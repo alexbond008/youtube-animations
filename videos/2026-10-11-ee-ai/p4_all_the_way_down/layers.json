@@ -1,0 +1,74 @@
+{
+  "fps": "30000/1001",
+  "animation_seconds": 26.0,
+  "hold_seconds": 1.0,
+  "total_seconds": 26.993,
+  "transition_seconds": 0.6,
+  "note": "start = camera begins dropping into this layer (previous layer ends); settle = start+0.6 (layer fully framed). Layer content animates from start. Last layer has no end move; ends at 26.0 then 1 s hold.",
+  "layers": [
+    {
+      "index": 1,
+      "id": "next_token",
+      "name": "Next-token prediction",
+      "start": 0,
+      "settle": 0.0,
+      "end": 3.5
+    },
+    {
+      "index": 2,
+      "id": "network_cloud",
+      "name": "Network / Cloud",
+      "start": 3.5,
+      "settle": 4.1,
+      "end": 7
+    },
+    {
+      "index": 3,
+      "id": "data_centre",
+      "name": "Data centre",
+      "start": 7,
+      "settle": 7.6,
+      "end": 10.5
+    },
+    {
+      "index": 4,
+      "id": "gpu",
+      "name": "GPU",
+      "start": 10.5,
+      "settle": 11.1,
+      "end": 14
+    },
+    {
+      "index": 5,
+      "id": "cpu",
+      "name": "CPU",
+      "start": 14,
+      "settle": 14.6,
+      "end": 17
+    },
+    {
+      "index": 6,
+      "id": "transistor",
+      "name": "Transistor",
+      "start": 17,
+      "settle": 17.6,
+      "end": 20
+    },
+    {
+      "index": 7,
+      "id": "logic_gates",
+      "name": "Logic gates",
+      "start": 20,
+      "settle": 20.6,
+      "end": 23
+    },
+    {
+      "index": 8,
+      "id": "zeros_ones",
+      "name": "0s and 1s",
+      "start": 23,
+      "settle": 23.6,
+      "end": 26.0
+    }
+  ]
+}

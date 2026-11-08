@@ -1,0 +1,208 @@
+<!doctype html>
+<html><head><meta charset="utf-8">
+<style>
+@font-face{font-family:Inter;font-weight:400;src:url(fonts/inter-latin-400-normal.woff2)}
+@font-face{font-family:Inter;font-weight:600;src:url(fonts/inter-latin-600-normal.woff2)}
+@font-face{font-family:Inter;font-weight:700;src:url(fonts/inter-latin-700-normal.woff2)}
+@font-face{font-family:Inter;font-weight:800;src:url(fonts/inter-latin-800-normal.woff2)}
+@font-face{font-family:"JetBrains Mono";font-weight:500;src:url(fonts/jetbrains-mono-latin-500-normal.woff2)}
+@font-face{font-family:"JetBrains Mono";font-weight:700;src:url(fonts/jetbrains-mono-latin-700-normal.woff2)}
+html,body{margin:0;padding:0;background:#0E0E10;overflow:hidden}
+#stage{position:relative;overflow:hidden;width:1920px;height:1080px;background:#0E0E10;
+  background-image:radial-gradient(circle at 12px 12px,#23232A 1.2px,transparent 1.7px);background-size:24px 24px}
+#stage svg{position:absolute;left:0;top:0;display:block}
+</style></head>
+<body>
+<div id="stage"></div>
+<script>
+const SCENE = new URLSearchParams(location.search).get('scene') || 'week';
+const VW = 1920, H = 1080;
+const stage = document.getElementById('stage');
+const CARD = '#16161A', BORDER = '#2A2A30', TXT = '#F5F5F7', SEC = '#A1A1AA', OR = '#D97757', BLUE = '#4DA3FF', GREEN = '#3DDC97', RED = '#FF5A4E', AMBER = '#F5B800';
+const clamp = (x, a = 0, b = 1) => Math.min(b, Math.max(a, x));
+const eo = x => 1 - Math.pow(1 - clamp(x), 3);
+const eio = x => { x = clamp(x); return x < .5 ? 4 * x * x * x : 1 - Math.pow(-2 * x + 2, 3) / 2; };
+const lerp = (a, b, t) => a + (b - a) * t;
+const f2 = x => (+x).toFixed(2);
+const esc = s => String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;');
+const IN = 10 / 29.97; // 10-frame entrance
+const rv = (t, s, d = IN) => eo((t - s) / d);
+const meas = document.createElement('canvas').getContext('2d');
+const mw = (s, font) => { meas.font = font; return meas.measureText(s).width; };
+function T(x, y, s, o = {}) {
+  const fam = o.mono ? "'JetBrains Mono'" : 'Inter';
+  return `<text x="${f2(x)}" y="${f2(y)}" font-family="${fam}" font-size="${o.size || 48}" font-weight="${o.w || 700}" fill="${o.fill || TXT}" text-anchor="${o.anchor || 'middle'}"${o.op == null ? '' : ` opacity="${f2(o.op)}"`}>${esc(s)}</text>`;
+}
+const SHADOW = `<filter id="sh" x="-20%" y="-20%" width="140%" height="160%"><feDropShadow dx="0" dy="20" stdDeviation="22" flood-color="#000" flood-opacity=".55"/></filter>
+<filter id="glow" x="-50%" y="-50%" width="200%" height="200%"><feGaussianBlur stdDeviation="8" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter>`;
+function card(x, y, w, h, o = {}) {
+  return `<rect x="${x}" y="${y}" width="${w}" height="${h}" rx="16" fill="${CARD}" stroke="${o.stroke || BORDER}" stroke-width="${o.sw || 1}" filter="url(#sh)"/>`;
+}
+// pop: opacity + scale .92->1 about (cx,cy) + optional translate
+function popG(p, cx, cy, inner, dx = 0, dy = 0, op = 1) {
+  if (p <= 0.001) return '';
+  const s = .92 + .08 * p;
+  return `<g opacity="${f2(p * op)}" transform="translate(${f2(dx * (1 - p))} ${f2(dy * (1 - p))}) translate(${f2(cx)} ${f2(cy)}) scale(${f2(s)}) translate(${f2(-cx)} ${f2(-cy)})">${inner}</g>`;
+}
+function wrap(t, total, inner) {
+  // static framing (camera push-in removed)
+  const s = 1;
+  stage.style.backgroundPosition = `${f2(-(s - 1) * 960)}px ${f2(-(s - 1) * 540)}px`;
+  return `<svg width="${VW}" height="${H}" viewBox="0 0 ${VW} ${H}" xmlns="http://www.w3.org/2000/svg"><defs>${SHADOW}</defs><g transform="translate(960 540) scale(${f2(s)}) translate(-960 -540)">${inner}</g></svg>`;
+}
+
+/* ================= THRESHOLD ================= */
+const TOTAL = 22.6;
+const AX = 440, Y0 = 860, PX = 6.6;
+const ym = m => Y0 - PX * m;
+const BW = 180, LC = 820, RC = 1240;
+const LINE_END = 1390;
+const lerpc = (a, b, k) => { // hex lerp
+  const pa = [1, 3, 5].map(i => parseInt(a.slice(i, i + 2), 16)), pb = [1, 3, 5].map(i => parseInt(b.slice(i, i + 2), 16));
+  return '#' + pa.map((v, i) => Math.round(lerp(v, pb[i], clamp(k))).toString(16).padStart(2, '0')).join('');
+};
+function student(cx, cy, col) {
+  return `<circle cx="${cx}" cy="${cy - 14}" r="13" fill="${col}"/><path d="M${cx - 24} ${cy + 22} a24 22 0 0 1 48 0 z" fill="${col}"/>`;
+}
+function tickPath(cx, cy, s, col, p = 1, w = 5) {
+  return `<path d="M${cx - 11 * s} ${cy} l${8 * s} ${8 * s} l${15 * s} ${-17 * s}" fill="none" stroke="${col}" stroke-width="${w}" stroke-linecap="round" stroke-linejoin="round" pathLength="1" stroke-dasharray="1 2" stroke-dashoffset="${f2(1 - p)}"/>`;
+}
+function weight(cx, bottom) {
+  const h = 104, tw = 176, bw = 236, top = bottom - h;
+  let g = `<path d="M${cx - 44} ${top + 2} v-14 a44 30 0 0 1 88 0 v14" fill="none" stroke="#6B3A36" stroke-width="12" stroke-linecap="round"/>`;
+  g += `<path d="M${cx - tw / 2} ${top} h${tw} l${(bw - tw) / 2} ${h} h${-bw} z" fill="#2A1B1B" stroke="${RED}" stroke-width="3" stroke-linejoin="round"/>`;
+  g += T(cx, top + 42, 'Hard module', { size: 28, w: 700 });
+  g += T(cx, top + 84, '−20%', { size: 36, w: 700, mono: true, fill: RED });
+  return g;
+}
+function bar(cx, m, col, op = 1) {
+  if (m <= 0.05) return '';
+  const top = ym(m), h = Y0 - top;
+  let g = `<path d="M${cx - BW / 2} ${Y0} V${f2(top + Math.min(12, h))} a12 12 0 0 1 12 -12 H${cx + BW / 2 - 12} a12 12 0 0 1 12 12 V${Y0} z" fill="${col}"/>`;
+  if (h > 56) g += T(cx, top + 44, `${Math.round(m)}%`, { size: 34, w: 700, mono: true, fill: '#0E0E10' });
+  return `<g opacity="${f2(op)}">${g}</g>`;
+}
+function target(cx, m, p, pulse = 0) {
+  if (p <= 0.001) return '';
+  const x = cx - BW / 2 - 10, y = ym(m);
+  let g = `<line x1="${x - 6}" y1="${f2(y)}" x2="${cx + BW / 2}" y2="${f2(y)}" stroke="${OR}" stroke-width="3" stroke-dasharray="4 6" opacity=".8"/>`;
+  g += `<path d="M${x - 22} ${f2(y - 14)} L${x} ${f2(y)} L${x - 22} ${f2(y + 14)} z" fill="${OR}"/>`;
+  g += T(x - 4, y - 22, `Target ${Math.round(m)}%`, { size: 28, w: 700, fill: OR, anchor: 'end' });
+  return `<g opacity="${f2(p)}">${g}</g>`;
+}
+function badge(cx, cy, text, col, tickP, p, glow = 0) {
+  if (p <= 0.001) return '';
+  const tw = mw(text, '800 36px Inter');
+  const w = tw + (tickP != null ? 92 : 56), h = 64;
+  let g = '';
+  if (glow > 0) g += `<rect x="${f2(cx - w / 2 - 6)}" y="${f2(cy - h / 2 - 6)}" width="${f2(w + 12)}" height="${h + 12}" rx="${(h + 12) / 2}" fill="${col}" opacity="${f2(glow)}" filter="url(#glow)"/>`;
+  g += `<rect x="${f2(cx - w / 2)}" y="${f2(cy - h / 2)}" width="${f2(w)}" height="${h}" rx="${h / 2}" fill="#101012" stroke="${col}" stroke-width="3"/>`;
+  if (tickP != null) {
+    g += tickPath(cx - w / 2 + 44, cy + 2, 1.35, col, tickP, 6);
+    g += T(cx - w / 2 + 74, cy + 13, text, { size: 36, w: 800, fill: col, anchor: 'start' });
+  } else g += T(cx, cy + 13, text, { size: 36, w: 800, fill: col });
+  return popG(p, cx, cy, g);
+}
+function threshold(t) {
+  let o = '';
+  const ap = rv(t, 0.0, 0.4);
+  // axis
+  let ax = `<line x1="${AX}" y1="${ym(100) - 10}" x2="${AX}" y2="${Y0}" stroke="#3A3A44" stroke-width="3"/><line x1="${AX}" y1="${Y0}" x2="${LINE_END}" y2="${Y0}" stroke="#3A3A44" stroke-width="3"/>`;
+  for (let m = 0; m <= 100; m += 10) {
+    ax += `<line x1="${AX - 10}" y1="${ym(m)}" x2="${AX}" y2="${ym(m)}" stroke="#3A3A44" stroke-width="3"/>`;
+    if (m % 20 === 0) ax += T(AX - 20, ym(m) + 10, `${m}%`, { size: 28, w: 500, mono: true, fill: '#8A8A94', anchor: 'end' });
+  }
+  ax += T(AX, 932, 'UK marks: pass 40%, first 70%', { size: 28, w: 400, fill: SEC, anchor: 'start' });
+  o += `<g opacity="${f2(ap)}">${ax}</g>`;
+  // threshold lines
+  const lp = rv(t, 0.15, 0.5);
+  if (lp > 0) {
+    o += `<g opacity="${f2(lp)}">`;
+    o += `<line x1="${AX}" y1="${ym(40)}" x2="${LINE_END}" y2="${ym(40)}" stroke="#D4D4DA" stroke-width="3" stroke-dasharray="14 10"/>`;
+    o += T(LINE_END + 18, ym(40) + 11, 'Pass 40%', { size: 32, w: 700, fill: '#D4D4DA', anchor: 'start' });
+    o += `<line x1="${AX}" y1="${ym(70)}" x2="${LINE_END}" y2="${ym(70)}" stroke="${BLUE}" stroke-width="3" stroke-dasharray="14 10"/>`;
+    o += T(LINE_END + 18, ym(70) + 11, 'First 70%', { size: 32, w: 700, fill: BLUE, anchor: 'start' });
+    o += `</g>`;
+  }
+  // headers
+  const rOn = eo((t - 11.2) / 0.4);
+  const rDim = 0.38 + 0.62 * rOn;
+  const hp = rv(t, 0.1, 0.4);
+  const head = (cx, txt, op) => {
+    const w = mw(txt, '800 40px Inter'), x0 = cx - (w + 58) / 2;
+    return `<g opacity="${f2(op)}">${student(x0 + 22, 112, SEC)}${T(x0 + 58, 128, txt, { size: 40, w: 800, anchor: 'start' })}</g>`;
+  };
+  o += popG(hp, LC, 115, head(LC, 'Aim: just pass', 1));
+  o += popG(hp, RC, 115, head(RC, 'Aim: top grade', rDim));
+  // "weak mentality" underline 2.1-3.6
+  {
+    const p = eo((t - 2.1) / 0.6), w = mw('Aim: just pass', '800 40px Inter') + 58;
+    const fade = 1 - 0.5 * eo((t - 4.2) / 1.0);
+    if (p > 0) o += `<rect x="${f2(LC - w / 2)}" y="146" width="${f2(w * p)}" height="6" rx="3" fill="${RED}" opacity="${f2(0.85 * fade)}"/>`;
+  }
+  // empty-bar ghosts
+  o += `<rect x="${RC - BW / 2}" y="${ym(100)}" width="${BW}" height="${PX * 100}" rx="12" fill="none" stroke="#2A2A30" stroke-width="2" stroke-dasharray="6 8" opacity="${f2(hp)}"/>`;
+  o += `<rect x="${LC - BW / 2}" y="${ym(100)}" width="${BW}" height="${PX * 100}" rx="12" fill="none" stroke="#2A2A30" stroke-width="2" stroke-dasharray="6 8" opacity="${f2(hp)}"/>`;
+  // ---- left student ----
+  const lGrow = eio((t - 0.3) / 0.7) * 40;
+  const lDrop = eio((t - 8.35) / 0.75);
+  const lm = lGrow - 20 * lDrop;
+  const lcol = lerpc(BLUE, RED, (t - 8.7) / 0.4);
+  o += bar(LC, lm, lcol);
+  o += target(LC, 40, rv(t, 0.5, 0.4));
+  // weight left: falls 7.9 -> 8.35 (ease-in), rides bar top after
+  {
+    const p = clamp((t - 7.9) / 0.45);
+    if (t >= 7.9) {
+      const fall = p * p; // gravity
+      const yb = t < 8.35 ? lerp(ym(40) - 360, ym(40), fall) : ym(lm);
+      const settle = t > 9.1 ? Math.sin((t - 9.1) * 1.6) * 1.5 : 0;
+      o += `<g opacity="${f2(clamp(p * 4))}">${weight(LC, yb + settle)}</g>`;
+      // impact ring
+      const ip = clamp((t - 8.35) / 0.4);
+      if (ip > 0 && ip < 1) o += `<ellipse cx="${LC}" cy="${f2(ym(40))}" rx="${f2(120 + 80 * eo(ip))}" ry="${f2(14 + 10 * eo(ip))}" fill="none" stroke="${RED}" stroke-width="3" opacity="${f2(0.7 * (1 - ip))}"/>`;
+    }
+  }
+  {
+    const p = rv(t, 9.1, 0.36);
+    const br = 1 + 0.02 * Math.sin((t - 9.5) * 2.4) * clamp(t - 9.5);
+    if (p > 0) o += `<g transform="translate(1030 ${ym(20)}) scale(${f2(br)}) translate(-1030 ${-ym(20)})">${badge(1030, ym(20), 'Fail', RED, null, p)}</g>`;
+  }
+  // ---- right student ----
+  const tgt = 40 + 45 * eio((t - 11.4) / 1.9);
+  const rGrow = 85 * eio((t - 11.6) / 1.8);
+  const rDrop = eio((t - 15.05) / 0.85);
+  const rm = rGrow - 20 * rDrop;
+  o += bar(RC, rm, BLUE);
+  o += target(RC, tgt, rOn);
+  {
+    const p = clamp((t - 14.6) / 0.45);
+    if (t >= 14.6) {
+      const fall = p * p;
+      const yb = t < 15.05 ? lerp(ym(85) - 300, ym(85), fall) : ym(rm);
+      const settle = t > 15.9 ? Math.sin((t - 15.9) * 1.6) * 1.5 : 0;
+      o += `<g opacity="${f2(clamp(p * 4))}">${weight(RC, yb + settle)}</g>`;
+      const ip = clamp((t - 15.05) / 0.4);
+      if (ip > 0 && ip < 1) o += `<ellipse cx="${RC}" cy="${f2(ym(85))}" rx="${f2(120 + 80 * eo(ip))}" ry="${f2(14 + 10 * eo(ip))}" fill="none" stroke="${RED}" stroke-width="3" opacity="${f2(0.7 * (1 - ip))}"/>`;
+    }
+  }
+  // Pass ✓ at 19.8, Still a 2:1 at 20.9
+  {
+    const top = ym(65) - 104 - 40;
+    const p = rv(t, 19.8, 0.36);
+    o += badge(RC, top - 44, 'Pass', GREEN, eo((t - 19.9) / 0.4), p);
+    const q = rv(t, 20.9, 0.4);
+    const glow = q * (0.32 + 0.12 * Math.sin((t - 20.9) * 3));
+    const pw = mw('Pass', '800 36px Inter') + 92, sw2 = mw('Still a 2:1', '800 36px Inter') + 56;
+    o += badge(RC + pw / 2 + 18 + sw2 / 2, top - 44, 'Still a 2:1', GREEN, null, q, glow);
+  }
+  return wrap(t, TOTAL, o);
+}
+window.renderAt = function (t) { stage.innerHTML = threshold(t); };
+window.ready = (async () => {
+  await Promise.all(['400 40px Inter', '600 40px Inter', '700 48px Inter', '800 100px Inter', '500 40px "JetBrains Mono"', '700 48px "JetBrains Mono"'].map(f => document.fonts.load(f)));
+  await document.fonts.ready;
+  window.renderAt(0);
+  return true;
+})();
+</script></body></html>

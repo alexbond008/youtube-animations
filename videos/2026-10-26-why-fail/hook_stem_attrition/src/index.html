@@ -1,0 +1,202 @@
+<!doctype html>
+<html><head><meta charset="utf-8">
+<style>
+@font-face{font-family:Inter;font-weight:400;src:url(fonts/inter-latin-400-normal.woff2)}
+@font-face{font-family:Inter;font-weight:600;src:url(fonts/inter-latin-600-normal.woff2)}
+@font-face{font-family:Inter;font-weight:700;src:url(fonts/inter-latin-700-normal.woff2)}
+@font-face{font-family:Inter;font-weight:800;src:url(fonts/inter-latin-800-normal.woff2)}
+@font-face{font-family:"JetBrains Mono";font-weight:500;src:url(fonts/jetbrains-mono-latin-500-normal.woff2)}
+@font-face{font-family:"JetBrains Mono";font-weight:700;src:url(fonts/jetbrains-mono-latin-700-normal.woff2)}
+html,body{margin:0;padding:0;background:#0E0E10;overflow:hidden}
+#stage{position:relative;overflow:hidden;width:1920px;height:1080px;background:#0E0E10;
+  background-image:radial-gradient(circle at 12px 12px,#23232A 1.2px,transparent 1.7px);background-size:24px 24px}
+#stage svg{position:absolute;left:0;top:0;display:block}
+</style></head>
+<body>
+<div id="stage"></div>
+<script>
+const SCENE = new URLSearchParams(location.search).get('scene') || 'main';
+const W = 1920, H = 1080;
+const stage = document.getElementById('stage');
+const CARD = '#16161A', BORDER = '#2A2A30', TXT = '#F5F5F7', SEC = '#A1A1AA', OR = '#D97757', RED = '#FF5A4E', BLUE = '#4DA3FF', AMBER = '#F5B800';
+const clamp = (x, a = 0, b = 1) => Math.min(b, Math.max(a, x));
+const eo = x => 1 - Math.pow(1 - clamp(x), 3);
+const eio = x => { x = clamp(x); return x < .5 ? 4 * x * x * x : 1 - Math.pow(-2 * x + 2, 3) / 2; };
+const lerp = (a, b, t) => a + (b - a) * t;
+const hash = n => { const x = Math.sin(n * 127.1 + 311.7) * 43758.5453; return x - Math.floor(x); };
+const f2 = x => (+x).toFixed(2);
+const esc = s => String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;');
+const rv = (t, s, d) => eo((t - s) / d);
+const hex = c => [1, 3, 5].map(i => parseInt(c.slice(i, i + 2), 16));
+const mix = (a, b, t) => { const A = hex(a), B = hex(b); return `rgb(${A.map((v, i) => Math.round(lerp(v, B[i], clamp(t)))).join(',')})`; };
+const meas = document.createElement('canvas').getContext('2d');
+const mw = (s, font) => { meas.font = font; return meas.measureText(s).width; };
+const SH = `filter="drop-shadow(0 20px 60px rgba(0,0,0,.55))"`;
+
+// ---------- grid ----------
+const PITCH = 62, GCX = 700, GCY = 565;
+const cellXY = i => [GCX + ((i % 10) - 4.5) * PITCH, GCY + (Math.floor(i / 10) - 4.5) * PITCH];
+// deterministic shuffle -> who leaves
+const order = [...Array(100).keys()].sort((a, b) => hash(a + 7) - hash(b + 7));
+const KIND = Array(100).fill('stay');
+order.slice(0, 20).forEach(i => KIND[i] = 'red');
+order.slice(20, 48).forEach(i => KIND[i] = 'blue');
+const redList = order.slice(0, 20).sort((a, b) => a - b), blueList = order.slice(20, 48).sort((a, b) => a - b);
+
+function person(x, y, s, fill, op, outline) {
+  // head + rounded shoulders, ~34 x 44 px at s=1
+  const body = `M -17 22 L -17 8 Q -17 -4 -5 -4 L 5 -4 Q 17 -4 17 8 L 17 22 Z`;
+  const st = outline ? `fill="none" stroke="${fill}" stroke-width="2" stroke-dasharray="4 4"` : `fill="${fill}"`;
+  return `<g transform="translate(${f2(x)} ${f2(y)}) scale(${f2(s)})" opacity="${f2(op)}"><circle cx="0" cy="-17" r="10" ${st}/><path d="${body}" ${st}/></g>`;
+}
+
+function figureState(i, t) {
+  const [x0, y0] = cellXY(i);
+  const r = Math.floor(i / 10), c = i % 10;
+  const st = 0.12 + (r + c) * 0.046, a = rv(t, st, 0.28);
+  let x = x0, y = y0, s = lerp(0.6, 1, a), op = 0.7 * a, col = TXT, ghost = 0;
+  // gentle idle ripple 1.3-5.0
+  const rip = Math.sin((t - 1.3) * 2.4 - (c * 0.45 + r * 0.25)) * 0.5 + 0.5;
+  if (t > 1.3) op = 0.7 + 0.12 * rip * clamp((t - 1.3) / 0.5) * (1 - clamp((t - 4.6) / 0.4));
+  const k = KIND[i];
+  if (k === 'red') {
+    const j = redList.indexOf(i), tc = 5.1 + j * 0.018;
+    const cp = rv(t, tc, 0.22), mp = eio((t - (tc + 0.45)) / 0.8);
+    col = mix(TXT, RED, cp); op = lerp(op, 0.95, cp);
+    y += mp * 46; op *= (1 - mp); s *= lerp(1, 0.85, mp); ghost = mp;
+  } else if (k === 'blue') {
+    const j = blueList.indexOf(i), tc = 6.7 + j * 0.014;
+    const cp = rv(t, tc, 0.22), mp = eio((t - (tc + 0.4)) / 0.85);
+    col = mix(TXT, BLUE, cp); op = lerp(op, 0.95, cp);
+    x -= mp * 70; op *= (1 - mp); s *= lerp(1, 0.9, mp); ghost = mp;
+  } else {
+    // the 52 who stay: brighten slightly when the counter lands
+    op = lerp(op, 0.86, rv(t, 7.6, 0.5));
+  }
+  return { x, y, s, op, col, ghost, x0, y0, k };
+}
+
+function grid(t, dim = 1) {
+  let g = '';
+  for (let i = 0; i < 100; i++) {
+    const f = figureState(i, t);
+    if (f.ghost > 0) g += person(f.x0, f.y0, 1, f.k === 'red' ? RED : BLUE, 0.28 * f.ghost * dim, true);
+    if (f.op > 0.004) g += person(f.x, f.y, f.s, f.col, f.op * dim, false);
+  }
+  return g;
+}
+
+function chip(x, y, num, rest, color, p) {
+  const fNum = `800 36px Inter`, fRest = `600 34px Inter`;
+  const wn = mw(num, fNum), wr = mw(rest, fRest);
+  const w = 28 + 22 + 18 + wn + 12 + wr + 30, h = 78;
+  const s = lerp(0.92, 1, p), dx = lerp(-24, 0, p);
+  return `<g opacity="${f2(p)}" transform="translate(${f2(x + dx)} ${y}) scale(${f2(s)})" ${SH}>
+    <rect x="0" y="${-h / 2}" width="${f2(w)}" height="${h}" rx="16" fill="${CARD}" stroke="${BORDER}"/>
+    <circle cx="${28 + 11}" cy="0" r="11" fill="${color}"/>
+    <text x="${28 + 22 + 18}" y="12" font-family="Inter" font-weight="800" font-size="36" fill="${color}">${num}</text>
+    <text x="${f2(28 + 22 + 18 + wn + 12)}" y="12" font-family="Inter" font-weight="600" font-size="34" fill="${TXT}">${esc(rest)}</text></g>`;
+}
+
+const PX = 1110, PCX = 1440;
+function rightPanel(t, op = 1) {
+  let g = '';
+  g += chip(PX, 360, '20', 'leave uni without a degree', RED, rv(t, 5.25, 0.35));
+  g += chip(PX, 462, '28', 'switch to a non-STEM major', BLUE, rv(t, 6.85, 0.35));
+  const p = rv(t, 7.6, 0.35), cnt = Math.round(48 * eo((t - 7.6) / 0.55));
+  if (p > 0) {
+    const s = lerp(0.92, 1, p);
+    g += `<g opacity="${f2(p)}" transform="translate(${PCX} 700) scale(${f2(s)})">
+      <text x="0" y="0" text-anchor="middle" font-family="Inter" font-weight="800" font-size="210" fill="${OR}" letter-spacing="-4">${cnt}%</text>
+      <text x="0" y="78" text-anchor="middle" font-family="Inter" font-weight="700" font-size="52" fill="${TXT}">left STEM</text></g>`;
+  }
+  return `<g opacity="${f2(op)}">${g}</g>`;
+}
+
+function title(t, op = 1) {
+  const p = rv(t, 0.0, 0.33), s = lerp(0.92, 1, p);
+  return `<g opacity="${f2(p * op)}" transform="translate(960 150) scale(${f2(s)})"><text x="0" y="0" text-anchor="middle" font-family="Inter" font-weight="800" font-size="56" fill="${TXT}">100 students start a STEM degree</text></g>`;
+}
+function source(t, op = 1) {
+  const p = rv(t, 0.9, 0.5) * op;
+  return `<text x="110" y="1010" font-family="Inter" font-weight="400" font-size="28" fill="${SEC}" opacity="${f2(p)}">US bachelor’s students who entered STEM 2003–09 · NCES 2014-001</text>`;
+}
+
+// ---------- main ----------
+function sceneMain(t) {
+  const z = 1; // static framing (no camera push)
+  const cy = 560;
+  return `<g transform="translate(960 ${cy}) scale(${f2(z)}) translate(-960 ${-cy})">${title(t)}${grid(t)}${rightPanel(t)}</g>${source(t)}`;
+}
+
+// ---------- maths variant (start = end state of main) ----------
+const SYMS = [
+  { k: 'int', x: 380, y: 330, sz: 150, d: 0.55 }, { k: 'sig', x: 1540, y: 300, sz: 130, d: 0.75 },
+  { k: 'dydx', x: 1430, y: 820, sz: 76, d: 0.95 }, { k: 'mat', x: 470, y: 800, sz: 1, d: 1.15 },
+  { k: 'int2', x: 1080, y: 250, sz: 96, d: 1.3 }, { k: 'dydx2', x: 300, y: 600, sz: 58, d: 1.45 },
+  { k: 'sig2', x: 1660, y: 600, sz: 90, d: 1.6 }, { k: 'mat2', x: 1180, y: 900, sz: 0.75, d: 1.75 },
+];
+function sym(s, t) {
+  const p = rv(t, s.d, 0.6);
+  if (p <= 0) return '';
+  const fl = Math.sin(t * 0.9 + s.x * 0.01) * 10, dy = lerp(40, 0, p) - t * 6 + fl;
+  const dimLine = lerp(1, 0.45, rv(t, 2.5, 0.5));
+  const op = 0.6 * p * dimLine, col = SEC, rot = (hash(s.x) - 0.5) * 14;
+  let g = '';
+  const MF = `'STIX Two Math','Cambria Math','Times New Roman',serif`;
+  if (s.k.startsWith('int')) g = `<text x="0" y="0" text-anchor="middle" font-family="${MF}" font-size="${s.sz}" fill="${col}">∫</text>`;
+  else if (s.k.startsWith('sig')) g = `<text x="0" y="0" text-anchor="middle" font-family="${MF}" font-size="${s.sz}" fill="${col}">Σ</text>`;
+  else if (s.k.startsWith('dydx')) {
+    const z = s.sz;
+    g = `<text x="0" y="${-z * 0.18}" text-anchor="middle" font-family="'JetBrains Mono'" font-weight="500" font-size="${z}" fill="${col}">dy</text>
+      <line x1="${-z * 0.75}" x2="${z * 0.75}" y1="${z * 0.02}" y2="${z * 0.02}" stroke="${col}" stroke-width="${f2(z * 0.06)}" stroke-linecap="round"/>
+      <text x="0" y="${z * 0.86}" text-anchor="middle" font-family="'JetBrains Mono'" font-weight="500" font-size="${z}" fill="${col}">dx</text>`;
+  } else {
+    const k = s.sz, w = 150 * k, h = 130 * k, sw = 5 * k;
+    const br = (x, dir) => `<path d="M ${x + dir * 18 * k} ${-h / 2} L ${x} ${-h / 2} L ${x} ${h / 2} L ${x + dir * 18 * k} ${h / 2}" fill="none" stroke="${col}" stroke-width="${sw}" stroke-linecap="round" stroke-linejoin="round"/>`;
+    const n = (x, y, v) => `<text x="${x}" y="${y}" text-anchor="middle" font-family="'JetBrains Mono'" font-weight="500" font-size="${46 * k}" fill="${col}">${v}</text>`;
+    const v = s.k === 'mat' ? ['2', '1', '0', '3'] : ['a', 'b', 'c', 'd'];
+    g = br(-w / 2, 1) + br(w / 2, -1) + n(-w * 0.22, -h * 0.1, v[0]) + n(w * 0.22, -h * 0.1, v[1]) + n(-w * 0.22, h * 0.33, v[2]) + n(w * 0.22, h * 0.33, v[3]);
+  }
+  return `<g opacity="${f2(op)}" transform="translate(${s.x} ${f2(s.y + dy)}) rotate(${f2(rot)})">${g}</g>`;
+}
+function sceneMaths(t) {
+  const T0 = 9.5; // end-state of the main clip
+  const out = 1 - rv(t, 0.0, 0.5);           // title / panel / source fade out
+  const back = eio((t - 0.1) / 0.9);         // grid slides to centre and dims
+  const gdx = lerp(0, 960 - GCX, back), gs = lerp(1.05, 1.0, back), gd = lerp(1, 0.32, back);
+  const zEnd = 1, cy = 560;
+  let g = `<g transform="translate(960 ${cy}) scale(${f2(zEnd * (1 - back) + back)}) translate(-960 ${-cy})">`;
+  g += title(T0, out) + rightPanel(T0, out);
+  g += `<g transform="translate(${f2(gdx)} 0)">${grid(T0, gd)}</g></g>`;
+  g += source(T0, out);
+  g += SYMS.map(s => sym(s, t)).join('');
+  // the line
+  const p = rv(t, 2.5, 0.35);
+  if (p > 0) {
+    const fz = 92, f = `800 ${fz}px Inter`;
+    const a = 'It’s not ', b = 'just the maths', c = '.';
+    const wa = mw(a, f), wb = mw(b, f), wc = mw(c, f), tw = wa + wb + wc, x0 = 960 - tw / 2, y = 575;
+    const sw = eo((t - 2.85) / 0.45);
+    const s = lerp(0.92, 1, p);
+    g += `<g opacity="${f2(p)}" transform="translate(960 545) scale(${f2(s)}) translate(-960 -545)">
+      <rect x="${f2(x0 - 60)}" y="${y - 120}" width="${f2(tw + 120)}" height="170" rx="20" fill="#0E0E10" opacity="0.72"/>
+      <rect x="${f2(x0 + wa - 8)}" y="${y - 74}" width="${f2((wb + 16) * sw)}" height="96" rx="8" fill="${AMBER}" opacity="0.3"/>
+      <text x="${f2(x0)}" y="${y}" font-family="Inter" font-weight="800" font-size="${fz}" fill="${TXT}" style="filter:drop-shadow(0 4px 24px rgba(0,0,0,.45))">${a}<tspan>${b}</tspan>${c}</text></g>`;
+  }
+  const z = 1; // static framing (no camera push)
+  return `<g transform="translate(960 540) scale(${f2(z)}) translate(-960 -540)">${g}</g>`;
+}
+
+window.renderAt = function (t) {
+  const body = SCENE === 'maths' ? sceneMaths(t) : sceneMain(t);
+  const z = 1;
+  stage.innerHTML = `<svg width="${W}" height="${H}" viewBox="0 0 ${W} ${H}" xmlns="http://www.w3.org/2000/svg">${body}</svg>`;
+};
+window.ready = (async () => {
+  await Promise.all(['400 40px Inter', '600 40px Inter', '700 48px Inter', '800 100px Inter', '500 40px "JetBrains Mono"', '700 48px "JetBrains Mono"'].map(f => document.fonts.load(f)));
+  await document.fonts.ready;
+  window.renderAt(0);
+  return true;
+})();
+</script></body></html>

@@ -1,0 +1,132 @@
+<!doctype html>
+<html><head><meta charset="utf-8">
+<style>
+@font-face{font-family:Inter;font-weight:400;src:url(fonts/inter-latin-400-normal.woff2)}
+@font-face{font-family:Inter;font-weight:600;src:url(fonts/inter-latin-600-normal.woff2)}
+@font-face{font-family:Inter;font-weight:700;src:url(fonts/inter-latin-700-normal.woff2)}
+@font-face{font-family:Inter;font-weight:800;src:url(fonts/inter-latin-800-normal.woff2)}
+@font-face{font-family:"JetBrains Mono";font-weight:500;src:url(fonts/jetbrains-mono-latin-500-normal.woff2)}
+@font-face{font-family:"JetBrains Mono";font-weight:700;src:url(fonts/jetbrains-mono-latin-700-normal.woff2)}
+html,body{margin:0;padding:0;background:#0E0E10;overflow:hidden}
+#stage{position:relative;overflow:hidden;width:1920px;height:1080px;background:#0E0E10;
+  background-image:radial-gradient(circle at 12px 12px,#23232A 1.2px,transparent 1.7px);background-size:24px 24px}
+#stage svg{position:absolute;left:0;top:0;display:block}
+</style></head>
+<body><div id="stage"></div>
+<script src="common.js"></script>
+<script>
+// Clip 2: p3_home_distractions — generic phone lock screen, notifications bury the lecture.
+window.cam = t => ({ s: 1, x: 0, y: 0 }); // static camera (micro drift/push-in removed)
+const PX = 660, PY = 40, PW = 600, PH = 1000;           // phone body
+const SX = PX + 16, SY = PY + 16, SW = PW - 32, SH = PH - 32; // screen
+const NX = SX + 18, NW = SW - 36, TOP = 345, GAP = 12;
+// icons (drawn at origin, size ~ s)
+const cakeIcon = s => { const k = s / 40; return `<g transform="scale(${f2(k)})">
+  <rect x="-18" y="-2" width="36" height="20" rx="3" fill="${OR}"/>
+  <rect x="-13" y="-14" width="26" height="14" rx="3" fill="#F2B8A2"/>
+  <path d="M -13 -9 q 3 5 6 0 q 3 5 6 0 q 3 5 7 0 q 3 5 7 0 L 13 -14 L -13 -14 Z" fill="${TXT}"/>
+  <rect x="-1.6" y="-24" width="3.2" height="10" rx="1.5" fill="${BLUE}"/>
+  <path d="M 0 -33 q 4 4 0 8 q -4 -4 0 -8 Z" fill="${AMBER}"/></g>`; };
+const bowlIcon = s => { const k = s / 40; return `<g transform="scale(${f2(k)})">
+  <path d="M -10 -4 q 4 -16 8 -2 q 4 -16 8 -2 q 4 -14 8 0" fill="none" stroke="${AMBER}" stroke-width="3.2" stroke-linecap="round"/>
+  <path d="M -14 -2 q 5 -12 10 -1 q 5 -12 10 -1" fill="none" stroke="#F5D06A" stroke-width="3" stroke-linecap="round"/>
+  <circle cx="-4" cy="-6" r="4.5" fill="${RED}"/><circle cx="7" cy="-7" r="4" fill="${RED}"/>
+  <path d="M -21 -2 L 21 -2 Q 19 18 0 18 Q -19 18 -21 -2 Z" fill="${TXT}"/>
+  <rect x="-8" y="17" width="16" height="4" rx="2" fill="${TXT}"/></g>`; };
+const playIcon = s => `<rect x="${-s / 2}" y="${-s / 2}" width="${s}" height="${s}" rx="${s * .24}" fill="${BLUE}"/><path d="M ${-s * .14} ${-s * .2} L ${s * .22} 0 L ${-s * .14} ${s * .2} Z" fill="${TXT}"/>`;
+const letterAv = (s, ch, c) => `<circle r="${s / 2}" fill="${c}"/>` + T(0, s * .17, ch, { size: s * .48, w: 800, fill: BG });
+const groupAv = (s, c) => { const k = s / 64; return `<circle r="${s / 2}" fill="#26323A"/><g transform="scale(${f2(k)})" fill="${c}">
+  <circle cx="-14" cy="-6" r="7"/><circle cx="14" cy="-6" r="7"/><circle cx="0" cy="-10" r="9"/>
+  <path d="M -26 16 q 0 -14 12 -14 q 12 0 12 14 Z"/><path d="M 2 16 q 0 -14 12 -14 q 12 0 12 14 Z"/><path d="M -14 20 q 0 -18 14 -18 q 14 0 14 18 Z"/></g>`; };
+const handset = (s, c, rot = 0) => `<g transform="rotate(${rot}) scale(${f2(s / 30)})"><path d="M -11 -9 q -3 3 0 9 q 6 10 16 15 q 6 3 9 0 l 3 -3 q 1 -2 -1 -4 l -5 -4 q -2 -1 -4 1 l -2 2 q -6 -3 -10 -10 l 2 -2 q 2 -2 0 -4 l -4 -5 q -2 -2 -4 0 Z" fill="${c}" transform="translate(-2 -2)"/></g>`;
+
+// notifications, oldest first
+const N = [
+  { at: 0.0, h: 200, kind: 'lecture' },
+  { at: 3.4, h: 124, kind: 'msg', av: s => letterAv(s, 'G', '#F2B8A2'), who: 'Grandma', text: 'more cake?', icon: cakeIcon },
+  { at: 5.2, h: 124, kind: 'msg', av: s => letterAv(s, 'M', AMBER), who: 'Mum', text: "spaghetti's ready", icon: bowlIcon },
+  { at: 7.8, h: 124, kind: 'call' },
+  { at: 11.6, h: 160, kind: 'msg', av: s => groupAv(s, GREEN), who: 'The boys', lines: ['yo when are you coming', 'outside??'] },
+];
+const arrive = (t, n) => n.at === 0 ? rv(t, 0.15, 12 * FR) : eio((t - n.at) / (12 * FR));
+function notif(n, t, y) {
+  const x = NX, w = NW, h = n.h;
+  let g = `<rect x="${x}" y="${f2(y)}" width="${w}" height="${h}" rx="26" fill="${n.kind === 'call' ? '#1D2A24' : '#232329'}" fill-opacity=".96" stroke="${n.kind === 'call' ? 'rgba(61,220,151,.5)' : '#34343C'}" stroke-width="1.5"/>`;
+  const ax = x + 54, tx = x + 104;
+  if (n.kind === 'lecture') {
+    g += `<g transform="translate(${ax} ${f2(y + 58)})">${playIcon(60)}</g>`;
+    g += T(tx, y + 52, 'Lecture 7', { anchor: 'start', size: 32, w: 800 });
+    g += T(tx, y + 96, 'recording available', { anchor: 'start', size: 34, w: 500 });
+    g += T(x + w - 24, y + 50, 'now', { anchor: 'end', size: 28, w: 500, fill: SEC });
+    // progress bar
+    g += `<rect x="${tx}" y="${f2(y + 128)}" width="${w - 128}" height="12" rx="6" fill="#3A3A42"/>`;
+    g += `<rect x="${tx}" y="${f2(y + 128)}" width="10" height="12" rx="6" fill="${BLUE}"/>`;
+    g += T(tx, y + 180, '0% watched', { anchor: 'start', size: 28, w: 600, fill: SEC });
+    const sp = eo((t - 2.0) / (10 * FR));
+    if (sp > 0) {
+      g += `<line x1="${tx - 4}" y1="${f2(y + 85)}" x2="${f2(tx - 4 + (mw('recording available', 34, 500) + 8) * sp)}" y2="${f2(y + 85)}" stroke="${RED}" stroke-opacity=".75" stroke-width="4" stroke-linecap="round"/>`;
+      g += chip(x + w - 22 - (mw('Watch later', 28, 800) + 56) / 2, y + 168, 'Watch later', RED, sp, { size: 28 });
+    }
+  } else if (n.kind === 'call') {
+    g += `<g transform="translate(${ax} ${f2(y + h / 2)})">${groupAv(64, GREEN)}</g>`;
+    g += T(tx, y + 54, 'The boys', { anchor: 'start', size: 34, w: 800 });
+    const dots = 1 + Math.floor(((t - n.at) * 2.5) % 3);
+    g += T(tx, y + 98, 'calling' + '.'.repeat(dots), { anchor: 'start', size: 30, w: 500, fill: GREEN });
+    const ring = 1 + 0.08 * Math.max(0, Math.sin((t - n.at) * 9)) * (Math.sin((t - n.at) * 1.6) > 0 ? 1 : 0);
+    g += `<g transform="translate(${x + w - 150} ${f2(y + h / 2)})"><circle r="30" fill="${RED}"/>${handset(30, TXT, 135)}</g>`;
+    g += `<g transform="translate(${x + w - 62} ${f2(y + h / 2)}) scale(${f2(ring)})"><circle r="30" fill="${GREEN}"/>${handset(30, TXT, 0)}</g>`;
+  } else {
+    g += `<g transform="translate(${ax} ${f2(y + (n.lines ? 62 : h / 2))})">${n.av(62)}</g>`;
+    g += T(tx, y + 52, n.who, { anchor: 'start', size: 32, w: 800 });
+    g += T(x + w - 24, y + 50, 'now', { anchor: 'end', size: 28, w: 500, fill: SEC });
+    if (n.lines) n.lines.forEach((l, i) => g += T(tx, y + 98 + i * 42, l, { anchor: 'start', size: 34, w: 500 }));
+    else {
+      g += T(tx, y + 98, n.text, { anchor: 'start', size: 34, w: 500 });
+      const iw = mw(n.text, 34, 500);
+      g += `<g transform="translate(${f2(tx + iw + 40)} ${f2(y + 90)})">${n.icon(52)}</g>`;
+    }
+  }
+  return g;
+}
+function phone(t) {
+  let g = '';
+  // glow behind phone
+  g += `<ellipse cx="960" cy="560" rx="520" ry="520" fill="url(#halo)"/>`;
+  g += `<rect x="${PX}" y="${PY}" width="${PW}" height="${PH}" rx="84" fill="#1B1B20" stroke="#3A3A42" stroke-width="3" filter="url(#shadow)"/>`;
+  g += `<clipPath id="scr"><rect x="${SX}" y="${SY}" width="${SW}" height="${SH}" rx="68"/></clipPath>`;
+  let s = `<rect x="${SX}" y="${SY}" width="${SW}" height="${SH}" fill="url(#wall)"/>`;
+  s += `<rect x="${960 - 70}" y="${SY + 18}" width="140" height="38" rx="19" fill="#050506"/>`;
+  // lock icon + date + time
+  s += `<g transform="translate(960 ${SY + 74})"><rect x="-11" y="-4" width="22" height="18" rx="4" fill="${TXT}"/><path d="M -7 -4 v -6 a 7 7 0 0 1 14 0 v 6" fill="none" stroke="${TXT}" stroke-width="3"/></g>`;
+  s += T(960, SY + 134, 'Friday 12 December', { size: 30, w: 600, fill: '#D4D4D8' });
+  s += T(960, SY + 258, '18:42', { size: 128, w: 700, fill: TXT, extra: 'letter-spacing="-2"' });
+  // notification stack
+  let ns = '';
+  N.forEach((n, i) => {
+    const p = arrive(t, n);
+    if (p <= 0) return;
+    let y = TOP;
+    for (let j = i + 1; j < N.length; j++) y += (N[j].h + GAP) * arrive(t, N[j]);
+    let op = p;
+    if (n.kind === 'lecture') op *= 1 - eo((t - 11.75) / (10 * FR));
+    const sc = 0.92 + 0.08 * p, dy = -26 * (1 - p);
+    ns += `<g opacity="${f2(op)}" transform="translate(960 ${f2(y + n.h / 2 + dy)}) scale(${f2(sc)}) translate(-960 ${f2(-(y + n.h / 2))})">${notif(n, t, y)}</g>`;
+  });
+  s += `<g mask="url(#fadeB)">${ns}</g>`;
+  s += `<rect x="${960 - 90}" y="${SY + SH - 22}" width="180" height="8" rx="4" fill="${TXT}" fill-opacity=".8"/>`;
+  g += `<g clip-path="url(#scr)">${s}</g>`;
+  return g;
+}
+function scene(t) {
+  // small buzz on each arrival (slow phone bob/sway removed)
+  let bx = 0;
+  for (const n of N.slice(1)) { const d = t - n.at; if (d >= 0 && d < 0.3) bx += 5 * Math.sin(d * 90) * (1 - d / 0.3); }
+  const by = 0, rot = 0;
+  const defs = `<defs><radialGradient id="halo"><stop offset="0" stop-color="${OR}" stop-opacity=".10"/><stop offset="1" stop-color="${OR}" stop-opacity="0"/></radialGradient>
+   <linearGradient id="wall" x1="0" y1="0" x2="0.6" y2="1"><stop offset="0" stop-color="#1E2433"/><stop offset=".55" stop-color="#17171D"/><stop offset="1" stop-color="#2A1C18"/></linearGradient>
+   <linearGradient id="fadeG" x1="0" y1="0" x2="0" y2="1" gradientUnits="userSpaceOnUse" y2b="0"><stop offset="0" stop-color="#fff"/></linearGradient>
+   <mask id="fadeB" maskUnits="userSpaceOnUse" x="0" y="0" width="1920" height="1080"><rect x="0" y="0" width="1920" height="1080" fill="url(#fadeL)"/></mask>
+   <linearGradient id="fadeL" gradientUnits="userSpaceOnUse" x1="0" y1="880" x2="0" y2="990"><stop offset="0" stop-color="#fff"/><stop offset="1" stop-color="#000"/></linearGradient></defs>`;
+  return defs + `<g transform="translate(${f2(bx)} ${f2(by)}) rotate(${f2(rot)} 960 540)">${phone(t)}</g>`;
+}
+</script></body></html>

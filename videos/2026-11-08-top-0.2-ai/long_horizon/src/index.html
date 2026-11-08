@@ -1,0 +1,142 @@
+<!doctype html>
+<html><head><meta charset="utf-8">
+<style>
+@font-face{font-family:Inter;font-weight:400;src:url(fonts/inter-latin-400-normal.woff2)}
+@font-face{font-family:Inter;font-weight:600;src:url(fonts/inter-latin-600-normal.woff2)}
+@font-face{font-family:Inter;font-weight:700;src:url(fonts/inter-latin-700-normal.woff2)}
+@font-face{font-family:Inter;font-weight:800;src:url(fonts/inter-latin-800-normal.woff2)}
+@font-face{font-family:"JetBrains Mono";font-weight:500;src:url(fonts/jetbrains-mono-latin-500-normal.woff2)}
+@font-face{font-family:"JetBrains Mono";font-weight:700;src:url(fonts/jetbrains-mono-latin-700-normal.woff2)}
+html,body{margin:0;padding:0;background:#0E0E10;overflow:hidden}
+#stage{position:relative;overflow:hidden;width:1920px;height:1080px;background:#0E0E10;
+  background-image:radial-gradient(circle at 12px 12px,#23232A 1.2px,transparent 1.7px);background-size:24px 24px}
+#stage svg{position:absolute;left:0;top:0;display:block}
+</style></head>
+<body><div id="stage"></div>
+<script src="lib.js"></script>
+<script>
+// ===== long_horizon: one long session decays (context rot) → split into sub-agents =====
+// Beats (s): 0.4 bar starts · ~5.0 decay obvious + "context rot" · 7.0 fade · 7.6–8.3 SPLIT · 8.6–12.2 sub-agents run · 12.4 "quality stays high" · end 14.0
+const stage = document.getElementById('stage');
+const X0 = 330, X1 = 1720, YT = 262, YB = 540, BY = 590, BH = 80, MY = 776, MH = 30;
+const qy = q => YB - q * (YB - YT);
+const qcol = s => s < .5 ? mix(GREEN, AMBER, s / .5) : mix(AMBER, RED, (s - .5) / .5);
+const P1 = (t) => clamp((t - 0.4) / 6.2);           // single-session progress
+const qLong = s => 0.9 - 0.75 * Math.pow(s, 1.8) + 0.012 * Math.sin(s * 47);
+const GAP = 36, SW = (X1 - X0 - 3 * GAP) / 4;
+
+function frame(t) {
+  let g = '';
+  // title + status chip
+  g += pop(rv(t, 0.0), 300, 130, T(128, 150, 'Long-horizon task', { size: 58, w: 800 }));
+  const swap = clamp((t - 7.7) / 0.45);
+  const chip = (label, col, op) => {
+    const w = 30 + 16 + 16 + mw(label, '700 30px Inter') + 30, x = 1792 - w;
+    return `<g opacity="${f2(op)}">${card(x, 98, w, 60)}<circle cx="${x + 38}" cy="128" r="8" fill="${col}"/>${T(x + 62, 139, label, { size: 30, w: 700 })}</g>`;
+  };
+  const cp = rv(t, 0.1);
+  if (swap < .5) g += chip('1 agent · 1 context window', OR, cp * (1 - swap * 2));
+  if (swap > .5) g += chip('1 orchestrator → 4 sub-agents', GREEN, swap * 2 - 1);
+  // main card
+  g += card(128, 200, 1664, 680);
+  // row labels
+  const lab = (y, s) => T(300, y, s, { size: 30, w: 700, fill: SEC, anchor: 'end' });
+  g += lab(410, 'quality') + lab(642, 'task') + lab(MY + 26, 'context');
+  // gridlines
+  for (const q of [0.25, 0.5, 0.75, 1]) g += `<line x1="${X0}" x2="${X1}" y1="${f2(qy(q))}" y2="${f2(qy(q))}" stroke="#24242B" stroke-width="1.5" stroke-dasharray="3 7"/>`;
+  g += `<line x1="${X0}" x2="${X1}" y1="${YB}" y2="${YB}" stroke="#2E2E36" stroke-width="2"/>`;
+
+  // ---- phase 1: long single line ----
+  const p = P1(t);
+  const ghost = clamp((t - 7.0) / 0.5);
+  if (p > 0) {
+    const N = 220, n = Math.max(1, Math.floor(N * p));
+    let seg = '';
+    for (let i = 0; i < n; i++) {
+      const s0 = i / N, s1 = Math.min(p, (i + 1) / N);
+      const c = mix(qcol(s1), '#4A4A52', ghost);
+      seg += `<line x1="${f2(lerp(X0, X1, s0))}" y1="${f2(qy(qLong(s0)))}" x2="${f2(lerp(X0, X1, s1))}" y2="${f2(qy(qLong(s1)))}" stroke="${c}" stroke-width="${f2(lerp(6, 3, ghost))}" stroke-linecap="round"/>`;
+    }
+    g += `<g opacity="${f2(lerp(1, .55, ghost))}">${seg}</g>`;
+    if (ghost < 1) {
+      const hx = lerp(X0, X1, p), hy = qy(qLong(p)), hc = qcol(p);
+      g += `<g opacity="${f2(1 - ghost)}"><circle cx="${f2(hx)}" cy="${f2(hy)}" r="22" fill="${hc}" opacity=".45" filter="url(#glow)"/><circle cx="${f2(hx)}" cy="${f2(hy)}" r="10" fill="${hc}"/></g>`;
+    }
+  }
+  // "context rot" annotation
+  const ar = rv(t, 4.9, 0.4) * fadeOut(t, 7.0, 0.3);
+  if (ar > 0) g += pop(ar, 1180, 490, `${T(1050, 506, 'context rot', { size: 46, w: 800, fill: RED })}
+     <path d="M 1262 468 L 1290 408" stroke="${RED}" stroke-width="3.5" fill="none" stroke-linecap="round"/>
+     <path d="M 1277 412 L 1291 405 L 1293 421" stroke="${RED}" stroke-width="3.5" fill="none" stroke-linecap="round" stroke-linejoin="round"/>`);
+  const gl = rv(t, 8.4, 0.4);
+  if (gl > 0) g += T(X1, 512, 'before: one long session', { size: 28, w: 600, fill: MUTED, anchor: 'end', op: gl });
+
+  // ---- bar(s) ----
+  const split = eio((t - 7.6) / 0.7);
+  const drain = clamp((t - 7.1) / 0.4);
+  for (let i = 0; i < 4; i++) {
+    const x = lerp(X0 + i * (X1 - X0) / 4, X0 + i * (SW + GAP), split);
+    const w = lerp((X1 - X0) / 4, SW, split);
+    const rx = lerp(i === 0 || i === 3 ? 14 : 0, 14, split);
+    // bg
+    if (split <= 0) { if (i === 0) g += `<rect x="${X0}" y="${BY}" width="${X1 - X0}" height="${BH}" rx="14" fill="#1E1E24"/>`; continue; }
+    g += `<rect x="${f2(x)}" y="${BY}" width="${f2(w)}" height="${BH}" rx="${f2(rx)}" fill="#1E1E24" stroke="${split > 0 ? mix(BORDER, '#3A3A44', split) : 'none'}"/>`;
+  }
+  // phase-1 outer outline + fill
+  if (split < 1) {
+    const fw = (X1 - X0) * p;
+    g += `<g opacity="${f2(1 - split)}"><rect x="${X0}" y="${BY}" width="${X1 - X0}" height="${BH}" rx="14" fill="none" stroke="#3A3A44"/>`;
+    if (fw > 0) g += `<rect x="${X0}" y="${BY}" width="${f2(fw)}" height="${BH}" rx="14" fill="${OR}" opacity="${f2(1 - drain)}"/>`;
+    for (let k = 1; k < 24; k++) { const xx = lerp(X0, X1, k / 24); g += `<line x1="${f2(xx)}" x2="${f2(xx)}" y1="${BY + 24}" y2="${BY + BH - 24}" stroke="#0E0E10" stroke-opacity=".35" stroke-width="2"/>`; }
+    g += T(X0 + 28, BY + 52, 'one agent, one long session', { size: 32, w: 700, fill: TXT, op: cp * (1 - drain) });
+    g += `</g>`;
+  }
+  // phase-1 context meter
+  const m1 = fadeOut(t, 7.0, 0.3);
+  if (m1 > 0 && p > 0) {
+    const c = 0.06 + 0.9 * p, col = qcol(c);
+    g += `<g opacity="${f2(m1)}"><rect x="${X0}" y="${MY}" width="${X1 - X0}" height="${MH}" rx="15" fill="#1E1E24"/>
+      <rect x="${X0}" y="${MY}" width="${f2((X1 - X0) * c)}" height="${MH}" rx="15" fill="${col}"/>
+      ${T(X1, MY - 16, Math.round(c * 100) + '% full', { size: 30, w: 800, fill: col, anchor: 'end' })}</g>`;
+  } else if (m1 > 0) {
+    g += `<rect x="${X0}" y="${MY}" width="${X1 - X0}" height="${MH}" rx="15" fill="#1E1E24" opacity="${f2(rv(t, 0.2))}"/>`;
+  }
+
+  // ---- phase 2: sub-agents ----
+  if (split >= 1) {
+    for (let i = 0; i < 4; i++) {
+      const x = X0 + i * (SW + GAP);
+      const lp = rv(t, 8.2 + i * 0.06, 0.35);
+      const sp = clamp((t - 8.6 - i * 0.22) / 3.0);
+      const spe = eio(sp);
+      // fill
+      if (spe > 0) g += `<rect x="${f2(x)}" y="${BY}" width="${f2(SW * spe)}" height="${BH}" rx="14" fill="${OR}"/>`;
+      g += T(x + 26, BY + 52, `sub-agent ${i + 1}`, { size: 32, w: 700, fill: TXT, op: lp });
+      // mini quality line (stays high)
+      if (spe > 0) {
+        const N = 50, n = Math.max(1, Math.floor(N * spe)); let pts = [];
+        for (let k = 0; k <= n; k++) { const s = Math.min(spe, k / N); pts.push(`${f2(x + 8 + (SW - 16) * s)},${f2(qy(0.88 + 0.012 * Math.sin(s * 19 + i * 2)))}`); }
+        g += `<polyline points="${pts.join(' ')}" fill="none" stroke="${GREEN}" stroke-width="6" stroke-linecap="round" stroke-linejoin="round"/>`;
+        const hx = x + 8 + (SW - 16) * spe, hy = qy(0.88 + 0.012 * Math.sin(spe * 19 + i * 2));
+        g += `<circle cx="${f2(hx)}" cy="${f2(hy)}" r="20" fill="${GREEN}" opacity=".35" filter="url(#glow)"/><circle cx="${f2(hx)}" cy="${f2(hy)}" r="9" fill="${GREEN}"/>`;
+      }
+      // mini context meter
+      const mp = rv(t, 8.3 + i * 0.06, 0.35);
+      if (mp > 0) {
+        const c = 0.05 + 0.27 * spe;
+        g += `<g opacity="${f2(mp)}"><rect x="${f2(x)}" y="${MY}" width="${f2(SW)}" height="${MH}" rx="15" fill="#1E1E24"/>
+          <rect x="${f2(x)}" y="${MY}" width="${f2(SW * c)}" height="${MH}" rx="15" fill="${GREEN}"/>
+          ${T(x + SW, MY - 16, Math.round(c * 100) + '%', { size: 30, w: 800, fill: GREEN, anchor: 'end' })}
+          ${T(x, MY - 16, 'fresh', { size: 28, w: 600, fill: SEC })}</g>`;
+      }
+    }
+    const ok = rv(t, 12.3, 0.4);
+    if (ok > 0) g += pop(ok, X0 + 180, 236, `<path d="M ${X0 + 4} 236 l 12 12 l 22 -26" stroke="${GREEN}" stroke-width="6" fill="none" stroke-linecap="round" stroke-linejoin="round"/>${T(X0 + 52, 248, 'quality stays high', { size: 34, w: 800, fill: GREEN })}`);
+  }
+  // caption
+  g += T(128, 962, 'illustrative · Anthropic calls this ‘context rot’', { size: 28, w: 600, fill: SEC, op: rv(t, 0.6, 0.5) });
+  return svgWrap(g);
+}
+window.renderAt = t => { stage.innerHTML = frame(t); };
+window.ready = (async () => { await loadFonts(); window.renderAt(0); return true; })();
+</script></body></html>

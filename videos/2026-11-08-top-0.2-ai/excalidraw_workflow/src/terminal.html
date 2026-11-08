@@ -1,0 +1,47 @@
+<!doctype html><html><head><meta charset="utf-8"><style>
+@font-face{font-family:Inter;src:url(fonts/inter-latin-600-normal.woff2);font-weight:600}
+@font-face{font-family:JBM;src:url(fonts/jetbrains-mono-latin-500-normal.woff2);font-weight:500}
+@font-face{font-family:JBM;src:url(fonts/jetbrains-mono-latin-700-normal.woff2);font-weight:700}
+html,body{margin:0;width:1920px;height:1080px;overflow:hidden;background:#0E0E10}
+#bg{position:absolute;inset:0;background:url(bgA.png) center/cover}
+#dim{position:absolute;inset:0;background:#0E0E10;opacity:0}
+#win{position:absolute;left:300px;top:170px;width:1320px;height:720px;background:#16161A;border:1px solid #2A2A30;border-radius:16px;box-shadow:0 20px 60px rgba(0,0,0,.55);opacity:0;overflow:hidden}
+#bar{height:48px;border-bottom:1px solid #2A2A30;display:flex;align-items:center;justify-content:center;position:relative;font:500 18px JBM;color:#A1A1AA}
+.dot{position:absolute;top:17px;width:13px;height:13px;border-radius:50%;background:#3A3A42}
+#path{position:absolute;left:60px;top:76px;font:500 20px JBM;color:#A1A1AA}
+#path b{color:#D97757;font-weight:700}
+#input{position:absolute;left:40px;right:40px;top:520px;height:160px;border:1px solid #2A2A30;border-radius:12px;background:#121215}
+#chip{position:absolute;left:24px;top:20px;display:flex;align-items:center;gap:10px;padding:6px 14px 6px 8px;border:1px solid #D97757;border-radius:8px;background:rgba(217,119,87,.10);font:500 18px JBM;color:#F5F5F7;opacity:0}
+#chip i{width:34px;height:22px;border-radius:4px;background:url(../diagram.png) center/cover;border:1px solid #2A2A30}
+#line{position:absolute;left:24px;top:84px;font:500 26px JBM;color:#F5F5F7;white-space:pre}
+#line .p{color:#D97757;font-weight:700}
+#caret{display:inline-block;width:15px;height:30px;background:#D97757;vertical-align:-6px;margin-left:2px}
+#card{position:absolute;border-radius:10px;border:1px solid #2A2A30;box-shadow:0 20px 60px rgba(0,0,0,.55);background:url(../diagram.png) center/100% 100% #121212;opacity:0}
+</style></head><body>
+<div id="bg"></div><div id="dim"></div>
+<div id="win"><div id="bar"><span class="dot" style="left:20px"></span><span class="dot" style="left:42px"></span><span class="dot" style="left:64px"></span>claude — terminal</div>
+<div id="path"><b>~/control-lab</b> &nbsp;new session</div>
+<div id="input"><div id="chip"><i></i>diagram.png</div><div id="line"><span class="p">&gt; </span><span id="txt"></span><span id="caret"></span></div></div></div>
+<div id="card"></div>
+<script>
+const MSG="I've got this diagram of my workflow with all the subsections…";
+const cl=(x)=>Math.max(0,Math.min(1,x)); const eo=u=>1-Math.pow(1-u,3);
+const seg=(t,a,b)=>eo(cl((t-a)/(b-a)));
+const lerp=(a,b,u)=>a+(b-a)*u;
+const WIN={x:300,y:170};
+const FROM={x:522,y:469,w:452,h:142}, TO={x:WIN.x+160,y:WIN.y+122,w:1000,h:318};
+window.renderAt=(t)=>{
+  const d=seg(t,0,.4); document.getElementById('dim').style.opacity=.7*d; document.getElementById('bg').style.filter=`blur(${8*d}px)`;
+  const w=seg(t,.15,.5); const win=document.getElementById('win'); win.style.opacity=w; win.style.transform=`translateY(${40*(1-w)}px)`;
+  const c=document.getElementById('card'); const f=seg(t,.35,1.15);
+  c.style.opacity=t<.05?0:1;
+  c.style.left=lerp(FROM.x,TO.x,f)+'px'; c.style.top=lerp(FROM.y,TO.y,f)+(t<1.15?0:40*0)+'px';
+  c.style.width=lerp(FROM.w,TO.w,f)+'px'; c.style.height=lerp(FROM.h,TO.h,f)+'px';
+  c.style.transform=`translateY(${40*(1-w)}px) rotate(${(1-f)*-2}deg)`;
+  const ch=seg(t,1.2,1.53); const chip=document.getElementById('chip'); chip.style.opacity=ch; chip.style.transform=`scale(${.92+.08*ch})`;
+  const T0=1.5, CPS=31; const n=Math.max(0,Math.min(MSG.length,Math.floor((t-T0)*CPS)));
+  document.getElementById('txt').textContent=MSG.slice(0,n);
+  const typing=t>=T0&&n<MSG.length; document.getElementById('caret').style.opacity=(typing||t<T0&&t>1.2)?1:((t*2)%2<1.2?1:0);
+};
+window.ready=document.fonts.ready.then(()=>new Promise(r=>{const i=new Image();i.onload=r;i.src='../diagram.png'}));
+</script></body></html>

@@ -1,0 +1,332 @@
+<!doctype html>
+<html><head><meta charset="utf-8">
+<style>
+@font-face{font-family:Inter;font-weight:400;src:url(fonts/Inter-Regular.ttf)}
+@font-face{font-family:Inter;font-weight:600;src:url(fonts/Inter-SemiBold.ttf)}
+@font-face{font-family:Inter;font-weight:700;src:url(fonts/Inter-Bold.ttf)}
+@font-face{font-family:Inter;font-weight:800;src:url(fonts/Inter-ExtraBold.ttf)}
+html,body{margin:0;padding:0;background:#0E0E10;overflow:hidden}
+#stage{position:relative;overflow:hidden;background:#0E0E10;
+  background-image:radial-gradient(circle at 12px 12px,#23232A 1.2px,transparent 1.7px);background-size:24px 24px}
+#stage svg{position:absolute;left:0;top:0;display:block}
+</style></head>
+<body>
+<svg id="meas" width="0" height="0" style="position:absolute"></svg>
+<div id="stage"></div>
+<script>
+const Q = new URLSearchParams(location.search);
+const VERT = Q.get('mode') === 'vert';
+const VW = VERT ? 1080 : 1920, H = VERT ? 1350 : 1080;
+const stage = document.getElementById('stage');
+stage.style.width = VW + 'px'; stage.style.height = H + 'px';
+const BG = '#0E0E10', CARD = '#16161A', BORDER = '#2A2A30', TXT = '#F5F5F7', SEC = '#A1A1AA', OR = '#D97757', BLUE = '#4DA3FF', HOT = '#FF8A4C', RED = '#FF5A4E';
+const clamp = (x, a = 0, b = 1) => Math.min(b, Math.max(a, x));
+const eo = x => 1 - Math.pow(1 - clamp(x), 3);
+const eio = x => { x = clamp(x); return x < .5 ? 4 * x * x * x : 1 - Math.pow(-2 * x + 2, 3) / 2; };
+const lerp = (a, b, t) => a + (b - a) * t;
+const f2 = x => (+x).toFixed(2);
+const esc = s => String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;');
+const rv = (t, s, d) => eo((t - s) / d);
+const hex = h => [1, 3, 5].map(i => parseInt(h.slice(i, i + 2), 16));
+const mixh = (a, b, t) => { const A = hex(a), B = hex(b); return '#' + A.map((v, i) => Math.round(lerp(v, B[i], t)).toString(16).padStart(2, '0')).join(''); };
+const meas = document.createElement('canvas').getContext('2d');
+const mw = (s, font) => { meas.font = font; return meas.measureText(s).width; };
+
+// ---------------- layout ----------------
+const L = VERT ? {
+  panel: [30, 130, 1020, 700],
+  rack: { x: 130, y: 200, w: 400, h: 500 }, bl: { x0: 155, w: 350, h: 58, y0: 300, pitch: 80, n: 5 },
+  gpus: [290, 390], rC: 84, rH: 575, grad: [255, 440],
+  cdu: { x: 690, y: 300, w: 280, h: 400 }, ports: [380, 640],
+  tower: { cx: 800, top: 900, mid: 1030, bot: 1160, wTop: 240, wMid: 190, wBot: 290 },
+  maskX0: 570,
+  rackPill: [330, 245], hotPill: [480, 165], coldPill: [300, 760], cduPill: [830, 250], towerPill: [800, 1245],
+  titleY: 100, titleSize: 60, pillSize: 42
+} : {
+  panel: [50, 150, 1280, 880],
+  rack: { x: 170, y: 255, w: 470, h: 595 }, bl: { x0: 195, w: 420, h: 60, y0: 355, pitch: 82, n: 6 },
+  gpus: [385, 500], rC: 110, rH: 700, grad: [345, 540],
+  cdu: { x: 960, y: 330, w: 290, h: 520 }, ports: [410, 770],
+  tower: { cx: 1610, top: 590, mid: 730, bot: 880, wTop: 250, wMid: 200, wBot: 300 },
+  maskX0: 730,
+  rackPill: [405, 300], hotPill: [810, 215], coldPill: [450, 910], cduPill: [1105, 985], towerPill: [1610, 985],
+  titleY: 115, titleSize: 76, pillSize: 44
+};
+const bl = L.bl;
+const tyOf = i => bl.y0 + i * bl.pitch + bl.h / 2;
+const TY = Array.from({ length: bl.n }, (_, i) => tyOf(i));
+const TW = L.tower;
+
+// pipes ------------------------------------------------
+const PIPES = {};
+function mk(name, pts, o) { PIPES[name] = Object.assign({ name, pts }, o); }
+if (!VERT) {
+  mk('cold', [[960, 770], [860, 770], [860, 910], [L.rC, 910], [L.rC, TY[0]]], { t0: 2.3, t1: 3.7, kind: 'cold' });
+  mk('hot', [[L.rH, TY[bl.n - 1]], [L.rH, 215], [880, 215], [880, 410], [960, 410]], { t0: 3.2, t1: 5.2, kind: 'hot' });
+  mk('warm', [[1250, 410], [1610, 410], [1610, 592]], { t0: 5.6, t1: 6.4, kind: 'hot' });
+  mk('cold2', [[1465, 830], [1380, 830], [1380, 770], [1250, 770]], { t0: 6.0, t1: 6.9, kind: 'cold' });
+} else {
+  mk('cold', [[690, 640], [625, 640], [625, 760], [L.rC, 760], [L.rC, TY[0]]], { t0: 2.3, t1: 3.7, kind: 'cold' });
+  mk('hot', [[L.rH, TY[bl.n - 1]], [L.rH, 165], [640, 165], [640, 380], [690, 380]], { t0: 3.2, t1: 5.2, kind: 'hot' });
+  mk('warm', [[970, 380], [1005, 380], [1005, 960], [915, 960]], { t0: 5.6, t1: 6.5, kind: 'hot' });
+  mk('cold2', [[935, 1120], [1042, 1120], [1042, 640], [970, 640]], { t0: 6.0, t1: 7.0, kind: 'cold' });
+}
+for (let i = 0; i < bl.n; i++) mk('tube' + i, [[L.rC, TY[i]], [L.rH, TY[i]]], { t0: 2.4 + i * 0.13, t1: 3.2 + i * 0.13, kind: 'tube', mid: true });
+
+function roundedD(pts, r) {
+  let d = `M${f2(pts[0][0])} ${f2(pts[0][1])}`;
+  for (let i = 1; i < pts.length - 1; i++) {
+    const a = pts[i - 1], b = pts[i], c = pts[i + 1];
+    const l1 = Math.hypot(b[0] - a[0], b[1] - a[1]), l2 = Math.hypot(c[0] - b[0], c[1] - b[1]);
+    const rr = Math.min(r, l1 / 2, l2 / 2);
+    const p1 = [b[0] + (a[0] - b[0]) / l1 * rr, b[1] + (a[1] - b[1]) / l1 * rr];
+    const p2 = [b[0] + (c[0] - b[0]) / l2 * rr, b[1] + (c[1] - b[1]) / l2 * rr];
+    d += `L${f2(p1[0])} ${f2(p1[1])}Q${f2(b[0])} ${f2(b[1])} ${f2(p2[0])} ${f2(p2[1])}`;
+  }
+  const z = pts[pts.length - 1]; return d + `L${f2(z[0])} ${f2(z[1])}`;
+}
+const meSvg = document.getElementById('meas');
+for (const k in PIPES) {
+  const p = PIPES[k];
+  p.d = roundedD(p.pts, 34);
+  const el = document.createElementNS('http://www.w3.org/2000/svg', 'path'); el.setAttribute('d', p.d); meSvg.appendChild(el);
+  p.el = el; p.len = el.getTotalLength();
+  p.spacing = 74; p.N = Math.max(2, Math.round(p.len / p.spacing)); p.sp = p.len / p.N;
+  p.speed = 120;
+  p.samples = null;
+}
+function ptAt(p, s) { return p.el.getPointAtLength(clamp(s, 0, p.len)); }
+
+// ---------------- primitives ----------------
+function pill(cx, cy, text, o = {}) {
+  const p = o.p == null ? 1 : o.p; if (p <= 0.003) return '';
+  const size = o.size || L.pillSize, pad = 28, dotW = o.dot ? 30 : 0;
+  const w = mw(text, `700 ${size}px Inter`) + pad * 2 + dotW;
+  const col = o.color || TXT;
+  const dy = (o.dy == null ? 16 : o.dy) * (1 - p);
+  let s = `<rect x="${f2(cx - w / 2)}" y="${cy - 38}" width="${f2(w)}" height="76" rx="38" fill="${o.fill || CARD}" stroke="${o.stroke || '#3A3A44'}" stroke-width="2"/>`;
+  if (o.dot) s += `<circle cx="${f2(cx - w / 2 + pad + 8)}" cy="${cy}" r="9" fill="${o.dot}"/>`;
+  s += `<text x="${f2(cx - w / 2 + pad + dotW)}" y="${cy + size * .35}" font-family="Inter" font-weight="700" font-size="${size}" fill="${col}">${esc(text)}</text>`;
+  return `<g opacity="${f2(p)}" transform="translate(0 ${f2(dy)})">${s}</g>`;
+}
+
+// ---------------- rack ----------------
+function heatAt(t) { return 1 - 0.55 * eio((t - 3.2) / 1.8); }
+function rackSvg(t) {
+  const R = L.rack, p = rv(t, 0, 0.8), heat = heatAt(t), warm = rv(t, 0, 1.5);
+  let s = '';
+  const cx = R.x + R.w / 2, cy = R.y + R.h / 2;
+  s += `<ellipse cx="${cx}" cy="${cy}" rx="${R.w * .95}" ry="${R.h * .78}" fill="url(#haloG)" opacity="${f2(warm * (.55 + .45 * heat) * (.9 + .1 * Math.sin(t * 2.3)))}"/>`;
+  s += `<rect x="${R.x}" y="${R.y}" width="${R.w}" height="${R.h}" rx="16" fill="${CARD}" stroke="${mixh('#2A2A30', '#6A4030', warm * heat)}" stroke-width="2.5"/>`;
+  for (let i = 0; i < bl.n; i++) {
+    const by = bl.y0 + i * bl.pitch, ty = by + bl.h / 2;
+    s += `<rect x="${bl.x0}" y="${by}" width="${bl.w}" height="${bl.h}" rx="9" fill="#1D1D22" stroke="#2F2F36" stroke-width="1.5"/>`;
+    s += `<rect x="${bl.x0}" y="${by}" width="${bl.w}" height="${bl.h}" rx="9" fill="${HOT}" opacity="${f2(warm * heat * (.10 + .07 * Math.sin(t * 2.2 + i * 1.1)))}"/>`;
+    for (let v = 0; v < 4; v++) s += `<rect x="${bl.x0 + 18 + v * 14}" y="${by + 14}" width="6" height="${bl.h - 28}" rx="3" fill="#2B2B33"/>`;
+    s += `<circle cx="${bl.x0 + 90}" cy="${ty}" r="6" fill="${GREENC}" opacity="${f2(.55 + .35 * Math.sin(t * 3 + i * 2))}"/>`;
+    L.gpus.forEach((gx, gi) => {
+      const gl = warm * heat * (.75 + .25 * Math.sin(t * 2.6 + i + gi));
+      s += `<circle cx="${gx}" cy="${ty}" r="54" fill="url(#gpuG)" opacity="${f2(gl)}"/>`;
+      s += `<rect x="${gx - 22}" y="${ty - 22}" width="44" height="44" rx="6" fill="url(#chipG)" stroke="${mixh('#3A3A44', '#C2603A', gl * .8)}" stroke-width="2"/>`;
+      s += `<rect x="${gx - 11}" y="${ty - 11}" width="22" height="22" rx="3" fill="${mixh('#22222A', '#9A3F22', gl * .9)}"/>`;
+      // cold plate
+      const q = rv(t, 1.6 + i * 0.17 + gi * 0.08, 0.55);
+      if (q > 0.004) {
+        const flow = rv(t, 3.0 + i * 0.13, 1.2);
+        const hotMix = flow * (gi === 0 ? .35 : .8);
+        const fillc = mixh('#1C3550', '#4A2418', hotMix), strokec = mixh(BLUE, HOT, hotMix);
+        s += `<g opacity="${f2(q)}" transform="translate(0 ${f2(-34 * (1 - q))})"><rect x="${gx - 42}" y="${ty - 25}" width="84" height="50" rx="9" fill="${fillc}" stroke="${strokec}" stroke-width="2.5"/>
+          <rect x="${gx - 42}" y="${ty - 25}" width="84" height="50" rx="9" fill="url(#plateSheen)" opacity=".5"/></g>`;
+      }
+    });
+  }
+  // shimmer
+  const sh = warm * heat * (1 - rv(t, 5.0, 1.5) * .6);
+  for (let k = 0; k < 6; k++) {
+    const x0 = R.x + 50 + k * ((R.w - 100) / 5), y0 = R.y - 6;
+    let d = `M${f2(x0)} ${y0}`;
+    for (let yy = 0; yy <= 78; yy += 6) d += `L${f2(x0 + 8 * Math.sin(yy * 0.09 - t * 3.4 + k * 1.7))} ${f2(y0 - yy)}`;
+    s += `<path d="${d}" fill="none" stroke="${HOT}" stroke-width="4" stroke-linecap="round" stroke-dasharray="26 22" stroke-dashoffset="${f2(t * 34 + k * 9)}" opacity="${f2(.38 * sh)}"/>`;
+  }
+  return `<g opacity="${f2(p)}" transform="translate(0 ${f2(36 * (1 - p))})">${s}</g>`;
+}
+const GREENC = '#3DDC97';
+
+// ---------------- pipes + flow ----------------
+function pipeSvg(p, t) {
+  const prog = eio((t - p.t0) / (p.t1 - p.t0));
+  if (prog <= 0.001) return '';
+  const dash = `pathLength="1" stroke-dasharray="1 2" stroke-dashoffset="${f2(1 - prog)}"`;
+  const col = p.kind === 'cold' ? BLUE : p.kind === 'hot' ? HOT : 'url(#tubeG)';
+  let s = `<path d="${p.d}" fill="none" stroke="#2C2C34" stroke-width="22" stroke-linecap="butt" stroke-linejoin="round" ${dash}/>`;
+  s += `<path d="${p.d}" fill="none" stroke="${p.kind === 'cold' ? '#1D3E63' : p.kind === 'hot' ? '#6B3519' : '#333'}" stroke-width="15" stroke-linecap="butt" ${dash} opacity="${p.kind === 'tube' ? 0 : 1}"/>`;
+  s += `<path d="${p.d}" fill="none" stroke="${col}" stroke-width="10" stroke-linecap="butt" stroke-linejoin="round" ${dash} opacity=".95"/>`;
+  // dots
+  const drawn = prog * p.len;
+  for (let k = 0; k < p.N; k++) {
+    const sPos = ((t * p.speed + k * p.sp) % p.len);
+    if (sPos > drawn - 4) continue;
+    const e = Math.min(sPos, drawn - sPos, p.len - sPos);
+    const a = clamp(e / 26);
+    if (a <= 0.01) continue;
+    const q = ptAt(p, sPos);
+    let c;
+    if (p.kind === 'tube') { c = mixh('#BFE0FF', '#FFD9BE', clamp((q.x - L.grad[0]) / (L.grad[1] - L.grad[0]))); }
+    else c = p.kind === 'cold' ? '#DCEBFF' : '#FFE2CF';
+    const hc = p.kind === 'tube' ? mixh(BLUE, HOT, clamp((q.x - L.grad[0]) / (L.grad[1] - L.grad[0]))) : (p.kind === 'cold' ? BLUE : HOT);
+    s += `<circle cx="${f2(q.x)}" cy="${f2(q.y)}" r="13" fill="${hc}" opacity="${f2(.28 * a)}"/><circle cx="${f2(q.x)}" cy="${f2(q.y)}" r="5.5" fill="${c}" opacity="${f2(a)}"/>`;
+  }
+  return s;
+}
+
+// ---------------- CDU ----------------
+function cduSvg(t) {
+  const C = L.cdu, p = rv(t, 4.3, 0.9);
+  if (p <= 0.003) return '';
+  let s = '';
+  const pulse = .5 + .5 * Math.sin(t * 2.4);
+  s += `<rect x="${C.x}" y="${C.y}" width="${C.w}" height="${C.h}" rx="16" fill="${CARD}" stroke="#34343C" stroke-width="2.5"/>`;
+  // inner exchanger
+  const ix = C.x + 38, iw = C.w - 76, iy = C.y + 56, ih = C.h - 112, n = 8;
+  const run = rv(t, 5.0, 1.0);
+  s += `<rect x="${ix - 12}" y="${iy - 14}" width="${iw + 24}" height="${ih + 28}" rx="12" fill="#101014" stroke="#2A2A30" stroke-width="1.5"/>`;
+  s += `<ellipse cx="${C.x + C.w / 2}" cy="${iy + ih / 2}" rx="${iw * .6}" ry="${ih * .35}" fill="url(#gpuG)" opacity="${f2(run * (.35 + .15 * pulse))}"/>`;
+  for (let i = 0; i < n; i++) {
+    const x = ix + (i + .5) * iw / n - 8, hotPl = i % 2 === 0;
+    s += `<rect x="${f2(x)}" y="${iy}" width="16" height="${ih}" rx="6" fill="${hotPl ? '#3A2218' : '#182B42'}" stroke="${hotPl ? '#8A4A2A' : '#2D5B8E'}" stroke-width="1.5"/>`;
+    // flow dots
+    const per = 5, sp = ih / per;
+    for (let k = 0; k < per; k++) {
+      let u = ((t * 70 + k * sp + i * 17) % ih) / ih;     // 0..1 along flow
+      const y = hotPl ? iy + u * ih : iy + (1 - u) * ih;
+      const col = hotPl ? mixh('#FFB07A', '#9CCBFF', u) : mixh('#9CCBFF', '#FFB07A', u);
+      const a = Math.min(u * 8, (1 - u) * 8, 1) * run;
+      s += `<circle cx="${f2(x + 8)}" cy="${f2(y)}" r="4.5" fill="${col}" opacity="${f2(a)}"/>`;
+    }
+  }
+  // heat arrows between plates
+  for (let k = 0; k < 3; k++) {
+    const u = ((t * .5 + k / 3) % 1), ay = iy + ih * (.18 + .32 * k);
+    const ax = ix + iw * (.18 + .64 * u);
+    s += `<path d="M${f2(ax - 11)} ${f2(ay - 9)}L${f2(ax + 9)} ${f2(ay)}L${f2(ax - 11)} ${f2(ay + 9)}Z" fill="#FFC9A0" opacity="${f2(run * Math.sin(u * Math.PI) * .75)}"/>`;
+  }
+  // port flanges
+  [[C.x, L.ports[0]], [C.x, L.ports[1]], [C.x + C.w, L.ports[0]], [C.x + C.w, L.ports[1]]].forEach(([x, y], i) => {
+    s += `<rect x="${x - 9}" y="${y - 20}" width="18" height="40" rx="5" fill="#3A3A44"/>`;
+  });
+  const dx = 40 * (1 - p);
+  return `<g opacity="${f2(p)}" transform="translate(${f2(dx)} 0)">${s}</g>`;
+}
+
+// ---------------- tower ----------------
+function towerPath() {
+  const T = TW, cx = T.cx;
+  return `M${cx - T.wTop / 2} ${T.top}Q${cx - T.wMid / 2 - 28} ${T.mid} ${cx - T.wBot / 2} ${T.bot}L${cx + T.wBot / 2} ${T.bot}Q${cx + T.wMid / 2 + 28} ${T.mid} ${cx + T.wTop / 2} ${T.top}Z`;
+}
+function towerSvg(t) {
+  const T = TW, cx = T.cx, p = rv(t, 5.3, 0.9);
+  if (p <= 0.003) return '';
+  let s = '';
+  const tp = towerPath();
+  s += `<clipPath id="twc"><path d="${tp}"/></clipPath>`;
+  s += `<path d="${tp}" fill="url(#towerG)" stroke="#3A3A44" stroke-width="2.5"/>`;
+  // fill media hatch
+  let hl = '';
+  for (let k = -8; k < 14; k++) hl += `M${cx - 220 + k * 26} ${T.bot + 6}l120 -150`;
+  s += `<g clip-path="url(#twc)"><path d="${hl}" stroke="#2B2B33" stroke-width="3" fill="none" transform="translate(0 ${-(T.bot - T.top) * 0 })"/>
+    <rect x="${cx - 200}" y="${T.top}" width="400" height="${(T.bot - T.top) * .62}" fill="${BG}" opacity=".0"/></g>`;
+  // water basin
+  s += `<g clip-path="url(#twc)"><rect x="${cx - 200}" y="${T.bot - 26}" width="400" height="30" fill="${BLUE}" opacity="${f2(.32 * rv(t, 6.5, 1))}"/></g>`;
+  // falling droplets
+  const spray = rv(t, 6.2, .8);
+  if (spray > 0.01) {
+    s += `<g clip-path="url(#twc)">`;
+    for (let k = 0; k < 16; k++) {
+      const x = cx - 78 + ((k * 53) % 156), ph = ((t * 0.55 + k * 0.137) % 1);
+      const y = T.top + 24 + ph * (T.bot - T.top - 54);
+      const col = mixh(HOT, BLUE, clamp(ph * 1.6));
+      s += `<circle cx="${f2(x)}" cy="${f2(y)}" r="4.2" fill="${col}" opacity="${f2(spray * .9)}"/>`;
+    }
+    s += `</g>`;
+  }
+  // rim + fan
+  s += `<ellipse cx="${cx}" cy="${T.top}" rx="${T.wTop / 2}" ry="22" fill="#1A1A20" stroke="#3A3A44" stroke-width="2.5"/>`;
+  const fs = rv(t, 6.0, 1.0), ang = t * 6.5 * fs;
+  for (let k = 0; k < 4; k++) {
+    const a = ang + k * Math.PI / 2, ex = cx + (T.wTop / 2 - 26) * Math.cos(a), ey = T.top + 14 * Math.sin(a);
+    s += `<path d="M${cx} ${T.top}L${f2(ex)} ${f2(ey)}" stroke="#585863" stroke-width="9" stroke-linecap="round"/>`;
+  }
+  s += `<circle cx="${cx}" cy="${T.top}" r="8" fill="#7A7A86"/>`;
+  // vapour
+  const vp = rv(t, 6.3, 1.4), N = 14, rise = VERT ? 190 : 340;
+  let v = '';
+  for (let k = 0; k < N; k++) {
+    const u = (t * 0.26 + k / N) % 1;
+    const x = cx + Math.sin(k * 2.3 + t * .9) * 34 * u + ((k % 5) - 2) * 20 * u;
+    const y = T.top - 14 - rise * u;
+    const r = 26 + 62 * u;
+    const a = Math.min(u / .14, 1) * Math.pow(1 - u, 1.25) * .46 * vp;
+    v += `<circle cx="${f2(x)}" cy="${f2(y)}" r="${f2(r)}" fill="url(#vapG)" opacity="${f2(a)}"/>`;
+  }
+  // heat glow at rim
+  s += `<ellipse cx="${cx}" cy="${T.top - 20}" rx="${T.wTop * .55}" ry="46" fill="url(#gpuG)" opacity="${f2(.5 * vp * (.8 + .2 * Math.sin(t * 2.1)))}"/>`;
+  s += v;
+  const dy = 34 * (1 - p);
+  return `<g opacity="${f2(p)}" transform="translate(0 ${f2(dy)})">${s}</g>`;
+}
+
+// ---------------- frame ----------------
+function defs(t) {
+  const X0 = lerp(L.maskX0, 3000, eio((t - 4.4) / 1.3));
+  return `<defs>
+  <radialGradient id="haloG"><stop offset="0" stop-color="#FF7A3D" stop-opacity=".48"/><stop offset=".55" stop-color="#FF7A3D" stop-opacity=".1"/><stop offset="1" stop-color="#FF7A3D" stop-opacity="0"/></radialGradient>
+  <radialGradient id="gpuG"><stop offset="0" stop-color="#FF8A4C" stop-opacity=".85"/><stop offset=".5" stop-color="#FF6A3A" stop-opacity=".3"/><stop offset="1" stop-color="#FF5A4E" stop-opacity="0"/></radialGradient>
+  <radialGradient id="vapG"><stop offset="0" stop-color="#E9EEF8" stop-opacity=".95"/><stop offset=".6" stop-color="#D5DCE9" stop-opacity=".45"/><stop offset="1" stop-color="#D5DCE9" stop-opacity="0"/></radialGradient>
+  <linearGradient id="chipG" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#2A2A33"/><stop offset="1" stop-color="#15151A"/></linearGradient>
+  <linearGradient id="plateSheen" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#fff" stop-opacity=".28"/><stop offset=".5" stop-color="#fff" stop-opacity="0"/><stop offset="1" stop-color="#fff" stop-opacity=".1"/></linearGradient>
+  <linearGradient id="towerG" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="#1B1B21"/><stop offset=".45" stop-color="#26262E"/><stop offset="1" stop-color="#17171C"/></linearGradient>
+  <linearGradient id="tubeG" gradientUnits="userSpaceOnUse" x1="${L.grad[0]}" y1="0" x2="${L.grad[1]}" y2="0"><stop offset="0" stop-color="${BLUE}"/><stop offset="1" stop-color="${HOT}"/></linearGradient>
+  <linearGradient id="maskG" gradientUnits="userSpaceOnUse" x1="${f2(X0)}" y1="0" x2="${f2(X0 + 110)}" y2="0"><stop offset="0" stop-color="#fff"/><stop offset="1" stop-color="#000"/></linearGradient>
+  <mask id="revealM" maskUnits="userSpaceOnUse" x="-600" y="-600" width="4000" height="4000"><rect x="-600" y="-600" width="4000" height="4000" fill="url(#maskG)"/></mask>
+  </defs>`;
+}
+function title(t) {
+  const p = rv(t, 7.5, 0.8); if (p <= 0.003) return '';
+  const s = L.titleSize, a = 'Liquid ', b = 'cooling', c = ' loop';
+  const f = `800 ${s}px Inter`, wa = mw(a, f), wb = mw(b, f), wc = mw(c, f), tot = wa + wb + wc;
+  const x0 = VW / 2 - tot / 2, y = L.titleY, sc = .94 + .06 * p;
+  const sh = 'style="filter:drop-shadow(0 4px 24px rgba(0,0,0,.45)) drop-shadow(0 1px 2px rgba(0,0,0,.6))"';
+  return `<g opacity="${f2(p)}" transform="translate(${VW / 2} ${y}) scale(${f2(sc)}) translate(${-VW / 2} ${-y})" ${sh}>
+    <text x="${f2(x0)}" y="${y}" font-family="Inter" font-weight="800" font-size="${s}" fill="${TXT}">${a}<tspan fill="${OR}">${b}</tspan>${c}</text></g>`;
+}
+window.renderAt = function (t) {
+  let s = defs(t);
+  const P = L.panel, pp = rv(t, 0, 0.8);
+  s += `<rect x="${P[0]}" y="${P[1]}" width="${P[2] - P[0]}" height="${P[3] - P[1]}" rx="28" fill="rgba(255,255,255,.018)" stroke="#25252B" stroke-width="2" stroke-dasharray="3 9" stroke-linecap="round" opacity="${f2(pp)}"/>`;
+  s += rackSvg(t);
+  // pipes under mask
+  let pg = '';
+  for (const k in PIPES) pg += pipeSvg(PIPES[k], t);
+  s += `<g mask="url(#revealM)">${pg}</g>`;
+  s += cduSvg(t);
+  s += towerSvg(t);
+  // labels
+  const rp = L.rackPill, hp = L.hotPill, cp = L.coldPill;
+  const swapOut = 1 - rv(t, 1.5, .5), rackIn = rv(t, 0.5, .6);
+  const platesIn = rv(t, 1.9, .5) * (1 - rv(t, 4.0, .45)), rackBack = rv(t, 4.55, .5);
+  s += pill(rp[0], rp[1], 'GPU rack ~ 100 kW', { p: Math.min(rackIn, t < 3 ? swapOut : rackBack) });
+  s += pill(rp[0], rp[1], 'Cold plates', { p: platesIn, color: '#9CCBFF', stroke: '#2D5B8E', dot: BLUE });
+  s += pill(L.cduPill[0], L.cduPill[1], VERT ? 'Heat exchanger' : 'CDU heat exchanger', { p: rv(t, 5.1, .6) });
+  s += pill(L.towerPill[0], L.towerPill[1], 'Cooling tower', { p: rv(t, 6.0, .6) });
+  s += pill(cp[0], cp[1], 'cold in 25 °C', { p: rv(t, 7.9, .6), color: '#9CCBFF', stroke: BLUE, dot: BLUE, fill: '#13202F' });
+  s += pill(hp[0], hp[1], 'hot out 45 °C', { p: rv(t, 8.2, .6), color: '#FFB07A', stroke: HOT, dot: HOT, fill: '#2A1A12' });
+  s += title(t);
+  stage.innerHTML = `<svg width="${VW}" height="${H}" viewBox="0 0 ${VW} ${H}" xmlns="http://www.w3.org/2000/svg">${s}</svg>`;
+};
+window.ready = (async () => {
+  await Promise.all(['400 40px Inter', '600 40px Inter', '700 44px Inter', '800 80px Inter'].map(f => document.fonts.load(f)));
+  await document.fonts.ready;
+  window.renderAt(0);
+  return true;
+})();
+</script></body></html>

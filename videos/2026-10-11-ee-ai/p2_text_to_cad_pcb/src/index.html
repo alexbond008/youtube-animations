@@ -1,0 +1,448 @@
+<!doctype html>
+<html><head><meta charset="utf-8">
+<style>
+@font-face{font-family:Inter;font-weight:400;src:url(fonts/Inter-Regular.ttf)}
+@font-face{font-family:Inter;font-weight:600;src:url(fonts/Inter-SemiBold.ttf)}
+@font-face{font-family:Inter;font-weight:700;src:url(fonts/Inter-Bold.ttf)}
+@font-face{font-family:Inter;font-weight:800;src:url(fonts/Inter-ExtraBold.ttf)}
+html,body{margin:0;padding:0;background:#0E0E10;overflow:hidden}
+#stage{position:relative;overflow:hidden;background:#0E0E10;
+  background-image:radial-gradient(circle at 12px 12px,#23232A 1.2px,transparent 1.7px);background-size:24px 24px}
+#stage svg{position:absolute;left:0;top:0;display:block}
+</style></head>
+<body>
+<svg width="0" height="0" style="position:absolute"><defs>
+  <filter id="wsh" x="-20%" y="-20%" width="140%" height="150%"><feDropShadow dx="0" dy="20" stdDeviation="30" flood-color="#000" flood-opacity=".55"/></filter>
+  <filter id="blur6" x="-50%" y="-50%" width="200%" height="200%"><feGaussianBlur stdDeviation="6"/></filter>
+  <radialGradient id="shadowG"><stop offset="0" stop-color="#000" stop-opacity=".55"/><stop offset="1" stop-color="#000" stop-opacity="0"/></radialGradient>
+  <linearGradient id="chipG" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#2A2A33"/><stop offset="1" stop-color="#15151A"/></linearGradient>
+  <linearGradient id="metal" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#D5DAE4"/><stop offset=".5" stop-color="#9AA2B2"/><stop offset="1" stop-color="#C3C9D6"/></linearGradient>
+  <linearGradient id="boardG" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#14473A"/><stop offset="1" stop-color="#0E3229"/></linearGradient>
+  <pattern id="vpdots" width="24" height="24" patternUnits="userSpaceOnUse"><circle cx="12" cy="12" r="1.2" fill="#1E1E24"/></pattern>
+</defs></svg>
+<div id="stage"></div>
+<script>
+const Q = new URLSearchParams(location.search);
+const VERT = Q.get('mode') === 'vert';
+const VW = VERT ? 1080 : 1920, H = VERT ? 1350 : 1080;
+const stage = document.getElementById('stage');
+stage.style.width = VW + 'px'; stage.style.height = H + 'px';
+const BG = '#0E0E10', CARD = '#16161A', BORDER = '#2A2A30', TXT = '#F5F5F7', SEC = '#A1A1AA', OR = '#D97757', BLUE = '#4DA3FF', GREEN = '#3DDC97';
+const MONO = "Menlo, 'Courier New', monospace";
+const clamp = (x, a = 0, b = 1) => Math.min(b, Math.max(a, x));
+const eo = x => 1 - Math.pow(1 - clamp(x), 3);
+const eio = x => { x = clamp(x); return x < .5 ? 4 * x * x * x : 1 - Math.pow(-2 * x + 2, 3) / 2; };
+const lerp = (a, b, t) => a + (b - a) * t;
+const f2 = x => (+x).toFixed(2);
+const esc = s => String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;');
+const rv = (t, s, d) => eo((t - s) / d);
+const meas = document.createElement('canvas').getContext('2d');
+const mw = (s, font) => { meas.font = font; return meas.measureText(s).width; };
+const MFONT = `400 40px ${MONO}`;
+
+// ---------------- layout ----------------
+const WIN = VERT
+  ? { w: 1000, h: 600, x: [40, 40], y: [45, 685], title: 64, boxT: 76, boxH: 148, vpY: 282, vpH: 300 }
+  : { w: 850, h: 900, x: [90, 980], y: [90, 90], title: 84, boxT: 104, boxH: 200, vpY: 368, vpH: 508 };
+const MX = 24, BW = 240, BH = 64;
+const BX = WIN.w - MX - 24 - BW, BY = WIN.boxT + WIN.boxH - 20;
+const VPW = WIN.w - 2 * MX;
+const TXTW = WIN.w - 2 * MX - 48;
+
+const P1 = 'Enclosure for a 50×30 mm board, 4 M3 mounting holes, USB-C cut-out';
+const P2 = 'STM32 breakout: USB-C power, 3.3 V LDO, SWD header';
+function wrap(s, maxW) {
+  const words = s.split(' '); const lines = []; let cur = '', start = 0, pos = 0;
+  for (const w of words) {
+    const test = cur ? cur + ' ' + w : w;
+    if (cur && mw(test, MFONT) > maxW) { lines.push({ s: cur, i0: start }); start = pos; cur = w; } else cur = test;
+    pos += w.length + 1;
+  }
+  lines.push({ s: cur, i0: start }); return lines;
+}
+let LINES = null;
+const WINS = [
+  { title: 'Text → CAD', prompt: P1, t0: 1.0, hint: 'Your part appears here', click: 3.75 },
+  { title: 'Text → PCB', prompt: P2, t0: 1.5, hint: 'Your board appears here', click: 4.4 }
+];
+const CPS = 30;
+const BUILD = [4.0, 4.6];
+
+// cursor path (absolute)
+const btnC = i => [WIN.x[i] + BX + BW / 2, WIN.y[i] + BY + BH / 2];
+
+// ---------------- chips ----------------
+function chip(x, y, label, o = {}) {   // x,y = left, vertical centre; returns svg
+  const size = 40, pad = 24, dotW = o.dot ? 34 : 0;
+  const w = mw(label, `700 ${size}px Inter`) + pad * 2 + dotW;
+  const col = o.color || TXT;
+  const w2 = w + (o.check ? 34 : 0);
+  let s = `<rect x="${f2(x)}" y="${f2(y - 32)}" width="${f2(w2)}" height="64" rx="32" fill="${o.fill || '#1D1D22'}" stroke="${o.stroke || '#34343C'}" stroke-width="2"/>`;
+  if (o.dot) s += `<circle cx="${f2(x + pad + 8)}" cy="${f2(y)}" r="8" fill="${o.dot}"/>`;
+  if (o.check) s += `<path d="M${f2(x + pad)} ${f2(y + 1)} l9 9 l17 -19" fill="none" stroke="${col}" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"/>`;
+  s += `<text x="${f2(x + pad + dotW + (o.check ? 34 : 0))}" y="${f2(y + 14)}" font-family="Inter" font-weight="700" font-size="${size}" fill="${col}">${esc(label)}</text>`;
+  return { svg: s, w: w + (o.check ? 34 : 0) };
+}
+function chipW(label, o = {}) { return mw(label, '700 40px Inter') + 48 + (o.dot ? 34 : 0) + (o.check ? 34 : 0); }
+// place chips list [{label,o,p}] in the viewport (local coords)
+function chipsLayout(list, vpH) {
+  let out = '';
+  if (!VERT) {
+    const ws = list.map(c => chipW(c.label, c.o)); const gap = 16;
+    let x = (VPW - (ws.reduce((a, b) => a + b, 0) + gap * (list.length - 1))) / 2;
+    list.forEach((c, i) => {
+      if (c.p > 0.002) { out += `<g opacity="${f2(c.p)}" transform="translate(0 ${f2(14 * (1 - c.p))})">${chip(x, vpH - 46, c.label, c.o).svg}</g>`; }
+      x += ws[i] + gap;
+    });
+  } else {
+    list.forEach((c, i) => {
+      const w = chipW(c.label, c.o), x = VPW - 24 - w, y = 90 + i * 84 + (list.length === 1 ? 40 : 0);
+      if (c.p > 0.002) out += `<g opacity="${f2(c.p)}" transform="translate(${f2(18 * (1 - c.p))} 0)">${chip(x, y, c.label, c.o).svg}</g>`;
+    });
+  }
+  return out;
+}
+
+// ---------------- CAD ----------------
+const PITCH = 36 * Math.PI / 180, SP = Math.sin(PITCH), CP = Math.cos(PITCH);
+const LDIR = (() => { const l = [-0.5, 0.5, 0.7], n = Math.hypot(...l); return l.map(v => v / n); })();
+const mixc = (a, b, t) => a.map((v, i) => v + (b[i] - v) * t);
+const rgb = c => `rgb(${c.map(v => Math.round(clamp(v, 0, 255))).join(',')})`;
+function boxFaces(x0, x1, y0, y1, z0, z1, tag) {
+  return [
+    { v: [[x0, y0, z1], [x1, y0, z1], [x1, y1, z1], [x0, y1, z1]], n: [0, 0, 1], tag },
+    { v: [[x1, y0, z0], [x1, y1, z0], [x1, y1, z1], [x1, y0, z1]], n: [1, 0, 0], tag },
+    { v: [[x0, y0, z0], [x0, y1, z0], [x0, y1, z1], [x0, y0, z1]], n: [-1, 0, 0], tag },
+    { v: [[x0, y1, z0], [x1, y1, z0], [x1, y1, z1], [x0, y1, z1]], n: [0, 1, 0], tag },
+    { v: [[x0, y0, z0], [x1, y0, z0], [x1, y0, z1], [x0, y0, z1]], n: [0, -1, 0], tag }
+  ];
+}
+function cadScene(t, w, h) {
+  const tb = BUILD[0];
+  const yaw = (52 + 14 * Math.sin((t - tb) * 0.55)) * Math.PI / 180;
+  const c = Math.cos(yaw), s = Math.sin(yaw);
+  const S = VERT ? 6.0 : 7.8;
+  const cx = VERT ? w * 0.30 : w / 2, cy = VERT ? h * 0.56 : h * 0.50;
+  const rot = (x, y) => [x * c - y * s, x * s + y * c];
+  const proj = (x, y, z) => { const [rx, ry] = rot(x, y); return [cx + S * rx, cy + S * (ry * SP - z * CP)]; };
+  const depthOf = (x, y, z) => { const [, ry] = rot(x, y); return ry * CP + z * SP; };
+  const vis = n => { const [, nry] = rot(n[0], n[1]); return nry * CP + n[2] * SP > 1e-6; };
+  const shade = n => { const [nrx, nry] = rot(n[0], n[1]); const d = nrx * LDIR[0] + nry * LDIR[1] + n[2] * LDIR[2]; return 0.30 + 0.70 * clamp(d); };
+  const BASE = [208, 213, 226], ORC = [217, 119, 87], DARK = [40, 42, 52];
+  const hlp = rv(t, 8.6, 0.8);
+  const pulse = t > 10.8 ? (0.5 + 0.5 * Math.sin((t - 10.8) * 3.1)) : 0;
+  let out = '';
+  // ground grid + shadow
+  const ga = rv(t, 4.0, 0.9);
+  out += `<ellipse cx="${f2(cx + 6)}" cy="${f2(cy + S * 6)}" rx="${f2(S * 52)}" ry="${f2(S * 26)}" fill="url(#shadowG)" opacity="${f2(ga)}"/>`;
+  let g = '';
+  for (let k = -50; k <= 50; k += 10) {
+    const a = proj(k, -50, 0), b = proj(k, 50, 0), a2 = proj(-50, k, 0), b2 = proj(50, k, 0);
+    g += `M${f2(a[0])} ${f2(a[1])}L${f2(b[0])} ${f2(b[1])}M${f2(a2[0])} ${f2(a2[1])}L${f2(b2[0])} ${f2(b2[1])}`;
+  }
+  out += `<path d="${g}" stroke="#2A2A32" stroke-width="1.5" fill="none" opacity="${f2(ga * .8)}"/>`;
+  // footprint outline
+  const fo = rv(t, 4.0, 0.8), pf = rv(t, 4.7, 1.0);
+  const fp = [[-29, -19, 0], [29, -19, 0], [29, 19, 0], [-29, 19, 0]].map(p => proj(...p));
+  if (pf < 1) out += `<path d="M${fp.map(p => f2(p[0]) + ' ' + f2(p[1])).join('L')}Z" fill="none" stroke="${OR}" stroke-width="3" stroke-dasharray="1 2" pathLength="1" stroke-dashoffset="${f2(1 - fo)}" opacity="${f2(1 - pf)}"/>`;
+  // objects
+  const objs = [];
+  const zf = 2 * pf;
+  const floor = { key: -1e9, faces: boxFaces(-29, 29, -19, 19, 0, Math.max(zf, 0.01), 'body'), alpha: clamp(pf * 2) };
+  // standoffs
+  const SO = [[21.5, 11.5], [-21.5, 11.5], [21.5, -11.5], [-21.5, -11.5]];
+  SO.forEach(([sx, sy], i) => {
+    const p = rv(t, 5.5 + i * 0.13, 0.8); if (p <= 0.001 || pf < 0.6) return;
+    const z1 = 2 + 4 * p, N = 18, r = 3.2, faces = [];
+    for (let k = 0; k < N; k++) {
+      const a0 = k / N * 2 * Math.PI, a1 = (k + 1) / N * 2 * Math.PI, am = (a0 + a1) / 2;
+      faces.push({ v: [[sx + r * Math.cos(a0), sy + r * Math.sin(a0), 2], [sx + r * Math.cos(a1), sy + r * Math.sin(a1), 2], [sx + r * Math.cos(a1), sy + r * Math.sin(a1), z1], [sx + r * Math.cos(a0), sy + r * Math.sin(a0), z1]], n: [Math.cos(am), Math.sin(am), 0], tag: 'body' });
+    }
+    const top = []; for (let k = 0; k < N; k++) { const a = k / N * 2 * Math.PI; top.push([sx + r * Math.cos(a), sy + r * Math.sin(a), z1]); }
+    faces.push({ v: top, n: [0, 0, 1], tag: 'body' });
+    const hole = []; for (let k = 0; k < N; k++) { const a = k / N * 2 * Math.PI; hole.push([sx + 1.6 * Math.cos(a), sy + 1.6 * Math.sin(a), z1 + 0.02]); }
+    objs.push({ key: depthOf(sx, sy, 4), faces, hole, holeA: rv(t, 6.3 + i * 0.1, 0.6) * p });
+  });
+  // walls
+  const wp = [rv(t, 6.0, 1.4), rv(t, 6.25, 1.4), rv(t, 6.5, 1.4), rv(t, 6.8, 1.5)]; // -x, -y, +y, +x
+  const Z = (p, z) => 2 + (z - 2) * p;
+  const H0 = 11;
+  const addWall = (x0, x1, y0, y1, p, zlo = 2, zhi = H0, tag = 'body') => {
+    if (p <= 0.002) return;
+    objs.push({ key: depthOf((x0 + x1) / 2, (y0 + y1) / 2, 6), faces: boxFaces(x0, x1, y0, y1, Z(p, zlo), Z(p, zhi), tag) });
+  };
+  addWall(-29, -27, -19, 19, wp[0]);
+  addWall(-27, 27, -19, -17, wp[1]);
+  addWall(-27, 27, 17, 19, wp[2]);
+  // +x wall in four pieces around the USB-C opening
+  const OP = { y0: -6.5, y1: 6.5, z0: 4.2, z1: 9.2 };
+  const pxw = wp[3];
+  if (pxw > 0.002) {
+    const key = depthOf(28, 0, 6);
+    const pieces = [
+      boxFaces(27, 29, -19, OP.y0, Z(pxw, 2), Z(pxw, H0), 'body'),
+      boxFaces(27, 29, OP.y1, 19, Z(pxw, 2), Z(pxw, H0), 'body'),
+      boxFaces(27, 29, OP.y0, OP.y1, Z(pxw, 2), Z(pxw, OP.z0), 'body'),
+      boxFaces(27, 29, OP.y0, OP.y1, Z(pxw, OP.z1), Z(pxw, H0), 'body')
+    ];
+    pieces[0].forEach(f => { if (f.n[1] === 1) f.tag = 'hl'; });
+    pieces[1].forEach(f => { if (f.n[1] === -1) f.tag = 'hl'; });
+    pieces[2].forEach(f => { if (f.n[2] === 1) f.tag = 'hl'; });
+    pieces[3].forEach(f => { if (f.n[2] === 1) f.tag = 'body'; });
+    pieces.forEach((fs, i) => objs.push({ key: key + i * 1e-4, faces: fs }));
+  }
+  objs.sort((a, b) => a.key - b.key);
+  const drawObj = o => {
+    let sx = '';
+    const fs = o.faces.filter(f => vis(f.n));
+    // order faces back to front inside an object (cylinders)
+    fs.sort((a, b) => depthOf(...a.v[0]) - depthOf(...b.v[0]));
+    for (const f of fs) {
+      let col = f.tag === 'hl' ? mixc(BASE, ORC, hlp * (0.78 + 0.22 * pulse)) : BASE;
+      const k = shade(f.n);
+      col = col.map(v => v * k);
+      const pts = f.v.map(p => proj(...p));
+      const d = 'M' + pts.map(p => f2(p[0]) + ' ' + f2(p[1])).join('L') + 'Z';
+      const al = o.alpha == null ? 1 : o.alpha;
+      sx += `<path d="${d}" fill="${rgb(col)}" stroke="rgba(255,255,255,${f.n[2] === 1 ? .22 : .08})" stroke-width="1.2" stroke-linejoin="round" opacity="${f2(al)}"/>`;
+    }
+    if (o.hole && o.holeA > 0.01) {
+      const pts = o.hole.map(p => proj(...p));
+      sx += `<path d="M${pts.map(p => f2(p[0]) + ' ' + f2(p[1])).join('L')}Z" fill="#0E0E12" stroke="#050507" stroke-width="1" opacity="${f2(o.holeA)}"/>`;
+    }
+    return sx;
+  };
+  out += drawObj(floor);
+  // floor mounting holes (through) drawn on the floor under standoffs: skipped (hidden)
+  for (const o of objs) out += drawObj(o);
+  // orange outline of the opening on the outer face
+  if (pxw > 0.9 && hlp > 0.01) {
+    const pts = [[29.05, OP.y0, Z(pxw, OP.z0)], [29.05, OP.y1, Z(pxw, OP.z0)], [29.05, OP.y1, Z(pxw, OP.z1)], [29.05, OP.y0, Z(pxw, OP.z1)]].map(p => proj(...p));
+    const d = 'M' + pts.map(p => f2(p[0]) + ' ' + f2(p[1])).join('L') + 'Z';
+    const on = vis([1, 0, 0]) ? 1 : 0;
+    out += `<path d="${d}" fill="none" stroke="${OR}" stroke-width="${f2(9 + 6 * pulse)}" opacity="${f2(hlp * on * (.22 + .12 * pulse))}" stroke-linejoin="round" filter="url(#blur6)"/>`;
+    out += `<path d="${d}" fill="none" stroke="#FFB08F" stroke-width="3.2" opacity="${f2(hlp * on)}" stroke-linejoin="round"/>`;
+  }
+  // chips
+  const list = [
+    { label: '4 × M3', p: rv(t, 6.5, 0.6), o: { dot: SEC } },
+    { label: 'USB-C cut-out', p: rv(t, 9.0, 0.6), o: { dot: OR, color: '#FFB08F', fill: 'rgba(217,119,87,.16)', stroke: OR } }
+  ];
+  return out + chipsLayout(list, h);
+}
+
+// ---------------- PCB ----------------
+const TR = []; // traces: {t0, segs:[{pts, layer}]}
+const T_ = (segs) => TR.push({ segs });
+const tp = pts => ({ pts, layer: 0 }), bot = pts => ({ pts, layer: 1 });
+T_([tp([[-17.6, -3], [-15, -3], [-15, -10.5], [-13.7, -11.8], [-11.9, -11.8]])]);                 // VBUS
+T_([tp([[-17.6, -1], [-13.5, -1], [-12.05, .45], [-2.3, .45]])]);                                  // D-
+T_([tp([[-17.6, 1], [-14, 1], [-13.65, 1.35], [-2.3, 1.35]])]);                                    // D+
+T_([tp([[-4.9, -9.5], [1.75, -9.5], [1.75, -6.3]])]);                                              // 3V3 to MCU
+T_([tp([[1.75, -9.5], [17, -9.5], [19, -7.5], [19, -3.81], [21.5, -3.81]])]);                      // 3V3 to header
+T_([tp([[10.3, -.45], [14.5, -.45], [15.32, -1.27], [21.5, -1.27]])]);                             // SWDIO
+T_([tp([[10.3, .45], [14.5, .45], [15.32, 1.27], [21.5, 1.27]])]);                                 // SWCLK
+T_([tp([[-17.6, 3], [-15.5, 3]]), bot([[-15.5, 3], [-15.5, 9.5], [.85, 9.5], [.85, 7.4]]), tp([[.85, 7.4], [.85, 6.3]])]); // GND USB
+T_([tp([[21.5, 3.81], [19.5, 3.81]]), bot([[19.5, 3.81], [19.5, 9.5], [5.35, 9.5], [5.35, 7.4]]), tp([[5.35, 7.4], [5.35, 6.3]])]); // GND header
+T_([tp([[-11.9, -9.5], [-13.4, -9.5]]), bot([[-13.4, -9.5], [-13.4, 9.5]])]);                       // LDO GND
+const TR_T0 = 7.0, TR_STEP = 0.4, TR_DUR = 0.55;
+const plen = pts => { let L = 0; for (let i = 1; i < pts.length; i++) L += Math.hypot(pts[i][0] - pts[i - 1][0], pts[i][1] - pts[i - 1][1]); return L; };
+function cutPoly(pts, L) {
+  const out = [pts[0]]; let acc = 0;
+  for (let i = 1; i < pts.length; i++) {
+    const d = Math.hypot(pts[i][0] - pts[i - 1][0], pts[i][1] - pts[i - 1][1]);
+    if (acc + d >= L) { const f = (L - acc) / d; out.push([lerp(pts[i - 1][0], pts[i][0], f), lerp(pts[i - 1][1], pts[i][1], f)]); return out; }
+    out.push(pts[i]); acc += d;
+  }
+  return out;
+}
+TR.forEach(tr => { tr.segs.forEach(sg => sg.len = plen(sg.pts)); tr.total = tr.segs.reduce((a, b) => a + b.len, 0); });
+
+function pcbScene(t, w, h) {
+  const S = VERT ? 8.6 : 13, cx = VERT ? w * 0.355 : w / 2, cy = VERT ? h * 0.5 : 215;
+  const bp = rv(t, 4.6, 0.9), bf = rv(t, 5.0, 0.7);
+  let o = '';
+  const parts = [];
+  parts.push(`<g transform="translate(${f2(cx)} ${f2(cy)}) scale(${S})">`);
+  // board
+  parts.push(`<rect x="-25" y="-15" width="50" height="30" rx="1.8" fill="url(#boardG)" opacity="${f2(bf)}"/>`);
+  parts.push(`<rect x="-25" y="-15" width="50" height="30" rx="1.8" fill="none" stroke="#3FBF8F" stroke-width=".28" pathLength="1" stroke-dasharray="1 2" stroke-dashoffset="${f2(1 - bp)}" opacity="${f2(.35 + .65 * (1 - bf) + .3 * bf)}"/>`);
+  [[-22.5, -12.5], [22.5, -12.5], [-22.5, 12.5], [22.5, 12.5]].forEach(([x, y]) => {
+    parts.push(`<circle cx="${x}" cy="${y}" r="1.7" fill="#0E0E10" stroke="#D9A17F" stroke-width=".35" opacity="${f2(bf)}"/>`);
+  });
+  const pulse = 0.5 + 0.5 * Math.sin(t * 3.0);
+  const holdP = rv(t, 11.0, 0.8);
+  // traces
+  const L0 = [], L1 = [];
+  let tips = '';
+  TR.forEach((tr, i) => {
+    const prog = eio((t - (TR_T0 + i * TR_STEP)) / TR_DUR);
+    if (prog <= 0) return;
+    let rem = prog * tr.total, last = null;
+    tr.segs.forEach(sg => {
+      if (rem <= 0) return;
+      const L = Math.min(sg.len, rem); rem -= L;
+      const pts = cutPoly(sg.pts, L);
+      (sg.layer === 1 ? L1 : L0).push(pts);
+      last = pts[pts.length - 1];
+      if (sg.layer === 1 && L >= sg.len - 1e-6) { const q = sg.pts; tr.vias = tr.vias || []; }
+    });
+    if (prog < 1 && last) tips += `<circle cx="${f2(last[0])}" cy="${f2(last[1])}" r="1.15" fill="#FFD3BD" opacity=".95"/><circle cx="${f2(last[0])}" cy="${f2(last[1])}" r="2.3" fill="${OR}" opacity=".35"/>`;
+  });
+  const dstr = arr => arr.map(p => 'M' + p.map(q => f2(q[0]) + ' ' + f2(q[1])).join('L')).join('');
+  const bottomD = dstr(L1), topD = dstr(L0);
+  // bottom layer (blue)
+  if (L1.length) {
+    parts.push(`<path d="${bottomD}" fill="none" stroke="${BLUE}" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" opacity="${f2(.14 + .1 * pulse * holdP)}"/>`);
+    parts.push(`<path d="${bottomD}" fill="none" stroke="#5AA9F5" stroke-width=".5" stroke-linecap="round" stroke-linejoin="round" opacity=".85"/>`);
+  }
+  // vias
+  TR.forEach((tr, i) => {
+    const prog = eio((t - (TR_T0 + i * TR_STEP)) / TR_DUR);
+    const bs = tr.segs.map((s, k) => ({ s, k })).filter(q => q.s.layer === 1);
+    bs.forEach(({ s, k }) => {
+      const before = tr.segs.slice(0, k).reduce((a, b) => a + b.len, 0);
+      if (prog * tr.total >= before + 0.01) { const a = s.pts[0]; parts.push(`<circle cx="${a[0]}" cy="${a[1]}" r=".62" fill="#C7DDF5" stroke="#1B3350" stroke-width=".18"/><circle cx="${a[0]}" cy="${a[1]}" r=".24" fill="#0B1A2B"/>`); }
+      if (prog >= 0.999) { const a = s.pts[s.pts.length - 1]; parts.push(`<circle cx="${a[0]}" cy="${a[1]}" r=".62" fill="#C7DDF5" stroke="#1B3350" stroke-width=".18"/><circle cx="${a[0]}" cy="${a[1]}" r=".24" fill="#0B1A2B"/>`); }
+    });
+  });
+  // top layer (copper)
+  if (L0.length) {
+    parts.push(`<path d="${topD}" fill="none" stroke="${OR}" stroke-width="${f2(2.1 + 0.9 * pulse * holdP)}" stroke-linecap="round" stroke-linejoin="round" opacity="${f2(.2 + .12 * pulse * holdP)}"/>`);
+    parts.push(`<path d="${topD}" fill="none" stroke="#E4824F" stroke-width=".62" stroke-linecap="round" stroke-linejoin="round"/>`);
+    parts.push(`<path d="${topD}" fill="none" stroke="#FFC9A8" stroke-width=".2" stroke-linecap="round" stroke-linejoin="round" opacity=".85"/>`);
+  }
+  // signal pulses travelling along finished traces (hold)
+  if (holdP > 0.01) {
+    TR.forEach((tr, i) => {
+      const all = []; tr.segs.forEach(sg => { sg.pts.forEach((p, k) => { if (!(all.length && k === 0)) all.push(p); }); });
+      const L = plen(all), ph = ((t * 0.32 + i * 0.173) % 1) * (L + 6) - 3;
+      if (ph > 0 && ph < L) { const pp = cutPoly(all, ph).slice(-1)[0]; parts.push(`<circle cx="${f2(pp[0])}" cy="${f2(pp[1])}" r=".5" fill="#FFE3D2" opacity="${f2(.9 * holdP)}"/><circle cx="${f2(pp[0])}" cy="${f2(pp[1])}" r="1.1" fill="${OR}" opacity="${f2(.3 * holdP)}"/>`); }
+    });
+  }
+  parts.push(tips);
+  // components
+  const place = (t0, inner) => {
+    const p = rv(t, t0, 0.7); if (p <= 0.002) return '';
+    return `<g opacity="${f2(p)}" transform="translate(0 ${f2(-1.6 * (1 - p))})">${inner}</g>`;
+  };
+  // USB-C
+  parts.push(place(5.3, `
+    <rect x="-26.6" y="-4.6" width="7.6" height="9.2" rx="1.2" fill="rgba(0,0,0,.35)" transform="translate(.5 .7)"/>
+    <rect x="-26.6" y="-4.6" width="7.6" height="9.2" rx="1.2" fill="url(#metal)" stroke="#6C7587" stroke-width=".22"/>
+    <rect x="-26.1" y="-3.2" width="6.2" height="6.4" rx="2.2" fill="#2A2D36" stroke="#59606F" stroke-width=".18"/>
+    <rect x="-25.5" y="-1.1" width="4.6" height="2.2" rx=".9" fill="#14151A"/>
+    <rect x="-19.1" y="-3.6" width="1.1" height=".7" fill="#E9C46A"/><rect x="-19.1" y="-1.6" width="1.1" height=".7" fill="#E9C46A"/><rect x="-19.1" y=".9" width="1.1" height=".7" fill="#E9C46A"/><rect x="-19.1" y="2.9" width="1.1" height=".7" fill="#E9C46A"/>`));
+  // QFP MCU
+  let pins = '';
+  for (let i = 0; i < 10; i++) {
+    const p = -4.05 + .9 * i, q = -0.05 + .9 * i;
+    pins += `<rect x="-2.3" y="${f2(p - .19)}" width="1.35" height=".38" fill="#C9CED8"/><rect x="8.95" y="${f2(p - .19)}" width="1.35" height=".38" fill="#C9CED8"/>`;
+    pins += `<rect x="${f2(q - .19)}" y="-6.3" width=".38" height="1.35" fill="#C9CED8"/><rect x="${f2(q - .19)}" y="4.95" width=".38" height="1.35" fill="#C9CED8"/>`;
+  }
+  parts.push(place(5.7, `<rect x="-1" y="-5" width="10" height="10" rx=".7" fill="rgba(0,0,0,.4)" transform="translate(.5 .7)"/>${pins}
+    <rect x="-1" y="-5" width="10" height="10" rx=".7" fill="url(#chipG)" stroke="#3A3A44" stroke-width=".2"/>
+    <circle cx="4" cy="0" r="2.6" fill="none" stroke="#2E2E38" stroke-width=".2"/><circle cx=".1" cy="-3.9" r=".42" fill="#7E7E8C"/>`));
+  // LDO SOT-223
+  parts.push(place(6.05, `<rect x="-10.5" y="-12.75" width="3.5" height="6.5" rx=".4" fill="rgba(0,0,0,.4)" transform="translate(.4 .5)"/>
+    <rect x="-11.9" y="-12.2" width="1.4" height=".9" fill="#C9CED8" transform="translate(0 .15)"/><rect x="-11.9" y="-9.95" width="1.4" height=".9" fill="#C9CED8"/><rect x="-11.9" y="-7.65" width="1.4" height=".9" fill="#C9CED8"/>
+    <rect x="-7" y="-11.2" width="2.1" height="3.4" fill="#C9CED8"/>
+    <rect x="-10.5" y="-12.75" width="3.5" height="6.5" rx=".4" fill="url(#chipG)" stroke="#3A3A44" stroke-width=".2"/>`));
+  // header
+  let hp = '';
+  [-3.81, -1.27, 1.27, 3.81].forEach(y => { hp += `<rect x="21.18" y="${f2(y - .32)}" width=".64" height=".64" fill="#E9C46A"/>`; });
+  parts.push(place(6.4, `<rect x="20.2" y="-5.4" width="2.6" height="10.8" rx=".3" fill="rgba(0,0,0,.4)" transform="translate(.4 .5)"/>
+    <rect x="20.2" y="-5.4" width="2.6" height="10.8" rx=".3" fill="#1C1C22" stroke="#3A3A44" stroke-width=".2"/>${hp}`));
+  parts.push('</g>');
+  o += parts.join('');
+  // chips
+  const done = TR_T0 + (TR.length - 1) * TR_STEP + TR_DUR;
+  const drc = rv(t, done + 0.15, 0.6);
+  const list = [
+    { label: '2-layer', p: rv(t, 5.0, 0.6), o: { dot: OR } },
+    { label: 'DRC passed', p: drc, o: { check: true, color: GREEN, fill: 'rgba(61,220,151,.13)', stroke: GREEN } }
+  ];
+  return o + chipsLayout(list, h);
+}
+
+// ---------------- windows ----------------
+function windowSvg(i, t) {
+  const cfg = WINS[i];
+  const p = rv(t, 0, 1.0);
+  const dir = i === 0 ? -1 : 1;
+  const ox = dir * 80 * (1 - p), sc = .97 + .03 * p;
+  const cxw = WIN.w / 2, cyw = WIN.h / 2;
+  let s = '';
+  s += `<rect x="0" y="0" width="${WIN.w}" height="${WIN.h}" rx="16" fill="${CARD}" stroke="${BORDER}" stroke-width="1.5" filter="url(#wsh)"/>`;
+  // title bar
+  s += `<path d="M0 ${WIN.title}H${WIN.w}" stroke="${BORDER}" stroke-width="1.5"/>`;
+  [0, 1, 2].forEach(k => { s += `<circle cx="${34 + k * 30}" cy="${WIN.title / 2}" r="8" fill="#34343C"/>`; });
+  s += `<text x="${WIN.w / 2}" y="${WIN.title / 2 + 15}" text-anchor="middle" font-family="Inter" font-weight="700" font-size="44" fill="${TXT}">${esc(cfg.title)}</text>`;
+  // prompt box
+  s += `<rect x="${MX}" y="${WIN.boxT}" width="${WIN.w - 2 * MX}" height="${WIN.boxH}" rx="12" fill="${BG}" stroke="#2F2F36" stroke-width="1.5"/>`;
+  const lines = LINES[i];
+  const n = Math.floor(clamp((t - cfg.t0) * CPS, 0, cfg.prompt.length));
+  const typing = t >= cfg.t0 && n < cfg.prompt.length;
+  let caretX = MX + 24, caretY = WIN.boxT + 58;
+  lines.forEach((ln, li) => {
+    const take = clamp(n - ln.i0, 0, ln.s.length);
+    const y = WIN.boxT + 58 + li * 54;
+    if (take > 0) s += `<text x="${MX + 24}" y="${y}" font-family="${MONO}" font-size="40" fill="${TXT}" xml:space="preserve">${esc(ln.s.slice(0, take))}</text>`;
+    if (n >= ln.i0 && (li === lines.length - 1 || n < lines[li + 1].i0)) { caretX = MX + 24 + take * mw('M', MFONT); caretY = y; }
+  });
+  const clicked = t > cfg.click;
+  const caretOn = !clicked && (typing || (t < cfg.t0 ? Math.floor(t * 2) % 2 === 0 : Math.floor(t * 1.9) % 2 === 0));
+  const ca = clamp((t - 0.7) / 0.3);
+  if (caretOn) s += `<rect x="${f2(caretX + 2)}" y="${caretY - 32}" width="19" height="42" fill="${OR}" opacity="${f2(ca)}"/>`;
+  // button
+  const press = clamp(1 - Math.abs(t - (cfg.click + .08)) / .12);
+  const bs = 1 - .06 * press;
+  const bcx = BX + BW / 2, bcy = BY + BH / 2;
+  const act = clamp((t - (cfg.t0 + cfg.prompt.length / CPS - .1)) / .4);
+  s += `<g transform="translate(${bcx} ${bcy}) scale(${f2(bs)}) translate(${-bcx} ${-bcy})" opacity="${f2(lerp(.45, 1, act))}">
+    <rect x="${BX}" y="${BY}" width="${BW}" height="${BH}" rx="14" fill="${OR}" stroke="${press > 0 ? '#FFD3BD' : '#E9906F'}" stroke-width="2"/>
+    <text x="${bcx}" y="${BCY(bcy)}" text-anchor="middle" font-family="Inter" font-weight="700" font-size="40" fill="#fff">Generate</text></g>`;
+  // click ripple
+  const rp = clamp((t - cfg.click) / .6);
+  if (rp > 0 && rp < 1) s += `<circle cx="${bcx}" cy="${bcy}" r="${f2(30 + 80 * eo(rp))}" fill="none" stroke="${OR}" stroke-width="3" opacity="${f2(.6 * (1 - rp))}"/>`;
+  // viewport
+  const clipId = 'vp' + i;
+  s += `<clipPath id="${clipId}"><rect x="${MX}" y="${WIN.vpY}" width="${VPW}" height="${WIN.vpH}" rx="12"/></clipPath>`;
+  s += `<rect x="${MX}" y="${WIN.vpY}" width="${VPW}" height="${WIN.vpH}" rx="12" fill="${BG}" stroke="#2F2F36" stroke-width="1.5"/>`;
+  s += `<g clip-path="url(#${clipId})"><rect x="${MX}" y="${WIN.vpY}" width="${VPW}" height="${WIN.vpH}" fill="url(#vpdots)"/>`;
+  const hintA = (1 - clamp((t - BUILD[i] + .1) / .5)) * clamp((t - .6) / .6) * .6;
+  if (hintA > 0.01) s += `<text x="${MX + VPW / 2}" y="${WIN.vpY + WIN.vpH / 2 + 14}" text-anchor="middle" font-family="Inter" font-weight="600" font-size="40" fill="${SEC}" opacity="${f2(hintA)}">${esc(cfg.hint)}</text>`;
+  s += `<g transform="translate(${MX} ${WIN.vpY})">${i === 0 ? cadScene(t, VPW, WIN.vpH) : pcbScene(t, VPW, WIN.vpH)}</g></g>`;
+  const x = WIN.x[i], y = WIN.y[i];
+  return `<g opacity="${f2(p)}" transform="translate(${f2(x + ox + cxw * (1 - sc))} ${f2(y + cyw * (1 - sc))}) scale(${f2(sc)})">${s}</g>`;
+}
+const BCY = c => c + 14;
+
+// cursor
+function cursor(t) {
+  const a = btnC(0), b = btnC(1);
+  const st = [a[0] + (VERT ? 150 : 260), a[1] + (VERT ? 120 : 190)];
+  const end = [b[0] + (VERT ? -40 : 80), b[1] + (VERT ? 120 : 160)];
+  let pos, op = clamp((t - 2.7) / .4) * (1 - clamp((t - 5.0) / .5));
+  if (op <= 0) return '';
+  if (t < 3.7) pos = [lerp(st[0], a[0], eio((t - 2.7) / 1.0)), lerp(st[1], a[1], eio((t - 2.7) / 1.0))];
+  else if (t < 3.95) pos = a;
+  else if (t < 4.4) pos = [lerp(a[0], b[0], eio((t - 3.95) / .45)), lerp(a[1], b[1], eio((t - 3.95) / .45))];
+  else if (t < 4.6) pos = b;
+  else pos = [lerp(b[0], end[0], eio((t - 4.6) / .9)), lerp(b[1], end[1], eio((t - 4.6) / .9))];
+  const press = Math.max(clamp(1 - Math.abs(t - (3.75 + .08)) / .12), clamp(1 - Math.abs(t - (4.4 + .08)) / .12));
+  const sc = 1.25 * (1 - .1 * press);
+  return `<g opacity="${f2(op)}" transform="translate(${f2(pos[0])} ${f2(pos[1])}) scale(${f2(sc)})"><path d="M0 0 L0 29 L7.5 22.5 L12.5 33.5 L18 31 L13 20.5 L23 20.5 Z" fill="#fff" stroke="#0E0E10" stroke-width="2" stroke-linejoin="round"/></g>`;
+}
+
+window.renderAt = function (t) {
+  stage.innerHTML = `<svg width="${VW}" height="${H}" viewBox="0 0 ${VW} ${H}" xmlns="http://www.w3.org/2000/svg">${windowSvg(0, t)}${windowSvg(1, t)}${cursor(t)}</svg>`;
+};
+window.ready = (async () => {
+  await Promise.all(['400 40px Inter', '600 40px Inter', '700 44px Inter', '800 80px Inter'].map(f => document.fonts.load(f)));
+  await document.fonts.ready;
+  LINES = WINS.map(w => wrap(w.prompt, TXTW));
+  window.renderAt(0);
+  return true;
+})();
+</script></body></html>

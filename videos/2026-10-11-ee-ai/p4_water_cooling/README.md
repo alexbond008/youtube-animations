@@ -1,0 +1,6 @@
+# p4_water_cooling
+Schematic of liquid cooling in a data centre: GPU rack with cold plates, coolant loop, CDU heat exchanger, cooling tower with rising vapour. Flow direction shown by moving dots (blue cold, orange hot). Figures are illustrative. HTML/CSS/SVG, frame-stepped headless Chromium + ffmpeg. 29.97 fps, H.264 CRF14 yuv420p, no audio.
+- `p4_water_cooling_1080p.mp4` 1920x1080, 10.0 s + 1.0 s hold = 11.0 s (330 frames)
+- `p4_water_cooling_1080x1350.mp4` vertical-safe re-layout (rack top-left, CDU right, tower below)
+Key times (s): 0-0.8 rack in, warm glow + heat shimmer; 0.5 label "GPU rack ~ 100 kW"; 1.6-2.6 cold plates slide onto GPUs, label "Cold plates" (1.9-4.4); 2.3-3.7 blue coolant pipes + tubes draw in, dots flow, coolant turns orange through plates; 3.2-5.2 hot pipe rises and runs right; 4.4-5.2 CDU appears, label 5.1; 5.3-6.1 cooling tower appears, label 6.0; 5.6-6.9 facility pipes (warm out, cold back); 6.3 vapour rises; 7.5 title "Liquid cooling loop"; 7.9 "cold in 25 °C"; 8.2 "hot out 45 °C"; 8-10 full loop flowing; 10-11 frozen last frame.
+QA stills: `qa/`, `qa_vertical/`. Re-render: `cd src && nice -n 10 node render.mjs land 10 ../p4_water_cooling_1080p.mp4` (`vert` for 1080x1350).

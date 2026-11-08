@@ -1,0 +1,12 @@
+node_modules/
+.venv/
+__pycache__/
+**/src/fonts/
+*.mp4
+*.mov
+qa/
+frames/
+.DS_Store
+._*
+_preview.html
+releases/

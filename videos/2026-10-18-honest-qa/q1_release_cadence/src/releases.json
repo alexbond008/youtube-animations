@@ -1,0 +1,465 @@
+[
+ {
+  "date": "2022-11-30",
+  "lab": "OpenAI",
+  "model": "ChatGPT (GPT-3.5)",
+  "source": "https://en.wikipedia.org/wiki/ChatGPT",
+  "label": "ChatGPT",
+  "labelPriority": 0
+ },
+ {
+  "date": "2023-02-06",
+  "lab": "Google",
+  "model": "Bard (announced, LaMDA)",
+  "source": "https://blog.google/technology/ai/bard-google-ai-search-updates/"
+ },
+ {
+  "date": "2023-03-14",
+  "lab": "OpenAI",
+  "model": "GPT-4",
+  "source": "https://en.wikipedia.org/wiki/GPT-4",
+  "label": "GPT-4",
+  "labelPriority": 1
+ },
+ {
+  "date": "2023-03-14",
+  "lab": "Anthropic",
+  "model": "Claude",
+  "source": "https://en.wikipedia.org/wiki/Claude_(language_model)"
+ },
+ {
+  "date": "2023-05-10",
+  "lab": "Google",
+  "model": "PaLM 2",
+  "source": "https://www.androidauthority.com/google-palm-2-bard-3323103/"
+ },
+ {
+  "date": "2023-07-11",
+  "lab": "Anthropic",
+  "model": "Claude 2",
+  "source": "https://en.wikipedia.org/wiki/Claude_(language_model)"
+ },
+ {
+  "date": "2023-11-03",
+  "lab": "xAI",
+  "model": "Grok-1",
+  "source": "https://en.wikipedia.org/wiki/Grok_(chatbot)"
+ },
+ {
+  "date": "2023-11-06",
+  "lab": "OpenAI",
+  "model": "GPT-4 Turbo",
+  "source": "https://developers.openai.com/api/docs/changelog"
+ },
+ {
+  "date": "2023-11-21",
+  "lab": "Anthropic",
+  "model": "Claude 2.1",
+  "source": "https://en.wikipedia.org/wiki/Claude_(language_model)"
+ },
+ {
+  "date": "2023-12-06",
+  "lab": "Google",
+  "model": "Gemini 1.0",
+  "source": "https://en.wikipedia.org/wiki/Gemini_(language_model)",
+  "label": "Gemini 1.0",
+  "labelPriority": 2
+ },
+ {
+  "date": "2024-02-08",
+  "lab": "Google",
+  "model": "Gemini Ultra 1.0 (Bard renamed Gemini)",
+  "source": "https://en.wikipedia.org/wiki/Gemini_(language_model)"
+ },
+ {
+  "date": "2024-02-15",
+  "lab": "Google",
+  "model": "Gemini 1.5 Pro",
+  "source": "https://en.wikipedia.org/wiki/Gemini_(language_model)"
+ },
+ {
+  "date": "2024-03-04",
+  "lab": "Anthropic",
+  "model": "Claude 3 (Opus, Sonnet)",
+  "source": "https://en.wikipedia.org/wiki/Claude_(language_model)",
+  "label": "Claude 3",
+  "labelPriority": 2
+ },
+ {
+  "date": "2024-03-17",
+  "lab": "xAI",
+  "model": "Grok-1 open weights",
+  "source": "https://en.wikipedia.org/wiki/Grok_(chatbot)"
+ },
+ {
+  "date": "2024-05-13",
+  "lab": "OpenAI",
+  "model": "GPT-4o",
+  "source": "https://developers.openai.com/api/docs/changelog",
+  "label": "GPT-4o",
+  "labelPriority": 1
+ },
+ {
+  "date": "2024-05-14",
+  "lab": "Google",
+  "model": "Gemini 1.5 Flash",
+  "source": "https://en.wikipedia.org/wiki/Gemini_(language_model)"
+ },
+ {
+  "date": "2024-06-20",
+  "lab": "Anthropic",
+  "model": "Claude 3.5 Sonnet",
+  "source": "https://platform.claude.com/docs/en/release-notes/overview",
+  "label": "Claude 3.5 Sonnet",
+  "labelPriority": 2
+ },
+ {
+  "date": "2024-07-18",
+  "lab": "OpenAI",
+  "model": "GPT-4o mini",
+  "source": "https://developers.openai.com/api/docs/changelog"
+ },
+ {
+  "date": "2024-08-14",
+  "lab": "xAI",
+  "model": "Grok-2",
+  "source": "https://en.wikipedia.org/wiki/Grok_(chatbot)"
+ },
+ {
+  "date": "2024-09-12",
+  "lab": "OpenAI",
+  "model": "o1-preview",
+  "source": "https://en.wikipedia.org/wiki/OpenAI_o1"
+ },
+ {
+  "date": "2024-10-22",
+  "lab": "Anthropic",
+  "model": "Claude 3.5 Sonnet (new) + 3.5 Haiku",
+  "source": "https://platform.claude.com/docs/en/release-notes/overview"
+ },
+ {
+  "date": "2024-12-05",
+  "lab": "OpenAI",
+  "model": "o1",
+  "source": "https://en.wikipedia.org/wiki/OpenAI_o1",
+  "label": "o1",
+  "labelPriority": 2
+ },
+ {
+  "date": "2024-12-11",
+  "lab": "Google",
+  "model": "Gemini 2.0 Flash (experimental)",
+  "source": "https://ai.google.dev/gemini-api/docs/changelog"
+ },
+ {
+  "date": "2025-01-31",
+  "lab": "OpenAI",
+  "model": "o3-mini",
+  "source": "https://developers.openai.com/api/docs/changelog"
+ },
+ {
+  "date": "2025-02-17",
+  "lab": "xAI",
+  "model": "Grok 3",
+  "source": "https://en.wikipedia.org/wiki/Grok_(chatbot)",
+  "label": "Grok 3",
+  "labelPriority": 2
+ },
+ {
+  "date": "2025-02-24",
+  "lab": "Anthropic",
+  "model": "Claude 3.7 Sonnet",
+  "source": "https://platform.claude.com/docs/en/release-notes/overview"
+ },
+ {
+  "date": "2025-02-27",
+  "lab": "OpenAI",
+  "model": "GPT-4.5",
+  "source": "https://developers.openai.com/api/docs/changelog"
+ },
+ {
+  "date": "2025-03-25",
+  "lab": "Google",
+  "model": "Gemini 2.5 Pro",
+  "source": "https://ai.google.dev/gemini-api/docs/changelog",
+  "label": "Gemini 2.5 Pro",
+  "labelPriority": 2
+ },
+ {
+  "date": "2025-04-14",
+  "lab": "OpenAI",
+  "model": "GPT-4.1",
+  "source": "https://developers.openai.com/api/docs/changelog"
+ },
+ {
+  "date": "2025-04-16",
+  "lab": "OpenAI",
+  "model": "o3 + o4-mini",
+  "source": "https://developers.openai.com/api/docs/changelog"
+ },
+ {
+  "date": "2025-04-17",
+  "lab": "Google",
+  "model": "Gemini 2.5 Flash",
+  "source": "https://ai.google.dev/gemini-api/docs/changelog"
+ },
+ {
+  "date": "2025-05-22",
+  "lab": "Anthropic",
+  "model": "Claude Opus 4 + Sonnet 4",
+  "source": "https://platform.claude.com/docs/en/release-notes/overview",
+  "label": "Claude 4",
+  "labelPriority": 3
+ },
+ {
+  "date": "2025-07-09",
+  "lab": "xAI",
+  "model": "Grok 4",
+  "source": "https://en.wikipedia.org/wiki/Grok_(chatbot)",
+  "label": "Grok 4",
+  "labelPriority": 3
+ },
+ {
+  "date": "2025-08-05",
+  "lab": "Anthropic",
+  "model": "Claude Opus 4.1",
+  "source": "https://platform.claude.com/docs/en/release-notes/overview"
+ },
+ {
+  "date": "2025-08-07",
+  "lab": "OpenAI",
+  "model": "GPT-5",
+  "source": "https://developers.openai.com/api/docs/changelog",
+  "label": "GPT-5",
+  "labelPriority": 1
+ },
+ {
+  "date": "2025-09-29",
+  "lab": "Anthropic",
+  "model": "Claude Sonnet 4.5",
+  "source": "https://platform.claude.com/docs/en/release-notes/overview"
+ },
+ {
+  "date": "2025-10-15",
+  "lab": "Anthropic",
+  "model": "Claude Haiku 4.5",
+  "source": "https://platform.claude.com/docs/en/release-notes/overview"
+ },
+ {
+  "date": "2025-11-12",
+  "lab": "OpenAI",
+  "model": "GPT-5.1",
+  "source": "https://en.wikipedia.org/wiki/GPT-5.1"
+ },
+ {
+  "date": "2025-11-17",
+  "lab": "xAI",
+  "model": "Grok 4.1",
+  "source": "https://en.wikipedia.org/wiki/Grok_(chatbot)"
+ },
+ {
+  "date": "2025-11-18",
+  "lab": "Google",
+  "model": "Gemini 3 Pro",
+  "source": "https://ai.google.dev/gemini-api/docs/changelog",
+  "label": "Gemini 3 Pro",
+  "labelPriority": 2
+ },
+ {
+  "date": "2025-11-24",
+  "lab": "Anthropic",
+  "model": "Claude Opus 4.5",
+  "source": "https://platform.claude.com/docs/en/release-notes/overview"
+ },
+ {
+  "date": "2025-12-11",
+  "lab": "OpenAI",
+  "model": "GPT-5.2",
+  "source": "https://developers.openai.com/api/docs/changelog"
+ },
+ {
+  "date": "2025-12-17",
+  "lab": "Google",
+  "model": "Gemini 3 Flash",
+  "source": "https://ai.google.dev/gemini-api/docs/changelog"
+ },
+ {
+  "date": "2026-02-05",
+  "lab": "Anthropic",
+  "model": "Claude Opus 4.6",
+  "source": "https://platform.claude.com/docs/en/release-notes/overview"
+ },
+ {
+  "date": "2026-02-05",
+  "lab": "OpenAI",
+  "model": "GPT-5.3-Codex",
+  "source": "https://openai.com/index/introducing-gpt-5-3-codex"
+ },
+ {
+  "date": "2026-02-17",
+  "lab": "Anthropic",
+  "model": "Claude Sonnet 4.6",
+  "source": "https://platform.claude.com/docs/en/release-notes/overview"
+ },
+ {
+  "date": "2026-02-19",
+  "lab": "Google",
+  "model": "Gemini 3.1 Pro",
+  "source": "https://ai.google.dev/gemini-api/docs/changelog"
+ },
+ {
+  "date": "2026-03-05",
+  "lab": "OpenAI",
+  "model": "GPT-5.4",
+  "source": "https://developers.openai.com/api/docs/changelog"
+ },
+ {
+  "date": "2026-04-07",
+  "lab": "Anthropic",
+  "model": "Claude Mythos Preview (gated)",
+  "source": "https://platform.claude.com/docs/en/release-notes/overview"
+ },
+ {
+  "date": "2026-04-16",
+  "lab": "Anthropic",
+  "model": "Claude Opus 4.7",
+  "source": "https://platform.claude.com/docs/en/release-notes/overview"
+ },
+ {
+  "date": "2026-04-23",
+  "lab": "OpenAI",
+  "model": "GPT-5.5",
+  "source": "https://en.wikipedia.org/wiki/GPT-5.5",
+  "label": "GPT-5.5",
+  "labelPriority": 3
+ },
+ {
+  "date": "2026-05-19",
+  "lab": "Google",
+  "model": "Gemini 3.5 Flash",
+  "source": "https://ai.google.dev/gemini-api/docs/changelog"
+ },
+ {
+  "date": "2026-05-28",
+  "lab": "Anthropic",
+  "model": "Claude Opus 4.8",
+  "source": "https://platform.claude.com/docs/en/release-notes/overview"
+ },
+ {
+  "date": "2026-06-09",
+  "lab": "Anthropic",
+  "model": "Claude Fable 5 + Mythos 5 (gated)",
+  "source": "https://platform.claude.com/docs/en/release-notes/overview",
+  "label": "Claude Fable 5",
+  "labelPriority": 2
+ },
+ {
+  "date": "2026-06-30",
+  "lab": "Anthropic",
+  "model": "Claude Sonnet 5",
+  "source": "https://platform.claude.com/docs/en/release-notes/overview"
+ },
+ {
+  "date": "2026-07-08",
+  "lab": "xAI",
+  "model": "Grok 4.5",
+  "source": "https://en.wikipedia.org/wiki/Grok_(chatbot)"
+ },
+ {
+  "date": "2026-07-09",
+  "lab": "OpenAI",
+  "model": "GPT-5.6 (Sol, Terra, Luna)",
+  "source": "https://en.wikipedia.org/wiki/GPT-5.6"
+ },
+ {
+  "date": "2026-07-21",
+  "lab": "Google",
+  "model": "Gemini 3.6 Flash",
+  "source": "https://ai.google.dev/gemini-api/docs/changelog"
+ },
+ {
+  "date": "2026-07-24",
+  "lab": "Anthropic",
+  "model": "Claude Opus 5",
+  "source": "https://platform.claude.com/docs/en/release-notes/overview",
+  "card": "Claude Opus 5"
+ },
+ {
+  "date": "2026-08-12",
+  "lab": "xAI",
+  "model": "Grok 4.6",
+  "source": "https://en.wikipedia.org/wiki/Grok_(chatbot)",
+  "card": "Grok 4.6"
+ },
+ {
+  "date": "2026-08-13",
+  "lab": "Google",
+  "model": "Gemini 3.7 Flash",
+  "source": "https://ai.google.dev/gemini-api/docs/changelog"
+ },
+ {
+  "date": "2026-09-01",
+  "lab": "Anthropic",
+  "model": "Claude Fable 5.1 + Mythos 5.1 (gated)",
+  "source": "https://platform.claude.com/docs/en/release-notes/overview"
+ },
+ {
+  "date": "2026-09-02",
+  "lab": "Google",
+  "model": "Gemini 3.8 Flash",
+  "source": "https://ai.google.dev/gemini-api/docs/changelog"
+ },
+ {
+  "date": "2026-09-03",
+  "lab": "OpenAI",
+  "model": "GPT-6 Astra",
+  "source": "https://en.wikipedia.org/wiki/GPT-6",
+  "card": "GPT-6 Astra"
+ },
+ {
+  "date": "2026-09-21",
+  "lab": "xAI",
+  "model": "Grok 4.7",
+  "source": "https://en.wikipedia.org/wiki/Grok_(chatbot)"
+ },
+ {
+  "date": "2026-09-22",
+  "lab": "Anthropic",
+  "model": "Claude Opus 5.5",
+  "source": "https://platform.claude.com/docs/en/release-notes/overview",
+  "card": "Claude Opus 5.5"
+ },
+ {
+  "date": "2026-09-22",
+  "lab": "OpenAI",
+  "model": "GPT-6 Sol + GPT-6 Luna",
+  "source": "https://en.wikipedia.org/wiki/GPT-6"
+ },
+ {
+  "date": "2026-09-28",
+  "lab": "Anthropic",
+  "model": "Claude Sonnet 5.5",
+  "source": "https://platform.claude.com/docs/en/release-notes/overview"
+ },
+ {
+  "date": "2026-09-29",
+  "lab": "OpenAI",
+  "model": "GPT-6.1 Sol",
+  "source": "https://developers.openai.com/api/docs/changelog",
+  "card": "GPT-6.1 Sol"
+ },
+ {
+  "date": "2026-10-07",
+  "lab": "Anthropic",
+  "model": "Claude Haiku 5.5",
+  "source": "https://platform.claude.com/docs/en/release-notes/overview",
+  "card": "Claude Haiku 5.5"
+ },
+ {
+  "date": "2026-10-13",
+  "lab": "Google",
+  "model": "Gemini 4 Argon",
+  "source": "https://blog.google/innovation-and-ai/models-and-research/gemini-models/introducing-gemini-4-argon/",
+  "card": "Gemini 4 Argon"
+ }
+]

@@ -1,0 +1,555 @@
+[
+ {
+  "slug": "ai-learn",
+  "folder": "2026-10-06-ai-learn",
+  "title": "How I use AI to learn engineering (anti brain rot studying)",
+  "date": "2026-10-06",
+  "yt": "GPM5MgFEkpk",
+  "blurb": "3Blue1Brown-style maths homage, a jargon storm, GNNs on lungs, the NASA rover, and Claude Code subagents fanning out.",
+  "held": [],
+  "animations": [
+   {
+    "name": "m01_3b1b_homage",
+    "title": "m01_3b1b_homage: grid transform that becomes a circuit",
+    "preview": "m01_3b1b_homage.gif",
+    "renders": [
+     "m01_3b1b_homage_1080p.mp4",
+     "m01_3b1b_homage_label_1080p.mp4"
+    ],
+    "render_bytes": 8661351
+   },
+   {
+    "name": "m02_jargon_storm",
+    "title": "m02_jargon_storm: jargon overload collapses to \"training loop\"",
+    "preview": "m02_jargon_storm.gif",
+    "renders": [
+     "m02_jargon_storm_1080p.mp4"
+    ],
+    "render_bytes": 7184198
+   },
+   {
+    "name": "m03_gnn_lungs",
+    "title": "m03_gnn_lungs: airway tree as a graph, and the 20 % you need",
+    "preview": "m03_gnn_lungs.gif",
+    "renders": [
+     "m03_gnn_lungs_1080p.mp4",
+     "m03_gnn_lungs_notext_1080p.mp4"
+    ],
+    "render_bytes": 1937213
+   },
+   {
+    "name": "nasa_perseverance",
+    "title": "NASA Perseverance: Blender renders",
+    "preview": "nasa_perseverance.gif",
+    "renders": [
+     "perseverance_closeup_1080p.mp4",
+     "perseverance_turntable_1080p.mp4"
+    ],
+    "render_bytes": 9773748
+   },
+   {
+    "name": "p1_datasheet_mock",
+    "title": "p1_datasheet_mock",
+    "preview": "p1_datasheet_mock.gif",
+    "renders": [
+     "p1_datasheet_mock_1080p.mp4"
+    ],
+    "render_bytes": 10565538
+   },
+   {
+    "name": "p2_books_1970",
+    "title": "p2_books_1970",
+    "preview": "p2_books_1970.gif",
+    "renders": [
+     "p2_books_1970_1080p.mp4"
+    ],
+    "render_bytes": 1642027
+   },
+   {
+    "name": "p2_old_uni_webpage",
+    "title": "p2_old_uni_webpage",
+    "preview": "p2_old_uni_webpage.gif",
+    "renders": [
+     "p2_old_uni_webpage_1080p.mp4"
+    ],
+    "render_bytes": 3907732
+   },
+   {
+    "name": "p2_paper_flood",
+    "title": "p2_paper_flood",
+    "preview": "p2_paper_flood.gif",
+    "renders": [
+     "p2_paper_flood_1080p.mp4"
+    ],
+    "render_bytes": 13715833
+   },
+   {
+    "name": "p4_subagents_fanout",
+    "title": "p4_subagents_fanout",
+    "preview": "p4_subagents_fanout.gif",
+    "renders": [
+     "p4_subagents_fanout_1080p.mp4"
+    ],
+    "render_bytes": 4513120
+   }
+  ]
+ },
+ {
+  "slug": "ee-ai",
+  "folder": "2026-10-11-ee-ai",
+  "title": "Electrical Engineers Will Dominate AI",
+  "date": "2026-10-11",
+  "yt": "BNFo5mwcX78",
+  "blurb": "Control vs RL loops, Fourier on a voice, text-to-PCB, the AI power chain and data-centre cooling.",
+  "held": [],
+  "animations": [
+   {
+    "name": "control_rl",
+    "title": "01 · Control loop vs RL loop (ee-ai, Point 3)",
+    "preview": "control_rl.gif",
+    "renders": [
+     "01_control_loop_build_1080p.mp4",
+     "02_side_by_side_1080p.mp4",
+     "03_morph_1080p.mp4",
+     "04_equation_echo_1080p.mp4"
+    ],
+    "render_bytes": 462040
+   },
+   {
+    "name": "ee_relabel",
+    "title": "ee_relabel: EE terms get relabelled as AI names",
+    "preview": "ee_relabel.gif",
+    "renders": [
+     "ee_relabel_1080p.mp4",
+     "ee_relabel_1080p_inter.mp4",
+     "ee_relabel_sidebyside_1080p.mp4",
+     "ee_relabel_sidebyside_1080p_inter.mp4",
+     "ee_relabel_sidebyside_vertical_1080x1350.mp4",
+     "ee_relabel_sidebyside_vertical_1080x1350_inter.mp4",
+     "ee_relabel_vertical_1080x1350.mp4",
+     "ee_relabel_vertical_1080x1350_inter.mp4"
+    ],
+    "render_bytes": 685488
+   },
+   {
+    "name": "m01_3b1b_homage",
+    "title": "m01_3b1b_homage: grid transform that becomes a circuit",
+    "reused_from": "2026-10-06-ai-learn",
+    "render_bytes": 8661351
+   },
+   {
+    "name": "m03_gnn_lungs",
+    "title": "m03_gnn_lungs: airway tree as a graph, and the 20 % you need",
+    "reused_from": "2026-10-06-ai-learn",
+    "render_bytes": 1937213
+   },
+   {
+    "name": "p1_maths_to_ml",
+    "title": "p1_maths_to_ml: two separate shots (Manim CE, house style)",
+    "preview": "p1_maths_to_ml.gif",
+    "renders": [
+     "p1_linreg_1080p.mp4",
+     "p1_linreg_1080p_inter.mp4",
+     "p1_linreg_vertical_1080x1350.mp4",
+     "p1_linreg_vertical_1080x1350_inter.mp4",
+     "p1_matrix_cnn_1080p.mp4",
+     "p1_matrix_cnn_1080p_inter.mp4",
+     "p1_matrix_cnn_vertical_1080x1350.mp4",
+     "p1_matrix_cnn_vertical_1080x1350_inter.mp4"
+    ],
+    "render_bytes": 1009070
+   },
+   {
+    "name": "p2_text_to_cad_pcb",
+    "title": "p2_text_to_cad_pcb",
+    "preview": "p2_text_to_cad_pcb.gif",
+    "renders": [
+     "p2_text_to_cad_pcb_1080p.mp4",
+     "p2_text_to_cad_pcb_1080x1350.mp4"
+    ],
+    "render_bytes": 2584831
+   },
+   {
+    "name": "p2_voice_fourier",
+    "title": "p2_voice_fourier: voice -> sines -> spectrum -> Voice AI",
+    "preview": "p2_voice_fourier.gif",
+    "renders": [
+     "p2_voice_fourier_1080p.mp4",
+     "p2_voice_fourier_1080p_half.mp4",
+     "p2_voice_fourier_vertical_1080x1350.mp4",
+     "p2_voice_fourier_vertical_1080x1350_half.mp4"
+    ],
+    "render_bytes": 4775749
+   },
+   {
+    "name": "p3_microwave",
+    "title": "p3_microwave: branch-line coupler, S-matrix, |S21| plot",
+    "preview": "p3_microwave.gif",
+    "renders": [
+     "p3_microwave_1080p.mp4"
+    ],
+    "render_bytes": 1086173
+   },
+   {
+    "name": "p4_all_the_way_down",
+    "title": "p4_all_the_way_down",
+    "preview": "p4_all_the_way_down.gif",
+    "renders": [
+     "p4_all_the_way_down_1080p.mp4",
+     "p4_all_the_way_down_1080p_half.mp4",
+     "p4_all_the_way_down_1080x1350.mp4"
+    ],
+    "render_bytes": 5270379
+   },
+   {
+    "name": "p4_power_chain",
+    "title": "p4_power_chain",
+    "preview": "p4_power_chain.gif",
+    "renders": [
+     "p4_power_chain_1080p.mp4",
+     "p4_power_chain_1080x1350.mp4"
+    ],
+    "render_bytes": 2724240
+   },
+   {
+    "name": "p4_water_cooling",
+    "title": "p4_water_cooling",
+    "preview": "p4_water_cooling.gif",
+    "renders": [
+     "p4_water_cooling_1080p.mp4",
+     "p4_water_cooling_1080x1350.mp4"
+    ],
+    "render_bytes": 3051081
+   },
+   {
+    "name": "recap_ai_town",
+    "title": "recap_ai_town",
+    "preview": "recap_ai_town.gif",
+    "renders": [
+     "recap_ai_town_1080p.mp4",
+     "recap_ai_town_1080x1350.mp4"
+    ],
+    "render_bytes": 21782041
+   }
+  ]
+ },
+ {
+  "slug": "honest-qa",
+  "folder": "2026-10-18-honest-qa",
+  "title": "Will AI Replace Engineers? (+7 Other Questions)",
+  "date": "2026-10-18",
+  "yt": "0YiiZA-hphk",
+  "blurb": "Model release cadence, project visibility, your first fifty users, Python vs C++, and English at B2.",
+  "held": [],
+  "animations": [
+   {
+    "name": "control_rl",
+    "title": "01 · Control loop vs RL loop (ee-ai, Point 3)",
+    "reused_from": "2026-10-11-ee-ai",
+    "render_bytes": 462040
+   },
+   {
+    "name": "ee_relabel",
+    "title": "ee_relabel: EE terms get relabelled as AI names",
+    "reused_from": "2026-10-11-ee-ai",
+    "render_bytes": 685488
+   },
+   {
+    "name": "p1_maths_to_ml",
+    "title": "p1_maths_to_ml: two separate shots (Manim CE, house style)",
+    "reused_from": "2026-10-11-ee-ai",
+    "render_bytes": 1009070
+   },
+   {
+    "name": "p2_text_to_cad_pcb",
+    "title": "p2_text_to_cad_pcb",
+    "reused_from": "2026-10-11-ee-ai",
+    "render_bytes": 2584831
+   },
+   {
+    "name": "p4_all_the_way_down",
+    "title": "p4_all_the_way_down",
+    "reused_from": "2026-10-11-ee-ai",
+    "render_bytes": 5270379
+   },
+   {
+    "name": "p4_power_chain",
+    "title": "p4_power_chain",
+    "reused_from": "2026-10-11-ee-ai",
+    "render_bytes": 2724240
+   },
+   {
+    "name": "p4_water_cooling",
+    "title": "p4_water_cooling",
+    "reused_from": "2026-10-11-ee-ai",
+    "render_bytes": 3051081
+   },
+   {
+    "name": "q1_release_cadence",
+    "title": "q1_release_cadence",
+    "preview": "q1_release_cadence.gif",
+    "renders": [
+     "q1_release_cadence_1080p.mp4",
+     "q1_release_cadence_notext_1080p.mp4",
+     "q1_release_cadence_v2_1080p.mp4",
+     "q1_release_cadence_v2_notext_1080p.mp4",
+     "q1_release_cadence_v2_vertical_1080x1350.mp4",
+     "q1_release_cadence_v2_vertical_notext_1080x1350.mp4",
+     "q1_release_cadence_vertical_1080x1350.mp4",
+     "q1_release_cadence_vertical_notext_1080x1350.mp4"
+    ],
+    "render_bytes": 3508080
+   },
+   {
+    "name": "q2_project_visibility",
+    "title": "q2_project_visibility",
+    "preview": "q2_project_visibility.gif",
+    "renders": [
+     "q2_project_visibility_a_1080p.mp4",
+     "q2_project_visibility_a_1080x1350.mp4",
+     "q2_project_visibility_b_1080p.mp4",
+     "q2_project_visibility_b_1080x1350.mp4"
+    ],
+    "render_bytes": 1160010
+   },
+   {
+    "name": "q3_fifty_users",
+    "title": "q3_fifty_users",
+    "preview": "q3_fifty_users.gif",
+    "renders": [
+     "q3_fifty_users_1080p.mp4",
+     "q3_fifty_users_notext_1080p.mp4",
+     "q3_fifty_users_vertical_1080x1350.mp4",
+     "q3_fifty_users_vertical_notext_1080x1350.mp4"
+    ],
+    "render_bytes": 5104969
+   },
+   {
+    "name": "q4_python_cpp",
+    "title": "q4_python_cpp: \"Python first, then C++ to understand it\"",
+    "preview": "q4_python_cpp.gif",
+    "renders": [
+     "q4_python_cpp_1080p.mp4",
+     "q4_python_cpp_1080x1350.mp4"
+    ],
+    "render_bytes": 2689563
+   },
+   {
+    "name": "q5_english_b2",
+    "title": "q5_english_b2: \"How good does my English need to be?\"",
+    "preview": "q5_english_b2.gif",
+    "renders": [
+     "q5_english_b2_a_1080p.mp4",
+     "q5_english_b2_a_vertical_1080x1350.mp4",
+     "q5_english_b2_b_1080p.mp4",
+     "q5_english_b2_b_vertical_1080x1350.mp4"
+    ],
+    "render_bytes": 1146566
+   },
+   {
+    "name": "recap_ai_town",
+    "title": "recap_ai_town",
+    "reused_from": "2026-10-11-ee-ai",
+    "render_bytes": 21782041
+   }
+  ]
+ },
+ {
+  "slug": "why-fail",
+  "folder": "2026-10-26-why-fail",
+  "title": "The Real Reasons Why Engineering Students Fail",
+  "date": "2026-10-26",
+  "yt": "uBAR_aZDiVk",
+  "blurb": "STEM attrition, isolation week, the medics comparison, skipping lectures and the fail loop.",
+  "held": [],
+  "animations": [
+   {
+    "name": "hook_stem_attrition",
+    "title": "hook_stem_attrition",
+    "preview": "hook_stem_attrition.gif",
+    "renders": [
+     "hook_stem_attrition_1080p.mp4",
+     "hook_stem_attrition_maths_1080p.mp4"
+    ],
+    "render_bytes": 1205204
+   },
+   {
+    "name": "p1_isolation_week",
+    "title": "p1_isolation_week",
+    "preview": "p1_isolation_week.gif",
+    "renders": [
+     "p1_isolation_week_calendar_1080p.mp4",
+     "p1_isolation_week_loop_1080p.mp4"
+    ],
+    "render_bytes": 357338
+   },
+   {
+    "name": "p2_medics",
+    "title": "p2_medics: point 2 fix, \"find a cohort, like medics do\"",
+    "preview": "p2_medics.gif",
+    "renders": [
+     "p2_medics_cohort_1080p.mp4",
+     "p2_medics_cohort_short_1080p.mp4"
+    ],
+    "render_bytes": 2896784
+   },
+   {
+    "name": "p2_timetable",
+    "title": "p2_timetable",
+    "preview": "p2_timetable.gif",
+    "renders": [
+     "p2_timetable_friday_1080p.mp4",
+     "p2_timetable_week_1080p.mp4"
+    ],
+    "render_bytes": 511692
+   },
+   {
+    "name": "p3_fly_home",
+    "title": "p3_fly_home: point 3 intro, flying home",
+    "preview": "p3_fly_home.gif",
+    "renders": [
+     "p3_fly_home_1080p.mp4"
+    ],
+    "render_bytes": 9378776
+   },
+   {
+    "name": "p3_skipping",
+    "title": "p3_skipping: point 3 \"Skipping lectures\" (3 concept animations)",
+    "preview": "p3_skipping.gif",
+    "renders": [
+     "p3_flight_trade_1080p.mp4",
+     "p3_home_distractions_1080p.mp4",
+     "p3_momentum_1080p.mp4"
+    ],
+    "render_bytes": 1305045
+   },
+   {
+    "name": "p4_fail_loop",
+    "title": "p4_fail_loop: point 4, \"failure itself isn't the issue\"",
+    "preview": "p4_fail_loop.gif",
+    "renders": [
+     "p4_fail_loop_1080p.mp4"
+    ],
+    "render_bytes": 2471379
+   },
+   {
+    "name": "p4_new_class",
+    "title": "p4_new_class: stick-figure \"just pass\" student",
+    "preview": "p4_new_class.gif",
+    "renders": [
+     "p4_new_class_1080p.mp4"
+    ],
+    "render_bytes": 4936067
+   },
+   {
+    "name": "p4_synapse_ohm",
+    "title": "\"It IS hard: it's applied maths\"",
+    "preview": "p4_synapse_ohm.gif",
+    "renders": [
+     "p4_synapse_ohm_1080p.mp4",
+     "p4_synapse_ohm_short_1080p.mp4"
+    ],
+    "render_bytes": 2873910
+   },
+   {
+    "name": "p4_threshold",
+    "title": "p4_threshold",
+    "preview": "p4_threshold.gif",
+    "renders": [
+     "p4_threshold_1080p.mp4"
+    ],
+    "render_bytes": 931321
+   }
+  ]
+ },
+ {
+  "slug": "top-0.2-ai",
+  "folder": "2026-11-08-top-0.2-ai",
+  "title": "Give Me X Min. I'll Make You a Top 0.2% AI User",
+  "date": "2026-11-08",
+  "yt": "",
+  "blurb": "Karpathy's AI-usage funnel, long-horizon agents, an Excalidraw workflow turned into subagents, evals on an airfoil, research agents and the knowledge-expiry curve.",
+  "held": [
+   "control_lab"
+  ],
+  "animations": [
+   {
+    "name": "hook_funnel",
+    "title": "Karpathy's AI-usage tiers (hook)",
+    "preview": "hook_funnel.gif",
+    "renders": [
+     "hook_funnel_1080p.mp4"
+    ],
+    "render_bytes": 2275742
+   },
+   {
+    "name": "knowledge_expiry",
+    "title": "\"Your knowledge expires\" (Point 5)",
+    "preview": "knowledge_expiry.gif",
+    "renders": [
+     "knowledge_expiry_1080p.mp4",
+     "knowledge_expiry_curve_1080p.mp4"
+    ],
+    "render_bytes": 761197
+   },
+   {
+    "name": "long_horizon",
+    "title": "one long session rots, sub-agents don't (Point 2)",
+    "preview": "long_horizon.gif",
+    "renders": [
+     "long_horizon_1080p.mp4"
+    ],
+    "render_bytes": 696651
+   },
+   {
+    "name": "airfoil_eval",
+    "title": "Point 3 example (aerospace eval)",
+    "preview": "airfoil_eval.gif",
+    "renders": [
+     "airfoil_eval_1080p.mp4"
+    ],
+    "render_bytes": 2280982
+   },
+   {
+    "name": "alpha_brief",
+    "title": "Point 4 \"Research agents find your alpha\"",
+    "preview": "alpha_brief.gif",
+    "renders": [
+     "alpha_brief_1080p.mp4",
+     "alpha_satellite_1080p.mp4"
+    ],
+    "render_bytes": 4417717
+   },
+   {
+    "name": "evals_loop",
+    "title": "Point 3 \"Evals\"",
+    "preview": "evals_loop.gif",
+    "renders": [
+     "evals_loop_1080p.mp4"
+    ],
+    "render_bytes": 1035035
+   },
+   {
+    "name": "excalidraw_workflow",
+    "title": "drawing the system in Excalidraw, then handing it to Claude (Point 2)",
+    "preview": "excalidraw_workflow.gif",
+    "renders": [
+     "drawing_1080p.mp4",
+     "export_to_terminal_1080p.mp4"
+    ],
+    "render_bytes": 602485
+   },
+   {
+    "name": "subagents_md",
+    "title": "Claude Code subagents b-roll (control-lab example)",
+    "preview": "subagents_md.gif",
+    "renders": [
+     "agent_md_1080p.mp4",
+     "agents_tree_1080p.mp4",
+     "orchestrate_1080p.mp4"
+    ],
+    "render_bytes": 2012858
+   }
+  ]
+ }
+]

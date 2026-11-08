@@ -1,0 +1,156 @@
+<!doctype html>
+<html><head><meta charset="utf-8">
+<style>
+@font-face{font-family:Inter;font-weight:400;src:url(fonts/inter-latin-400-normal.woff2)}
+@font-face{font-family:Inter;font-weight:600;src:url(fonts/inter-latin-600-normal.woff2)}
+@font-face{font-family:Inter;font-weight:700;src:url(fonts/inter-latin-700-normal.woff2)}
+@font-face{font-family:Inter;font-weight:800;src:url(fonts/inter-latin-800-normal.woff2)}
+@font-face{font-family:"JetBrains Mono";font-weight:500;src:url(fonts/jetbrains-mono-latin-500-normal.woff2)}
+@font-face{font-family:"JetBrains Mono";font-weight:700;src:url(fonts/jetbrains-mono-latin-700-normal.woff2)}
+html,body{margin:0;padding:0;background:#0E0E10;overflow:hidden}
+#stage{position:relative;overflow:hidden;width:1920px;height:1080px;background:#0E0E10;
+  background-image:radial-gradient(circle at 12px 12px,#23232A 1.2px,transparent 1.7px);background-size:24px 24px}
+#stage svg{position:absolute;left:0;top:0;display:block}
+</style></head>
+<body><div id="stage"></div>
+<script src="lib.js"></script>
+<script>
+// ===== hook_funnel: Karpathy's AI-usage tiers =====
+// Beats (s): A 0.0 source chip · B 4.0 tier1 · C 6.0 tier2 + chat bubble · D 13.0 tier3 (0.2%) · E 17.0 tier4 · end 22.0
+const A = 0.0, Bt = 4.0, Ct = 6.0, Dt = 13.0, Et = 17.0;
+const stage = document.getElementById('stage');
+
+// waffle: 40 x 25 = 1000 dots ≈ 8.1B people → 1 dot ≈ 8M
+const COLS = 40, ROWS = 25, P = 25, R = 7.6, FX = 128, FY = 262;
+const GREY = '#5A5A66', FAINT = '#34343D', BLUEDOT = BLUE;
+const kind = i => (i >= 998 ? 'o' : i >= 800 ? 'b' : 'g');
+
+function dots(t) {
+  let g = '';
+  const dimFocus = rv(t, Dt, 0.6); // at D, dim the rest
+  for (let i = 0; i < COLS * ROWS; i++) {
+    const c = i % COLS, r = Math.floor(i / COLS);
+    const x = FX + c * P, y = FY + r * P;
+    // intro ripple (0.5 → 3.2 s), diagonal wave
+    const appear = rv(t, 0.5 + (c + r) / (COLS + ROWS) * 2.2, 0.35);
+    if (appear <= 0) continue;
+    const k = kind(i);
+    let col = FAINT, op = appear, rad = R * lerp(.4, 1, appear);
+    if (k === 'g') {
+      const lit = rv(t, Bt + (r / ROWS) * 0.9 + c * 0.004, 0.3);
+      col = mix(FAINT, GREY, lit);
+      op *= lerp(1, .55, dimFocus);
+    } else if (k === 'b') {
+      const lit = rv(t, Ct + c * 0.02 + (r - 20) * 0.05, 0.3);
+      col = mix(FAINT, BLUEDOT, lit);
+      op *= lerp(1, .5, dimFocus);
+    } else {
+      const lit = rv(t, Dt + 0.15, 0.3);
+      col = mix(FAINT, OR, lit);
+      if (lit > 0) {
+        const pulse = t > Dt + 0.5 ? 0.5 + 0.5 * Math.sin((t - Dt - 0.5) * 2.6) : 1;
+        g += `<circle cx="${x}" cy="${y}" r="${f2(R * 2.6)}" fill="${OR}" opacity="${f2(lit * (0.55 + 0.35 * pulse))}" filter="url(#glow)"/>`;
+        rad = R * lerp(1, 1.25, lit);
+      }
+    }
+    g += `<circle cx="${x}" cy="${y}" r="${f2(rad)}" fill="${col}" opacity="${f2(op)}"/>`;
+  }
+  // ring + callout around orange dots at D
+  const ox = FX + 38.5 * P, oy = FY + 24 * P;
+  const rp = rv(t, Dt + 0.35, 0.4);
+  if (rp > 0) {
+    // expanding ping
+    const ping = ((t - Dt - 0.35) % 2.2) / 2.2;
+    g += `<ellipse cx="${f2(ox)}" cy="${oy}" rx="${f2(lerp(30, 70, ping))}" ry="${f2(lerp(22, 60, ping))}" fill="none" stroke="${OR}" stroke-width="2" opacity="${f2(rp * (1 - ping) * .7)}"/>`;
+    g += `<rect x="${f2(ox - 34)}" y="${oy - 22}" width="68" height="44" rx="22" fill="none" stroke="${OR}" stroke-width="3" opacity="${f2(rp)}"/>`;
+    g += `<path d="M ${f2(ox)} ${oy + 22} L ${f2(ox)} ${oy + 52}" stroke="${OR}" stroke-width="3" opacity="${f2(rp)}"/>`;
+    g += T(ox + 34, oy + 92, '0.2% = 2 dots', { size: 34, w: 800, fill: OR, anchor: 'end', op: rp });
+  }
+  // field caption
+  const cp = rv(t, 1.2, 0.5);
+  g += T(FX - 8, FY + 24 * P + 92, 'Everyone on Earth · 1 dot ≈ 8M people', { size: 30, w: 600, fill: SEC, op: cp * lerp(1, 0.0, rp) });
+  return g;
+}
+
+// --- chicken drumstick icon (drawn, no emoji font) ---
+function drumstick(x, y, s) {
+  return `<g transform="translate(${x} ${y}) rotate(-38) scale(${s})">
+    <rect x="-6" y="-2" width="34" height="12" rx="6" fill="#EFE4D0"/>
+    <circle cx="30" cy="-1" r="8" fill="#EFE4D0"/><circle cx="30" cy="11" r="8" fill="#EFE4D0"/>
+    <path d="M -46 4 C -46 -24 -18 -28 -4 -10 L 2 -4 L 2 14 L -4 18 C -18 36 -46 32 -46 4 Z" fill="#C7843F"/>
+    <path d="M -38 -6 C -32 -16 -22 -18 -14 -12" stroke="#E6A867" stroke-width="5" fill="none" stroke-linecap="round"/>
+  </g>`;
+}
+function bubble(t) {
+  const p = rv(t, Ct + 0.55, 0.37) * fadeOut(t, Dt - 0.4, 0.3);
+  if (p <= 0) return '';
+  const x = 520, y = 616, w = 560, h = 112;
+  const tail = `<path d="M ${x + w - 120} ${y + h - 2} L ${x + w - 92} ${y + h + 26} L ${x + w - 74} ${y + h - 2} Z" fill="#26262E"/>`;
+  const inner = `<g ${SH}><rect x="${x}" y="${y}" width="${w}" height="${h}" rx="26" fill="#26262E" stroke="#34343C"/>${tail}</g>
+    ${T(x + 30, y + 46, 'can you make me a', { size: 32, w: 600, fill: TXT })}
+    ${T(x + 30, y + 88, 'chicken & rice recipe?', { size: 32, w: 600, fill: TXT })}
+    ${drumstick(x + w - 70, y + h / 2, 1.05)}`;
+  return pop(p, x + w - 90, y + h + 20, inner);
+}
+
+// --- tier cards (funnel: narrowing widths, centred on CXC) ---
+const CXC = 1500;
+const TIERS = [
+  { num: '~6B', pct: '75%', label: 'barely touched AI', col: GREY, w: 620, y: 262, h: 150, t: Bt },
+  { num: '~1–2B', pct: '20%', label: 'chatbot users', col: BLUE, w: 560, y: 432, h: 150, t: Ct },
+  { num: '~20M', pct: '0.2%', label: 'agents doing real work', col: OR, w: 500, y: 602, h: 150, t: Dt, hero: true },
+  { num: '~5K', pct: '', label: 'frontier labs', col: TXT, w: 0, y: 772, h: 96, t: Et, small: true },
+];
+function tier(T0, t) {
+  const p = rv(t, T0.t, 0.4);
+  if (p <= 0) return '';
+  const w = T0.w || (56 + mw(T0.num, '800 46px Inter') + 18 + mw('· ' + T0.label, '600 32px Inter') + 40);
+  const x = CXC - w / 2, y = T0.y, h = T0.h;
+  let g = '';
+  if (T0.hero) {
+    const gl = rv(t, T0.t + 0.2, 0.6) * (0.75 + 0.25 * Math.sin((t - T0.t) * 2.6));
+    g += `<rect x="${x}" y="${y}" width="${w}" height="${h}" rx="16" fill="${OR}" opacity="${f2(.35 * gl)}" filter="url(#glowBig)"/>`;
+    g += card(x, y, w, h, { fill: '#1E1714', stroke: OR, sw: 2 });
+  } else g += card(x, y, w, h);
+  if (T0.small) {
+    g += `<circle cx="${x + 34}" cy="${y + h / 2}" r="7" fill="${T0.col}"/>`;
+    g += T(x + 56, y + h / 2 + 16, T0.num, { size: 46, w: 800 });
+    const nw = mw(T0.num, '800 46px Inter');
+    g += T(x + 56 + nw + 18, y + h / 2 + 12, '· ' + T0.label, { size: 32, w: 600, fill: SEC });
+  } else {
+    g += `<circle cx="${x + 36}" cy="${y + 54}" r="10" fill="${T0.col}"/>`;
+    g += T(x + 62, y + 76, T0.num, { size: 62, w: 800, fill: T0.hero ? OR : TXT });
+    // pct pill, right-aligned
+    const pw = mw(T0.pct, '800 36px Inter') + 36;
+    g += `<rect x="${x + w - 30 - pw}" y="${y + 28}" width="${f2(pw)}" height="54" rx="27" fill="${T0.hero ? OR : '#24242B'}"/>`;
+    g += T(x + w - 30 - pw / 2, y + 68, T0.pct, { size: 36, w: 800, fill: T0.hero ? '#1A0F0A' : TXT, anchor: 'middle' });
+    g += T(x + 36, y + 126, T0.label, { size: 34, w: 600, fill: T0.hero ? '#F2C4B0' : SEC });
+  }
+  return pop(p, x + w / 2, y + h / 2, g);
+}
+function connector(t) {
+  // thin funnel spine between cards
+  let g = '';
+  for (let i = 1; i < TIERS.length; i++) {
+    const p = rv(t, TIERS[i].t - 0.05, 0.3);
+    if (p <= 0) continue;
+    const y0 = TIERS[i - 1].y + TIERS[i - 1].h, y1 = TIERS[i].y;
+    g += `<path d="M ${CXC} ${y0 + 3} L ${CXC} ${f2(lerp(y0 + 3, y1 - 3, p))}" stroke="#3A3A44" stroke-width="2" stroke-dasharray="4 5"/>`;
+  }
+  return g;
+}
+
+function sourceChip(t) {
+  const p = rv(t, A + 0.05, 0.37);
+  const label = 'Andrej Karpathy · X · Oct 2026';
+  const w = 30 + 16 + 18 + mw(label, '700 32px Inter') + 30, h = 64, x = 128, y = 150;
+  return pop(p, x + w / 2, y, `${card(x, y - h / 2, w, h)}
+    <circle cx="${x + 30 + 8}" cy="${y}" r="8" fill="${OR}"/>${T(x + 30 + 16 + 18, y + 11, label, { size: 32, w: 700 })}`);
+}
+
+function scene(t) {
+  return svgWrap(`${sourceChip(t)}${dots(t)}${connector(t)}${TIERS.map(x => tier(x, t)).join('')}`);
+}
+window.renderAt = t => { stage.innerHTML = scene(t); };
+window.ready = (async () => { await loadFonts(); window.renderAt(0); return true; })();
+</script></body></html>

@@ -1,0 +1,181 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>p2 old uni webpage</title>
+<link rel="stylesheet" href="fonts.css">
+<style>
+  html, body { margin: 0; padding: 0; background: #000; }
+  #stage { position: relative; width: 1920px; height: 1080px; overflow: hidden; background: #C0C0C0; }
+  /* everything below is laid out on a virtual 960 x 540 screen and scaled x2 */
+  #cam { position: absolute; left: 0; top: 0; width: 1920px; height: 1080px; transform-origin: 0 0; }
+  #screen { position: absolute; left: 0; top: 0; width: 960px; height: 540px; transform: scale(2); transform-origin: 0 0;
+    font-family: Arial, Helvetica, sans-serif; background: #C0C0C0; color: #000; }
+  .bevel { border-style: solid; border-width: 1px; border-color: #fff #404040 #404040 #fff; box-shadow: inset -1px -1px #808080, inset 1px 1px #dfdfdf; }
+  .inset { border-style: solid; border-width: 1px; border-color: #808080 #fff #fff #808080; box-shadow: inset 1px 1px #404040; }
+  #title { position: absolute; left: 2px; right: 2px; top: 2px; height: 18px; background: #000080; color: #fff; font-weight: bold; font-size: 11.5px;
+    display: flex; align-items: center; padding-left: 4px; gap: 5px; box-sizing: border-box; }
+  #title .btns { margin-left: auto; display: flex; gap: 2px; margin-right: 2px; }
+  #title .b { width: 16px; height: 14px; background: #C0C0C0; box-sizing: border-box; position: relative; }
+  #menu { position: absolute; left: 4px; top: 21px; height: 18px; display: flex; gap: 14px; font-size: 12px; align-items: center; padding-left: 6px; }
+  #menu u { text-decoration: underline; }
+  #toolbar { position: absolute; left: 2px; right: 2px; top: 40px; height: 42px; display: flex; gap: 3px; padding: 2px 6px; box-sizing: border-box; border-top: 1px solid #808080; border-bottom: 1px solid #fff; }
+  .tb { width: 50px; height: 36px; box-sizing: border-box; display: flex; flex-direction: column; align-items: center; justify-content: center; font-size: 10px; gap: 2px; }
+  .tb svg { width: 18px; height: 16px; }
+  .tb.dis { color: #808080; text-shadow: 1px 1px #fff; }
+  #loc { position: absolute; left: 2px; right: 2px; top: 83px; height: 24px; display: flex; align-items: center; gap: 6px; padding: 0 6px; font-size: 12px; box-sizing: border-box; border-bottom: 1px solid #808080; }
+  #loc .field { flex: 1; height: 18px; background: #fff; display: flex; align-items: center; padding-left: 4px; font-size: 12px; box-sizing: border-box; }
+  #view { position: absolute; left: 2px; top: 109px; width: 940px; height: 409px; overflow: hidden; background: #C0C0C0; }
+  #vscroll { position: absolute; left: 942px; top: 109px; width: 16px; height: 409px; background: repeating-conic-gradient(#C0C0C0 0 25%, #fff 0 50%) 0 0 / 2px 2px; }
+  #vscroll .arr { position: absolute; left: 0; width: 16px; height: 16px; background: #C0C0C0; box-sizing: border-box; }
+  #thumb { position: absolute; left: 0; width: 16px; height: 120px; background: #C0C0C0; box-sizing: border-box; }
+  #status { position: absolute; left: 2px; right: 2px; top: 520px; height: 18px; display: flex; gap: 2px; font-size: 11px; }
+  #status div { height: 16px; display: flex; align-items: center; padding: 0 6px; box-sizing: border-box; }
+
+  /* ---------- the 1990s page itself ---------- */
+  #page { position: absolute; left: 0; top: 0; width: 924px; padding: 10px 8px 120px 8px; font-family: 'Times New Roman', Times, serif; font-size: 16px; line-height: 1.22; color: #000; }
+  #page h1 { font-size: 32px; margin: 4px 0 2px; text-align: center; color: #000080; }
+  #page h2 { font-size: 22px; margin: 0 0 2px; text-align: center; }
+  #page .dept { text-align: center; font-style: italic; font-size: 15px; margin-bottom: 6px; }
+  #page hr { border: 0; border-top: 1px solid #808080; border-bottom: 1px solid #fff; height: 0; margin: 8px 0; }
+  #page a { color: #0000EE; text-decoration: underline; }
+  #page a.v { color: #551A8B; }
+  #page h3 { font-size: 19px; margin: 10px 0 4px; }
+  #page ol { margin: 4px 0 6px; padding-left: 34px; }
+  #page ol li { margin-bottom: 5px; }
+  #page ul { margin: 2px 0 6px; padding-left: 30px; }
+  .uc { display: flex; align-items: center; gap: 12px; margin: 4px 0 6px; }
+  .uc .txt { font-size: 17px; }
+  .uc .txt b { color: #CC0000; }
+  .hazard { height: 10px; width: 300px; margin-top: 5px; background: repeating-linear-gradient(-45deg, #000 0 8px, #FFCC00 8px 16px); border: 1px solid #000; }
+  #marq { position: relative; height: 22px; overflow: hidden; background: #000080; border: 2px inset #808080; margin: 6px 0 8px; }
+  #marq span { position: absolute; top: 1px; white-space: nowrap; font-weight: bold; font-size: 16px; color: #FFFF00; font-family: 'Times New Roman', serif; }
+  .ess { color: #CC0000; font-weight: bold; }
+  .new { display: inline-block; vertical-align: -6px; margin-left: 6px; }
+  .counter { display: inline-flex; gap: 1px; vertical-align: -5px; margin: 0 4px; padding: 2px; background: #404040; }
+  .counter i { font-style: normal; display: inline-block; width: 13px; height: 18px; background: #000; color: #7CFC00; font: bold 15px/18px 'Courier New', monospace; text-align: center; }
+  .small { font-size: 14px; }
+  #lastup { position: relative; display: inline-block; font-style: italic; font-size: 15px; }
+  #lastup .hl { position: absolute; left: -4px; top: 1px; height: 17px; width: 0; background: rgba(245,184,0,.42); border-radius: 2px 4px 3px 2px; z-index: 0; }
+  #lastup span { position: relative; z-index: 1; }
+</style>
+</head>
+<body>
+<div id="stage">
+<div id="cam">
+<div id="screen">
+  <div id="title"><svg width="14" height="14" viewBox="0 0 14 14"><circle cx="7" cy="7" r="6" fill="#3a8ee6" stroke="#fff" stroke-width=".8"/><path d="M1.5 7h11M7 1.2c-2.6 3-2.6 8.6 0 11.6M7 1.2c2.6 3 2.6 8.6 0 11.6" stroke="#fff" stroke-width=".7" fill="none"/></svg>
+    EE2xx Electromagnetics - Recommended Reading
+    <div class="btns"><div class="b bevel"><svg width="14" height="12" viewBox="0 0 14 12" style="position:absolute;left:0;top:0"><rect x="3" y="8" width="6" height="2" fill="#000"/></svg></div><div class="b bevel"><svg width="14" height="12" viewBox="0 0 14 12" style="position:absolute;left:0;top:0"><rect x="2.5" y="1.5" width="8" height="7" fill="none" stroke="#000" stroke-width="1"/><rect x="2.5" y="1.5" width="8" height="1.6" fill="#000"/></svg></div><div class="b bevel" style="margin-left:2px"><svg width="14" height="12" viewBox="0 0 14 12" style="position:absolute;left:0;top:0"><path d="M3.5 2.5l6 6M9.5 2.5l-6 6" stroke="#000" stroke-width="1.6"/></svg></div></div></div>
+  <div id="menu"><span><u>F</u>ile</span><span><u>E</u>dit</span><span><u>V</u>iew</span><span><u>G</u>o</span><span><u>H</u>elp</span></div>
+  <div id="toolbar">
+    <div class="tb bevel"><svg viewBox="0 0 18 16"><path d="M8 2L2 8l6 6V10h8V6H8z" fill="#2f6f2f" stroke="#000" stroke-width=".8"/></svg>Back</div>
+    <div class="tb bevel dis"><svg viewBox="0 0 18 16"><path d="M10 2l6 6-6 6V10H2V6h8z" fill="#9a9a9a" stroke="#808080" stroke-width=".8"/></svg>Forward</div>
+    <div class="tb bevel"><svg viewBox="0 0 18 16"><path d="M14 8a5 5 0 1 1-2-4" fill="none" stroke="#1d4fa8" stroke-width="2"/><path d="M10.5 1.5l3 2.6-3.6 1.2z" fill="#1d4fa8"/></svg>Reload</div>
+    <div class="tb bevel"><svg viewBox="0 0 18 16"><path d="M2 8l7-6 7 6" fill="none" stroke="#000" stroke-width="1.2"/><rect x="4.5" y="7" width="9" height="8" fill="#e8c06a" stroke="#000" stroke-width=".8"/><rect x="8" y="10" width="2.6" height="5" fill="#7a3d12"/></svg>Home</div>
+    <div class="tb bevel"><svg viewBox="0 0 18 16"><circle cx="7" cy="7" r="4.5" fill="#cfe6ff" stroke="#000" stroke-width="1.2"/><path d="M10.5 10.5l5 5" stroke="#000" stroke-width="2"/></svg>Search</div>
+    <div class="tb bevel"><svg viewBox="0 0 18 16"><rect x="4" y="1" width="10" height="6" fill="#fff" stroke="#000" stroke-width=".8"/><rect x="1.5" y="6" width="15" height="6" fill="#a8a8a8" stroke="#000" stroke-width=".8"/><rect x="4" y="10" width="10" height="5" fill="#fff" stroke="#000" stroke-width=".8"/></svg>Print</div>
+    <div class="tb bevel dis"><svg viewBox="0 0 18 16"><polygon points="6,1 12,1 17,6 17,11 12,15 6,15 1,11 1,6" fill="#c9a0a0" stroke="#808080" stroke-width=".8"/></svg>Stop</div>
+  </div>
+  <div id="loc"><span>Location:</span><div class="field inset">http://www.ee.example.ac.uk/~ee2xx/reading.html</div></div>
+  <div id="view"><div id="page">
+    <h1>EE2xx Electromagnetics</h1>
+    <h2>Recommended Reading</h2>
+    <div class="dept">Department of Electrical &amp; Electronic Engineering</div>
+    <hr>
+    <div class="uc">
+      <svg id="ucsign" width="96" height="84" viewBox="0 0 96 84">
+        <polygon points="48,2 92,42 48,82 4,42" fill="#FFCC00" stroke="#000" stroke-width="3" stroke-linejoin="round"/>
+        <g id="worker" fill="#000">
+          <circle cx="40" cy="27" r="4.2"/>
+          <path d="M37 32 L44 32 L47 47 L52 58 L48 60 L42 49 L39 60 L34 60 L37 46 Z"/>
+          <g id="shovel"><path d="M44 35 L60 47" stroke="#000" stroke-width="2.4"/><path d="M58 44 L66 50 L61 56 L55 50 Z"/></g>
+          <path d="M56 62 Q64 52 72 62 Z"/>
+        </g>
+        <circle id="lamp" cx="48" cy="7" r="3.2" fill="#FF6600"/>
+      </svg>
+      <div><div class="txt"><b>This page is UNDER CONSTRUCTION!</b> Please check back soon.</div><div class="hazard"></div></div>
+    </div>
+    <div>Module leader: <b>Dr A. N. Other</b> (Room 3.14, office hours Tuesday 2&ndash;3pm)</div>
+    <div id="marq"><span id="marqText">*** NEW: Problem Sheet 4 is now available! *** Lecture 7 has moved to Room B12 *** Revision session: Friday 2pm *** NEW: Problem Sheet 4 is now available! *** Lecture 7 has moved to Room B12 ***</span></div>
+    <div>Students are expected to read the following books <b>before the start of term</b>. Copies are held in the Main Library (Short Loan Collection).</div>
+    <h3>Recommended books</h3>
+    <ol>
+      <li>Thornbury, R. J. <i>Electromagnetic Fields</i>, 2nd edn. 1970. (approx. 1000 pages) <span class="ess">ESSENTIAL</span></li>
+      <li>Ashcombe, D. &amp; Rudd, P. <i>Waves, Lines and Guides</i>. 1974.</li>
+      <li>Pellingham, M. <i>Problems in Fields and Waves, with Answers</i>. 1981.<svg class="new" id="newbadge" width="46" height="24" viewBox="0 0 46 24"><polygon points="23,0 27,5 34,2 33,8 41,8 37,13 44,17 36,18 37,24 29,20 23,24 17,20 9,24 10,18 2,17 9,13 5,8 13,8 12,2 19,5" fill="#FF0000"/><text x="23" y="16" text-anchor="middle" font-family="Arial Black, Arial" font-weight="900" font-size="9" fill="#FFFF00">NEW!</text></svg></li>
+      <li>Wexford, H. <i>Antennas for the Practical Engineer</i>. 1977.</li>
+      <li><i>Electromagnetics: Collected Lecture Notes</i>, Vols. I&ndash;III. Dept. of E&amp;EE, 1989. (&pound;4.50 from the departmental office)</li>
+    </ol>
+    <h3>Useful links</h3>
+    <ul>
+      <li><a href="#">Lecture notes</a> (PostScript, 2.1 MB)</li>
+      <li><a class="v" href="#">Problem sheets</a></li>
+      <li><a href="#">Past exam papers (1993&ndash;1998)</a></li>
+      <li><a href="#">Laboratory timetable</a></li>
+      <li><a class="v" href="#">Back to the module list</a></li>
+    </ul>
+    <div style="text-align:center;margin-top:10px">
+    <div>You are visitor number <span class="counter"><i>0</i><i>0</i><i>4</i><i>2</i><i>1</i><i>7</i></span> since 01/10/1997</div>
+    <p class="small" style="margin:8px 0 2px">Best viewed at 800 x 600 in 256 colours.</p>
+    <div class="small">Comments? <svg width="18" height="12" viewBox="0 0 18 12" style="vertical-align:-1px"><rect x=".5" y=".5" width="17" height="11" fill="#fff" stroke="#000"/><path d="M.5 .5L9 7l8.5-6.5" fill="none" stroke="#000"/></svg> <a href="#">a.n.other@ee.example.ac.uk</a></div>
+    </div>
+    <hr>
+    <div style="text-align:center"><div id="lastup"><div class="hl" id="hl"></div><span>Last updated: 14/03/1999</span></div>
+    <div class="small" style="margin-top:3px">&copy; 1997&ndash;1999 Dept. of Electrical &amp; Electronic Engineering</div></div>
+  </div></div>
+  <div id="vscroll"><div class="arr bevel" style="top:0"><svg width="14" height="14" viewBox="0 0 14 14"><path d="M3.5 9l3.5-4 3.5 4z" fill="#000"/></svg></div><div id="thumb" class="bevel"></div><div class="arr bevel" style="bottom:0"><svg width="14" height="14" viewBox="0 0 14 14"><path d="M3.5 5l3.5 4 3.5-4z" fill="#000"/></svg></div></div>
+  <div id="status"><div class="inset" style="flex:1">Done</div><div class="inset" style="width:28px;justify-content:center"><svg width="10" height="12" viewBox="0 0 10 12"><path d="M2.5 5V3.5a2.5 2.5 0 0 1 5 0" fill="none" stroke="#000" stroke-width="1.2"/><rect x="1" y="5" width="8" height="6.5" fill="#d8b04a" stroke="#000" stroke-width=".8"/></svg></div><div class="inset" style="width:90px"></div></div>
+</div>
+</div>
+</div>
+<script src="common.js"></script>
+<script>
+window.SCENE = { dur: 6.0 };            // 5.0 s of motion + 1.0 s clean hold
+const QA_TIMES = [0.20, 1.40, 2.60, 3.60, 4.30, 5.80];
+const view = document.getElementById('view'), page = document.getElementById('page'), thumb = document.getElementById('thumb');
+const cam = document.getElementById('cam'), hl = document.getElementById('hl'), lastup = document.getElementById('lastup');
+const marq = document.getElementById('marqText'), shovel = document.getElementById('shovel'), lamp = document.getElementById('lamp'), newb = document.getElementById('newbadge');
+let RANGE = 0, TARGET = null, HLW = 0;
+function measure() {
+  page.style.transform = 'none';
+  RANGE = Math.max(0, page.offsetHeight - view.clientHeight);
+  // where "Last updated" ends up (virtual screen px) once the page is fully scrolled
+  const vr = view.getBoundingClientRect(), lr = lastup.getBoundingClientRect(), sr = document.getElementById('screen').getBoundingClientRect();
+  const k = sr.width / 960;   // css px per virtual px (2 in normal layout)
+  HLW = lastup.querySelector('span').getBoundingClientRect().width / k + 8;
+  TARGET = { x: (lr.left - sr.left) / k + HLW / 2 - 4, y: (lr.top - sr.top) / k - RANGE + lr.height / k / 2 };
+}
+window.sceneReady = () => { measure(); renderAt(0); };
+const S0 = 0.30, S1 = 3.05, Z0 = 3.00, Z1 = 4.15, H0 = 4.22, H1 = 4.62, ZOOM = 2.35;
+function renderAt(t) {
+  if (!TARGET) measure();
+  /* slow scroll to the bottom of the page */
+  const sp = easeInOut(prog(t, S0, S1));
+  const y = Math.round(sp * RANGE * 2) / 2;
+  page.style.transform = `translateY(${-y}px)`;
+  const track = 409 - 32, th = Math.max(24, track * view.clientHeight / page.offsetHeight);
+  thumb.style.height = th + 'px'; thumb.style.top = (16 + (track - th) * (RANGE ? y / RANGE : 0)) + 'px';
+  /* period details: marquee, digging worker, blinking lamp + NEW! */
+  const mw = marq.offsetWidth;
+  marq.style.left = (924 - ((t * 70 + 640) % (924 + mw))) + 'px';
+  const ph = Math.floor(t / 0.25) % 2;
+  shovel.setAttribute('transform', ph ? 'rotate(-14 44 35)' : 'rotate(6 44 35)');
+  lamp.setAttribute('fill', Math.floor(t / 0.4) % 2 ? '#FF6600' : '#7a3000');
+  newb.style.visibility = Math.floor(t / 0.35) % 3 === 2 ? 'hidden' : 'visible';
+  /* camera: zoom into "Last updated" (virtual coords x2 = real px) */
+  const z = easeInOut(prog(t, Z0, Z1));
+  const s = lerp(1, ZOOM, z);
+  const cx = lerp(480, TARGET.x, z) * 2, cy = lerp(270, TARGET.y - 12, z) * 2;   // footer sits just below centre
+  // keep the camera inside the browser screen (never reveal anything outside it)
+  const tx = clamp(960 - cx * s, 1920 - 1920 * s, 0), ty = clamp(540 - cy * s, 1080 - 1080 * s, 0);
+  cam.style.transform = `translate(${tx}px, ${ty}px) scale(${s})`;
+  /* amber marker sweep */
+  const h = easeOut(prog(t, H0, H1));
+  hl.style.width = (h * HLW).toFixed(2) + 'px';
+}
+window.renderAt = renderAt;
+if (!location.search.includes('capture')) { measure(); const t0 = performance.now(); const loop = () => { renderAt(((performance.now() - t0) / 1000) % SCENE.dur); requestAnimationFrame(loop); }; loop(); }
+</script>
+</body>
+</html>

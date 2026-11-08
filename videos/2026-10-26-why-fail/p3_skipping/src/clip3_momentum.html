@@ -1,0 +1,117 @@
+<!doctype html>
+<html><head><meta charset="utf-8">
+<style>
+@font-face{font-family:Inter;font-weight:400;src:url(fonts/inter-latin-400-normal.woff2)}
+@font-face{font-family:Inter;font-weight:600;src:url(fonts/inter-latin-600-normal.woff2)}
+@font-face{font-family:Inter;font-weight:700;src:url(fonts/inter-latin-700-normal.woff2)}
+@font-face{font-family:Inter;font-weight:800;src:url(fonts/inter-latin-800-normal.woff2)}
+@font-face{font-family:"JetBrains Mono";font-weight:500;src:url(fonts/jetbrains-mono-latin-500-normal.woff2)}
+@font-face{font-family:"JetBrains Mono";font-weight:700;src:url(fonts/jetbrains-mono-latin-700-normal.woff2)}
+html,body{margin:0;padding:0;background:#0E0E10;overflow:hidden}
+#stage{position:relative;overflow:hidden;width:1920px;height:1080px;background:#0E0E10;
+  background-image:radial-gradient(circle at 12px 12px,#23232A 1.2px,transparent 1.7px);background-size:24px 24px}
+#stage svg{position:absolute;left:0;top:0;display:block}
+</style></head>
+<body><div id="stage"></div>
+<script src="common.js"></script>
+<script>
+// Clip 3: p3_momentum — course vs came-back-early vs skipped-2-weeks line chart.
+window.cam = t => ({ s: 1, x: 0, y: 0 }); // static camera (micro drift/push-in removed)
+const X0 = 330, X1 = 1500, Y0 = 880, PXU = 6.2, PASS = 62;
+const xs = w => X0 + (w - 1) / 11 * (X1 - X0);
+const ys = v => Y0 - v * PXU;
+const sm = x => { x = clamp(x); return x * x * (3 - 2 * x); };
+const course = w => 15 + (w - 1) * 85 / 11;
+const green = w => 15 + (w - 1) * 80 / 11 - 1.6 * Math.sin((w - 1) * 0.9) * (w - 1) / 11;
+function orangeSeries(k) { // integrate slope; k = bend progress
+  const s1 = 6.18, s2 = 3.2, out = [[1, 15]]; let v = 15;
+  for (let w = 1.05; w <= 12.0001; w += 0.05) {
+    const s = sm((w - 3) / 0.7 + 0.35) * (s1 + (s2 - s1) * k * sm((w - 6) / 1.4 + 0.5));
+    v += s * 0.05; out.push([w, v]);
+  }
+  return out;
+}
+const sampled = (f, n = 221) => Array.from({ length: n }, (_, i) => { const w = 1 + 11 * i / (n - 1); return [w, f(w)]; });
+const upTo = (pts, wEnd) => { const o = []; for (const p of pts) { if (p[0] <= wEnd) o.push(p); else { const a = o[o.length - 1]; if (a) { const u = (wEnd - a[0]) / (p[0] - a[0]); o.push([wEnd, lerp(a[1], p[1], u)]); } break; } } return o; };
+const path = pts => pts.length ? 'M ' + pts.map(p => f2(xs(p[0])) + ' ' + f2(ys(p[1]))).join(' L ') : '';
+const valAt = (pts, w) => { for (let i = 1; i < pts.length; i++) if (pts[i][0] >= w) { const a = pts[i - 1], b = pts[i]; return lerp(a[1], b[1], (w - a[0]) / (b[0] - a[0])); } return pts[pts.length - 1][1]; };
+function scene(t) {
+  let g = '';
+  const ap = rv(t, 0.0, 12 * FR);
+  // axes
+  g += `<g opacity="${f2(ap)}">`;
+  for (let w = 1; w <= 12; w++) {
+    g += `<line x1="${f2(xs(w))}" y1="${Y0}" x2="${f2(xs(w))}" y2="${Y0 + 10}" stroke="#4A4A52" stroke-width="2"/>`;
+    g += T(xs(w), Y0 + 48, String(w), { size: 28, w: 600, fill: SEC });
+  }
+  for (const v of [25, 50, 75, 100]) g += `<line x1="${X0}" y1="${f2(ys(v))}" x2="${X1}" y2="${f2(ys(v))}" stroke="#202026" stroke-width="1.5"/>`;
+  g += `<line x1="${X0 - 20}" y1="${Y0}" x2="${X1 + 20}" y2="${Y0}" stroke="#4A4A52" stroke-width="2.5"/>`;
+  g += `<line x1="${X0 - 20}" y1="${Y0}" x2="${X0 - 20}" y2="${ys(100) - 10}" stroke="#4A4A52" stroke-width="2.5"/>`;
+  g += T((X0 + X1) / 2, Y0 + 104, 'Weeks of term', { size: 34, w: 700, fill: SEC });
+  g += `<g transform="translate(${X0 - 64} ${f2((Y0 + ys(100)) / 2)}) rotate(-90)">${T(0, 0, 'Content understood', { size: 34, w: 700, fill: SEC })}</g>`;
+  g += '</g>';
+  // series
+  const k = eio((t - 16.5) / 1.3);
+  const OS = orangeSeries(k), CS = sampled(course), GS = sampled(green);
+  // behind area
+  const bp = rv(t, 12.9, 14 * FR);
+  if (bp > 0) {
+    const top = CS.map(p => [p[0], p[1]]), bot = OS.slice().reverse();
+    const d = 'M ' + top.map(p => f2(xs(p[0])) + ' ' + f2(ys(p[1]))).join(' L ') + ' L ' + bot.map(p => f2(xs(p[0])) + ' ' + f2(ys(p[1]))).join(' L ') + ' Z';
+    g += `<path d="${d}" fill="${RED}" fill-opacity="${f2(0.2 * bp)}"/>`;
+    const lw = 7.3, mid = (course(lw) + valAt(OS, lw)) / 2;
+    g += pop(T(xs(lw), ys(mid) + 14, 'Behind', { size: 40, w: 800, fill: RED }), xs(lw), ys(mid), bp);
+  }
+  // pass threshold
+  const pp = eo((t - 21.3) / (16 * FR));
+  if (pp > 0) {
+    g += `<line x1="${X0}" y1="${f2(ys(PASS))}" x2="${f2(lerp(X0, X1 + 20, pp))}" y2="${f2(ys(PASS))}" stroke="${TXT}" stroke-opacity=".75" stroke-width="3" stroke-dasharray="14 12"/>`;
+    g += T(X0 + 10, ys(PASS) - 16, 'Pass', { anchor: 'start', size: 30, w: 700, fill: TXT, op: pp });
+  }
+  // exams marker
+  const ep = eo((t - 20.3) / (12 * FR));
+  if (ep > 0) {
+    const yTop = ys(100) - 30;
+    g += `<line x1="${X1}" y1="${yTop}" x2="${X1}" y2="${f2(lerp(yTop, Y0, ep))}" stroke="${AMBER}" stroke-width="4"/>`;
+    g += pop(T(X1, yTop - 22, 'Exams', { size: 38, w: 800, fill: AMBER }), X1, yTop - 34, ep);
+  }
+  const cw = 1 + 11 * eio((t - 0.4) / 1.8), gw = 1 + 11 * eio((t - 2.4) / 2.0), ow = 1 + 11 * clamp((t - 5.0) / 3.4);
+  if (t > 0.4) g += `<path d="${path(upTo(CS, cw))}" fill="none" stroke="#8A8A94" stroke-width="4" stroke-dasharray="14 12" stroke-linecap="round"/>`;
+  if (t > 2.4) g += `<path d="${path(upTo(GS, gw))}" fill="none" stroke="${GREEN}" stroke-width="7" stroke-linecap="round" stroke-linejoin="round"/>`;
+  if (t > 5.0) {
+    // ghost of the pre-bend line, so the bend reads
+    if (k > 0) g += `<path d="${path(orangeSeries(0))}" fill="none" stroke="${OR}" stroke-opacity="${f2(0.35 * (1 - 0.4 * k))}" stroke-width="4" stroke-dasharray="6 10" stroke-linecap="round"/>`;
+    g += `<path d="${path(upTo(OS, ow))}" fill="none" stroke="${OR}" stroke-width="7" stroke-linecap="round" stroke-linejoin="round"/>`;
+  }
+  // heads
+  const head = (pts, w, c, on) => on ? `<circle cx="${f2(xs(w))}" cy="${f2(ys(valAt(pts, w)))}" r="9" fill="${c}"/>` : '';
+  g += head(GS, gw, GREEN, t > 2.4) + head(OS, ow, OR, t > 5.0);
+  // 2 weeks bracket
+  const brp = rv(t, 6.0);
+  if (brp > 0) {
+    const by = ys(15) + 26, xa = xs(1), xb = xs(3);
+    g += `<g opacity="${f2(brp)}"><path d="M ${f2(xa)} ${f2(by - 12)} L ${f2(xa)} ${f2(by)} L ${f2(xb)} ${f2(by)} L ${f2(xb)} ${f2(by - 12)}" fill="none" stroke="${OR}" stroke-width="3"/>`;
+    g += T((xa + xb) / 2, by + 40, '2 weeks away', { size: 30, w: 700, fill: OR }) + '</g>';
+  }
+  // losing momentum label
+  const lp = rv(t, 17.0);
+  if (lp > 0) {
+    const w = 9.0, y = ys(valAt(OS, w)) + 70;
+    g += pop(T(xs(w) - 110, y + 10, 'Losing momentum', { anchor: 'start', size: 32, w: 700, fill: OR }) +
+      `<path d="M ${f2(xs(w) - 132)} ${f2(y - 16)} l 0 24 m -9 -9 l 9 9 l 9 -9" fill="none" stroke="${OR}" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"/>`, xs(w), y, lp);
+  }
+  // legend
+  const leg = (y, c, label, dashed, at) => { const p = rv(t, at); if (p <= 0) return ''; return `<g opacity="${f2(p)}"><line x1="380" y1="${y - 10}" x2="430" y2="${y - 10}" stroke="${c}" stroke-width="${dashed ? 4 : 7}" ${dashed ? 'stroke-dasharray="12 8"' : ''} stroke-linecap="round"/>` + T(448, y, label, { anchor: 'start', size: 30, w: 700, fill: dashed ? SEC : c }) + '</g>'; };
+  g += leg(300, '#8A8A94', 'Course', true, 0.4) + leg(350, GREEN, 'Came back early', false, 2.4) + leg(400, OR, 'Skipped 2 weeks', false, 5.0);
+  // outcome chips
+  const ov = valAt(OS, 12), gv = valAt(GS, 12);
+  const fp = rv(t, 24.1);
+  if (fp > 0) {
+    g += `<circle cx="${X1}" cy="${f2(ys(ov))}" r="${f2(9 + 6 * fp)}" fill="none" stroke="${RED}" stroke-width="3" opacity="${f2(fp)}"/>`;
+    g += chip(X1 + 44 + (mw('Fail', 40, 800) + 50 + 56) / 2, ys(ov), 'Fail', RED, fp, { icon: cross });
+  }
+  const sp = rv(t, 24.6);
+  if (sp > 0) g += chip(X1 + 44 + (mw('Pass', 40, 800) + 50 + 56) / 2, ys(gv), 'Pass', GREEN, sp, { icon: tick });
+  return g;
+}
+</script></body></html>

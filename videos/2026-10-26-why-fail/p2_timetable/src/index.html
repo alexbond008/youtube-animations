@@ -1,0 +1,276 @@
+<!doctype html>
+<html><head><meta charset="utf-8">
+<style>
+@font-face{font-family:Inter;font-weight:400;src:url(fonts/inter-latin-400-normal.woff2)}
+@font-face{font-family:Inter;font-weight:600;src:url(fonts/inter-latin-600-normal.woff2)}
+@font-face{font-family:Inter;font-weight:700;src:url(fonts/inter-latin-700-normal.woff2)}
+@font-face{font-family:Inter;font-weight:800;src:url(fonts/inter-latin-800-normal.woff2)}
+@font-face{font-family:"JetBrains Mono";font-weight:500;src:url(fonts/jetbrains-mono-latin-500-normal.woff2)}
+@font-face{font-family:"JetBrains Mono";font-weight:700;src:url(fonts/jetbrains-mono-latin-700-normal.woff2)}
+html,body{margin:0;padding:0;background:#0E0E10;overflow:hidden}
+#stage{position:relative;overflow:hidden;width:1920px;height:1080px;background:#0E0E10;
+  background-image:radial-gradient(circle at 12px 12px,#23232A 1.2px,transparent 1.7px);background-size:24px 24px}
+#stage svg{position:absolute;left:0;top:0;display:block}
+</style></head>
+<body>
+<div id="stage"></div>
+<script>
+const SCENE = new URLSearchParams(location.search).get('scene') || 'week';
+const VW = 1920, H = 1080;
+const stage = document.getElementById('stage');
+const CARD = '#16161A', BORDER = '#2A2A30', TXT = '#F5F5F7', SEC = '#A1A1AA', OR = '#D97757', BLUE = '#4DA3FF', GREEN = '#3DDC97', RED = '#FF5A4E', AMBER = '#F5B800';
+const clamp = (x, a = 0, b = 1) => Math.min(b, Math.max(a, x));
+const eo = x => 1 - Math.pow(1 - clamp(x), 3);
+const eio = x => { x = clamp(x); return x < .5 ? 4 * x * x * x : 1 - Math.pow(-2 * x + 2, 3) / 2; };
+const lerp = (a, b, t) => a + (b - a) * t;
+const f2 = x => (+x).toFixed(2);
+const esc = s => String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;');
+const IN = 10 / 29.97; // 10-frame entrance
+const rv = (t, s, d = IN) => eo((t - s) / d);
+const meas = document.createElement('canvas').getContext('2d');
+const mw = (s, font) => { meas.font = font; return meas.measureText(s).width; };
+function T(x, y, s, o = {}) {
+  const fam = o.mono ? "'JetBrains Mono'" : 'Inter';
+  return `<text x="${f2(x)}" y="${f2(y)}" font-family="${fam}" font-size="${o.size || 48}" font-weight="${o.w || 700}" fill="${o.fill || TXT}" text-anchor="${o.anchor || 'middle'}"${o.op == null ? '' : ` opacity="${f2(o.op)}"`}>${esc(s)}</text>`;
+}
+const SHADOW = `<filter id="sh" x="-20%" y="-20%" width="140%" height="160%"><feDropShadow dx="0" dy="20" stdDeviation="22" flood-color="#000" flood-opacity=".55"/></filter>
+<filter id="glow" x="-50%" y="-50%" width="200%" height="200%"><feGaussianBlur stdDeviation="8" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter>`;
+function card(x, y, w, h, o = {}) {
+  return `<rect x="${x}" y="${y}" width="${w}" height="${h}" rx="16" fill="${CARD}" stroke="${o.stroke || BORDER}" stroke-width="${o.sw || 1}" filter="url(#sh)"/>`;
+}
+// pop: opacity + scale .92->1 about (cx,cy) + optional translate
+function popG(p, cx, cy, inner, dx = 0, dy = 0, op = 1) {
+  if (p <= 0.001) return '';
+  const s = .92 + .08 * p;
+  return `<g opacity="${f2(p * op)}" transform="translate(${f2(dx * (1 - p))} ${f2(dy * (1 - p))}) translate(${f2(cx)} ${f2(cy)}) scale(${f2(s)}) translate(${f2(-cx)} ${f2(-cy)})">${inner}</g>`;
+}
+function wrap(t, total, inner) {
+  // static framing (camera push-in removed)
+  const s = 1;
+  stage.style.backgroundPosition = `${f2(-(s - 1) * 960)}px ${f2(-(s - 1) * 540)}px`;
+  return `<svg width="${VW}" height="${H}" viewBox="0 0 ${VW} ${H}" xmlns="http://www.w3.org/2000/svg"><defs>${SHADOW}</defs><g transform="translate(960 540) scale(${f2(s)}) translate(-960 -540)">${inner}</g></svg>`;
+}
+
+/* ================= WEEK ================= */
+const CW = 790, CY = 64, CH = 770;
+const LX = 90, RX = 1040;
+const HC = 74;              // hour label column
+const COLW = (CW - HC - 22) / 5;
+const GY = 214, RH = 50;    // grid top, row height (9:00-18:00)
+const EY = GY + 9 * RH + 16, ER = 38; // evening band 18-21
+const DAYS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri'];
+const ENG = [[0, 9, 2], [0, 12, 1], [0, 14, 1], [1, 9, 2], [1, 11, 1], [2, 9, 2], [2, 11, 1], [3, 9, 2], [3, 12, 1], [4, 9, 1], [4, 11, 1]];
+const HIS = [[0, 11, 1, 'Lecture'], [1, 14, 1, 'Seminar'], [2, 10, 1, 'Lecture'], [3, 13, 1, 'Seminar'], [4, 11, 1, 'Lecture']];
+const CWK = []; // coursework 1h blocks stacked bottom-up in evenings Mon-Thu
+[[0, 2], [1, 3], [2, 2], [3, 2]].forEach(([d, n]) => { for (let k = 0; k < n; k++) CWK.push([d, 20 - k]); });
+const LABS = [[1, 14, 3], [3, 14, 3]];
+
+const colX = (cx, d) => cx + HC + d * COLW;
+const rowY = h => h >= 18 ? EY + (h - 18) * ER : GY + (h - 9) * RH;
+function block(cx, d, h0, dur, col, label, p, dy = -30, op = 1, yo = 0) {
+  if (p <= 0.001) return '';
+  const ev = h0 >= 18;
+  const x = colX(cx, d) + 4, y = rowY(h0) + 3 + yo, w = COLW - 8, hh = (ev ? ER : RH) * dur - 6;
+  let g = `<rect x="${f2(x)}" y="${f2(y)}" width="${f2(w)}" height="${f2(hh)}" rx="8" fill="${col}" fill-opacity=".2" stroke="${col}" stroke-opacity=".75" stroke-width="2"/>
+  <rect x="${f2(x)}" y="${f2(y)}" width="6" height="${f2(hh)}" rx="3" fill="${col}"/>`;
+  if (label) g += T(x + 13, y + 32, label, { size: 28, w: 600, anchor: 'start' });
+  return popG(p, x + w / 2, y + hh / 2, g, 0, dy, op);
+}
+function grid(cx, title, dotCol, t, p, hl) {
+  let g = card(cx, CY, CW, CH, hl ? { stroke: hl.border, sw: 2 } : {});
+  // header
+  const hx = cx + 30, hy = CY + 64;
+  if (hl) g += hl.sweeps;
+  g += `<circle cx="${hx + 8}" cy="${hy - 15}" r="8" fill="${dotCol}"/>`;
+  g += T(hx + 30, hy, title, { size: 44, w: 800, anchor: 'start' });
+  // days
+  DAYS.forEach((d, i) => { g += T(colX(cx, i) + COLW / 2, GY - 16, d, { size: 28, w: 600, fill: SEC }); });
+  // rows
+  for (let h = 9; h <= 18; h++) {
+    const y = rowY(h);
+    g += `<line x1="${colX(cx, 0)}" x2="${colX(cx, 5)}" y1="${y}" y2="${y}" stroke="#25252B" stroke-width="1.5"/>`;
+    if (h < 18) g += T(cx + HC - 14, y + 30, String(h).padStart(2, '0'), { size: 28, w: 500, mono: true, fill: '#7A7A84', anchor: 'end' });
+  }
+  for (let i = 0; i <= 5; i++) g += `<line x1="${colX(cx, i)}" x2="${colX(cx, i)}" y1="${GY}" y2="${rowY(18)}" stroke="#202026" stroke-width="1.5"/>`;
+  // evening band
+  g += `<rect x="${colX(cx, 0)}" y="${EY}" width="${5 * COLW}" height="${3 * ER}" rx="10" fill="#111114" stroke="#2E2E36" stroke-width="1.5" stroke-dasharray="6 6"/>`;
+  g += T(cx + HC - 14, EY + 3 * ER / 2 + 10, 'Eve', { size: 28, w: 600, fill: '#7A7A84', anchor: 'end' });
+  return popG(p, cx + CW / 2, CY + CH / 2, g, 0, 24);
+}
+function sweep(x, y, w, p) {
+  if (p <= 0.001) return '';
+  return `<rect x="${f2(x - 6)}" y="${f2(y)}" width="${f2((w + 12) * p)}" height="52" rx="6" fill="${AMBER}" fill-opacity=".3"/>`;
+}
+function week(t) {
+  let o = '';
+  // left card
+  o += grid(LX, 'Engineering', OR, t, rv(t, 0.05, 0.4));
+  // right card w/ highlight
+  const hx = RX + 60, hy = CY + 64;
+  const F = '800 44px Inter';
+  const wH = mw('History', F), wS = mw('History / ', F), wP = mw('Psychology', F);
+  const sw = sweep(hx + wS, hy - 42, wP, eo((t - 4.9) / 0.4)) + sweep(hx, hy - 42, wH, eo((t - 5.9) / 0.4));
+  const hp = eo((t - 4.9) / 0.4);
+  const hl = hp > 0 ? { sweeps: sw, border: `rgba(77,163,255,${f2(0.15 + 0.6 * hp)})` } : null;
+  o += grid(RX, 'History / Psychology', BLUE, t, rv(t, 0.25, 0.4), hl);
+  // engineering lectures 1.5 -> ~2.9
+  ENG.forEach((b, i) => { o += block(LX, b[0], b[1], b[2], OR, 'Lecture', rv(t, 1.5 + i * 0.12)); });
+  HIS.forEach((b, i) => { o += block(RX, b[0], b[1], b[2], BLUE, b[3], rv(t, 1.6 + i * 0.3)); });
+  // coursework 14.4: 1h blocks drop and stack
+  CWK.forEach((b, i) => {
+    const s = 14.4 + i * 0.11, p = clamp((t - s) / 0.3);
+    if (p <= 0) return;
+    const fall = 1 - eio(p);
+    o += block(LX, b[0], b[1], 1, AMBER, null, Math.min(1, p * 3), 0, 1, -90 * fall);
+  });
+  { // coursework label across the band
+    const p = rv(t, 15.55, 0.4);
+    if (p > 0) {
+      const cx = colX(LX, 3), cy = EY + ER / 2;
+      const w = mw('Coursework', '700 30px Inter') + 40;
+      o += popG(p, cx, cy, `<rect x="${f2(cx - w / 2)}" y="${f2(cy - 25)}" width="${f2(w)}" height="50" rx="25" fill="#0E0E10" stroke="${AMBER}" stroke-width="2"/>` + T(cx, cy + 11, 'Coursework', { size: 30, w: 700, fill: AMBER }));
+    }
+  }
+  // labs 16.2
+  LABS.forEach((b, i) => {
+    const s = 16.2 + i * 0.25, p = clamp((t - s) / 0.4);
+    if (p <= 0) return;
+    o += block(LX, b[0], b[1], b[2], GREEN, 'Lab · 3 h', eo(p), -70);
+  });
+  // ≈3× badge 2.7
+  {
+    const p = rv(t, 2.7, 0.36);
+    if (p > 0) {
+      const cx = 960, cy = 470, br = 1 + 0.025 * Math.sin((t - 3) * 2.2) * clamp(t - 3.1);
+      o += popG(p, cx, cy, `<g transform="translate(${cx} ${cy}) scale(${f2(br)}) translate(${-cx} ${-cy})"><circle cx="${cx}" cy="${cy}" r="74" fill="#1B1512" stroke="${OR}" stroke-width="4" filter="url(#sh)"/>` + T(cx, cy + 18, '≈3×', { size: 52, w: 800, fill: OR }) + `</g>`);
+    }
+  }
+  // hours bars 12.4
+  const BY = 872, PX = 36;
+  [[LX, 15, OR, 12.4, 1.2], [RX, 5, BLUE, 12.4, 0.6]].forEach(([cx, hrs, col, s, d]) => {
+    const pa = rv(t, s - 0.35, 0.33);
+    if (pa <= 0) return;
+    const p = eio((t - s) / d);
+    let g = `<rect x="${cx}" y="${BY}" width="${CW}" height="40" rx="20" fill="#18181C" stroke="${BORDER}"/>`;
+    const w = Math.max(0.001, hrs * PX * p);
+    g += `<rect x="${cx}" y="${BY}" width="${f2(w)}" height="40" rx="20" fill="${col}"/>`;
+    g += T(cx + 20, BY + 29, 'Lectures', { size: 28, w: 700, fill: p * hrs * PX > 150 ? '#140c08' : TXT, anchor: 'start' });
+    const tp = rv(t, s + d - 0.15, 0.33);
+    if (tp > 0) g += T(cx + w + 18, BY + 31, `≈${hrs} h / week`, { size: 34, w: 700, mono: true, anchor: 'start', op: tp });
+    o += `<g opacity="${f2(pa)}">${g}</g>`;
+  });
+  o += T(960, 990, '≈ illustrative weeks: typical first-year lecture hours', { size: 28, w: 400, fill: SEC, op: rv(t, 12.9, 0.5) });
+  return wrap(t, 18, o);
+}
+
+/* ================= FRIDAY ================= */
+function clockIcon(cx, cy, r) {
+  return `<circle cx="${cx}" cy="${cy}" r="${r}" fill="none" stroke="${OR}" stroke-width="5"/><line x1="${cx}" y1="${cy}" x2="${cx}" y2="${cy - r * .6}" stroke="${OR}" stroke-width="5" stroke-linecap="round"/><line x1="${cx}" y1="${cy}" x2="${cx + r * .45}" y2="${cy + r * .2}" stroke="${OR}" stroke-width="5" stroke-linecap="round"/>`;
+}
+function docIcon(x, y, col) {
+  return `<path d="M${x} ${y} h34 l16 16 v50 h-50 z" fill="none" stroke="${col}" stroke-width="4" stroke-linejoin="round"/><path d="M${x + 34} ${y} v16 h16" fill="none" stroke="${col}" stroke-width="4" stroke-linejoin="round"/>
+  <line x1="${x + 10}" y1="${y + 32}" x2="${x + 40}" y2="${y + 32}" stroke="${col}" stroke-width="4" stroke-linecap="round"/><line x1="${x + 10}" y1="${y + 46}" x2="${x + 34}" y2="${y + 46}" stroke="${col}" stroke-width="4" stroke-linecap="round"/>`;
+}
+function calIcon(x, y, col) {
+  let g = `<rect x="${x}" y="${y + 6}" width="54" height="52" rx="8" fill="none" stroke="${col}" stroke-width="4"/><line x1="${x}" y1="${y + 22}" x2="${x + 54}" y2="${y + 22}" stroke="${col}" stroke-width="4"/>
+  <line x1="${x + 14}" y1="${y}" x2="${x + 14}" y2="${y + 12}" stroke="${col}" stroke-width="4" stroke-linecap="round"/><line x1="${x + 40}" y1="${y}" x2="${x + 40}" y2="${y + 12}" stroke="${col}" stroke-width="4" stroke-linecap="round"/>`;
+  for (let i = 0; i < 3; i++) for (let j = 0; j < 2; j++) g += `<rect x="${x + 9 + i * 14}" y="${y + 30 + j * 13}" width="8" height="8" rx="2" fill="${col}"/>`;
+  return g;
+}
+function popper(x, y, s, t) {
+  // cone pointing down-left; confetti bursting up-right
+  const wob = Math.sin(t * 3) * 2;
+  let g = `<g transform="translate(${x} ${y}) scale(${s})">`;
+  g += `<path d="M0 60 L18 6 L54 42 Z" fill="${AMBER}"/>`;
+  g += `<path d="M7 39 L40 28 L47 35 L4 49 Z" fill="${OR}"/><path d="M12 24 L28 18 L34 24 L9 32 Z" fill="${OR}"/>`;
+  g += `<path d="M18 6 L54 42" stroke="#FFD866" stroke-width="4" stroke-linecap="round"/>`;
+  const conf = [[48, -6, BLUE, 'r'], [64, 8, GREEN, 'c'], [36, -16, RED, 'c'], [70, 28, AMBER, 'r'], [58, -20, GREEN, 'r'], [76, -4, RED, 'c']];
+  conf.forEach(([cx, cy, c, k], i) => {
+    const yy = cy + Math.sin(t * 2.4 + i) * 2.5;
+    g += k === 'c' ? `<circle cx="${cx}" cy="${f2(yy)}" r="4.5" fill="${c}"/>` : `<rect x="${cx - 4}" y="${f2(yy - 4)}" width="8" height="8" rx="1.5" fill="${c}" transform="rotate(${30 + i * 25} ${cx} ${f2(yy)})"/>`;
+  });
+  g += `<path d="M40 14 q8 -16 0 -26 q-8 -10 2 -20" fill="none" stroke="${BLUE}" stroke-width="3.5" stroke-linecap="round" transform="translate(${f2(wob)} 0)"/>`;
+  g += `<path d="M58 30 q14 -4 20 -14 q6 -10 16 -8" fill="none" stroke="${RED}" stroke-width="3.5" stroke-linecap="round"/>`;
+  return g + '</g>';
+}
+function cursor(x, y) {
+  return `<path transform="translate(${f2(x)} ${f2(y)})" d="M0 0 L0 46 L12 35 L21 55 L30 51 L21 31 L37 31 Z" fill="#FFFFFF" stroke="#0E0E10" stroke-width="3" stroke-linejoin="round"/>`;
+}
+function tick(cx, cy, s, col, p = 1) {
+  return `<path d="M${cx - 11 * s} ${cy} l${8 * s} ${8 * s} l${15 * s} ${-17 * s}" fill="none" stroke="${col}" stroke-width="${5 * s}" stroke-linecap="round" stroke-linejoin="round" pathLength="1" stroke-dasharray="1 2" stroke-dashoffset="${f2(1 - p)}"/>`;
+}
+function friday(t) {
+  let o = '';
+  const DIM = 1 - 0.4 * eo((t - 7.5) / 0.6);
+  const pick = eo((t - 7.5) / 0.35);
+  // slot card
+  const sx = 960, sy = 160, sw = 600, sh = 140;
+  o += popG(rv(t, 0.05, 0.4), sx, sy + sh / 2, card(sx - sw / 2, sy, sw, sh) + clockIcon(sx - 196, sy + 70, 32) + T(sx - 140, sy + 93, 'Fri 21:00', { size: 68, w: 700, mono: true, anchor: 'start' }), 0, 20);
+  // connectors
+  const con = (x2, p, col, w) => p <= 0 ? '' : `<path d="M960 ${sy + sh} C 960 ${sy + sh + 60}, ${x2} ${sy + sh + 40}, ${x2} 432" fill="none" stroke="${col}" stroke-width="${w}" stroke-linecap="round" pathLength="1" stroke-dasharray="1 2" stroke-dashoffset="${f2(1 - p)}"/>`;
+  o += `<g opacity="${f2(DIM)}">${con(560, eo((t - 2.0) / 0.5), '#3A3A44', 4)}</g>`;
+  o += con(1360, eo((t - 4.7) / 0.5), '#3A3A44', 4);
+  o += con(1360, pick, GREEN, 5);
+  // left: lab + exam
+  const L = 210, LW = 700;
+  const lab = card(L, 440, LW, 140) + docIcon(L + 40, 477, OR) + T(L + 130, 526, 'Lab report due Mon', { size: 44, w: 700, anchor: 'start' });
+  const exam = card(L, 610, LW, 140) + calIcon(L + 38, 650, RED) + T(L + 130, 696, 'Exam in 2 weeks', { size: 44, w: 700, anchor: 'start' });
+  o += popG(rv(t, 2.2, 0.4), L + LW / 2, 510, lab, -70, 0, DIM);
+  o += popG(rv(t, 2.9, 0.4), L + LW / 2, 680, exam, -70, 0, DIM);
+  // right: group chat
+  const R = 1010, RW = 700, RY = 440, RH2 = 310;
+  {
+    const p = rv(t, 4.55, 0.4);
+    if (p > 0) {
+      let g = card(R, RY, RW, RH2, pick > 0 ? { stroke: `rgba(61,220,151,${f2(pick)})`, sw: 3 } : {});
+      // header: avatars + label
+      [[BLUE, 0], [GREEN, 1], [OR, 2]].forEach(([c, i]) => { g += `<circle cx="${R + 50 + i * 30}" cy="${RY + 52}" r="20" fill="${c}" stroke="${CARD}" stroke-width="4"/>`; });
+      g += T(R + 150, RY + 62, 'Group chat', { size: 30, w: 600, fill: SEC, anchor: 'start' });
+      g += `<line x1="${R + 24}" y1="${RY + 96}" x2="${R + RW - 24}" y2="${RY + 96}" stroke="${BORDER}" stroke-width="1.5"/>`;
+      // typing dots 4.55-4.9 then bubble
+      const bp = rv(t, 4.9, 0.36);
+      if (bp < 1) {
+        const op = 1 - bp;
+        for (let i = 0; i < 3; i++) g += `<circle cx="${R + 70 + i * 26}" cy="${RY + 170 + Math.sin(t * 9 - i * 1.1) * 5}" r="8" fill="${SEC}" opacity="${f2(op)}"/>`;
+      }
+      if (bp > 0) {
+        const bx = R + 36, by = RY + 124, bw = 628, bh = 140;
+        let b = `<path d="M${bx + 24} ${by} h${bw - 48} a24 24 0 0 1 24 24 v${bh - 48} a24 24 0 0 1 -24 24 h${-(bw - 48)} a24 24 0 0 1 -24 -24 v-${bh - 72} l-14 -18 l14 -6 v0 a24 24 0 0 1 24 -24 z" fill="#24242B"/>`;
+        b += T(bx + 34, by + 84, 'Pres at 9, club at 11', { size: 44, w: 700, anchor: 'start' });
+        b += popper(bx + 515, by + 34, 1.0, t);
+        g += popG(bp, bx + bw / 2, by + bh / 2, b, 40, 0);
+      }
+      // pick check badge
+      if (pick > 0) {
+        const cx = R + RW - 10, cy = RY + 10;
+        g += popG(pick, cx, cy, `<circle cx="${cx}" cy="${cy}" r="38" fill="${GREEN}"/>` + tick(cx, cy + 2, 1.5, '#0E0E10', eo((t - 7.6) / 0.35)));
+      }
+      o += popG(p, R + RW / 2, RY + RH2 / 2, g, 70, 0);
+    }
+  }
+  // cursor 6.7 -> lands 7.5, then drifts gently
+  if (t > 6.6) {
+    const a = eo((t - 6.6) / 0.25);
+    const m = eio((t - 6.7) / 0.8);
+    const x = lerp(1100, 1585, m) + Math.sin(Math.max(0, t - 7.9) * 1.3) * 6 * clamp(t - 7.9);
+    const y = lerp(990, 668, m) + Math.cos(Math.max(0, t - 7.9) * 1.1) * 4 * clamp(t - 7.9);
+    let g = '';
+    const rp = clamp((t - 7.5) / 0.45);
+    if (rp > 0 && rp < 1) g += `<circle cx="1585" cy="668" r="${f2(10 + 50 * eo(rp))}" fill="none" stroke="${GREEN}" stroke-width="4" opacity="${f2(1 - rp)}"/>`;
+    const press = (t > 7.42 && t < 7.62) ? 0.9 : 1;
+    g += `<g transform="translate(${f2(x)} ${f2(y)}) scale(${press}) translate(${f2(-x)} ${f2(-y)})">${cursor(x, y)}</g>`;
+    o += `<g opacity="${f2(a)}">${g}</g>`;
+  }
+  return wrap(t, 9.5, o);
+}
+
+window.renderAt = function (t) {
+  stage.innerHTML = SCENE === 'friday' ? friday(t) : week(t);
+};
+window.ready = (async () => {
+  await Promise.all(['400 40px Inter', '600 40px Inter', '700 48px Inter', '800 100px Inter', '500 40px "JetBrains Mono"', '700 48px "JetBrains Mono"'].map(f => document.fonts.load(f)));
+  await document.fonts.ready;
+  window.renderAt(0);
+  return true;
+})();
+</script></body></html>

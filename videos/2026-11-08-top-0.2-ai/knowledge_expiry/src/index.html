@@ -1,0 +1,118 @@
+<!doctype html>
+<html><head><meta charset="utf-8">
+<style>
+@font-face{font-family:Inter;font-weight:400;src:url(fonts/inter-latin-400-normal.woff2)}
+@font-face{font-family:Inter;font-weight:600;src:url(fonts/inter-latin-600-normal.woff2)}
+@font-face{font-family:Inter;font-weight:700;src:url(fonts/inter-latin-700-normal.woff2)}
+@font-face{font-family:Inter;font-weight:800;src:url(fonts/inter-latin-800-normal.woff2)}
+@font-face{font-family:"JetBrains Mono";font-weight:500;src:url(fonts/jetbrains-mono-latin-500-normal.woff2)}
+@font-face{font-family:"JetBrains Mono";font-weight:700;src:url(fonts/jetbrains-mono-latin-700-normal.woff2)}
+html,body{margin:0;padding:0;background:#0E0E10;overflow:hidden}
+#stage{position:relative;overflow:hidden;width:1920px;height:1080px;background:#0E0E10;
+  background-image:radial-gradient(circle at 12px 12px,#23232A 1.2px,transparent 1.7px);background-size:24px 24px}
+#stage svg{position:absolute;left:0;top:0;display:block}
+</style></head>
+<body><div id="stage"></div>
+<script src="lib.js"></script>
+<script>
+// ===== knowledge_expiry: today's skills get a "best before" label, then an exponential curve outruns them =====
+// scene=main (12 s): cards 0.3–0.9 · STAMP 3.0 · CURVE 6.0–7.6 · NEW "?" CARDS 9.0–9.9 · hold
+// scene=curve (6 s): cards 0–0.6 · curve 0.5–2.1 · new cards 2.6–3.5 · hold
+const SCENE = new URLSearchParams(location.search).get('scene') || 'main';
+const stage = document.getElementById('stage');
+const isCurve = SCENE === 'curve';
+const TM = isCurve ? { cards: 0.0, stamp: 1e9, curve: 0.5, fresh: 2.6 } : { cards: 0.3, stamp: 3.0, curve: 6.0, fresh: 9.0 };
+
+const TLY = 950, TX0 = 160, TX1 = 1770;
+const TICKS = [[390, 'today'], [770, '+3 mo'], [1150, '+6 mo'], [1530, '+9 mo']];
+const CX = 180, CW = 480, CHh = 100, CG = 18, CY0 = 470;
+const SKILLS = ['Coding agents', 'Subagents', 'Evals', 'Token budgeting'];
+const K = 3.4, U0x = 700, U1x = 1740, Ybase = 930, Yspan = 760;
+const curveXY = u => [U0x + (U1x - U0x) * u, Ybase - Yspan * (Math.exp(K * u) - 1) / (Math.exp(K) - 1)];
+
+function icon(i, x, y, col) {
+  const cx = x + 22, cy = y + 22;
+  let g = `<rect x="${x}" y="${y}" width="44" height="44" rx="10" fill="#24242B"/>`;
+  if (i === 0) g += T(cx, cy + 8, '>_', { mono: true, size: 22, w: 700, fill: col, anchor: 'middle' });
+  if (i === 1) g += `<g stroke="${col}" stroke-width="2.5" fill="none"><path d="M ${cx} ${cy - 8} L ${cx - 11} ${cy + 8} M ${cx} ${cy - 8} L ${cx} ${cy + 8} M ${cx} ${cy - 8} L ${cx + 11} ${cy + 8}"/></g>
+     <circle cx="${cx}" cy="${cy - 10}" r="5" fill="${col}"/><circle cx="${cx - 12}" cy="${cy + 10}" r="4" fill="${col}"/><circle cx="${cx}" cy="${cy + 10}" r="4" fill="${col}"/><circle cx="${cx + 12}" cy="${cy + 10}" r="4" fill="${col}"/>`;
+  if (i === 2) g += `<path d="M ${cx - 11} ${cy + 1} l 7 7 l 15 -16" stroke="${col}" stroke-width="4" fill="none" stroke-linecap="round" stroke-linejoin="round"/>`;
+  if (i === 3) for (let k = 2; k >= 0; k--) g += `<ellipse cx="${cx}" cy="${cy + 8 - k * 7}" rx="12" ry="5" fill="#24242B" stroke="${col}" stroke-width="2.5"/>`;
+  return g;
+}
+
+function frame(t) {
+  let g = '';
+  // timeline
+  const tl = eo((t - (isCurve ? 0 : 0.05)) / 0.6);
+  g += `<line x1="${TX0}" y1="${TLY}" x2="${f2(lerp(TX0, TX1, tl))}" y2="${TLY}" stroke="#3A3A44" stroke-width="3" stroke-linecap="round"/>`;
+  if (tl > .98) g += `<path d="M ${TX1 - 14} ${TLY - 9} L ${TX1} ${TLY} L ${TX1 - 14} ${TLY + 9}" stroke="#3A3A44" stroke-width="3" fill="none" stroke-linecap="round" stroke-linejoin="round"/>`;
+  TICKS.forEach(([x, l], k) => {
+    const p = rv(t, (isCurve ? 0 : 0.1) + k * 0.08, 0.3);
+    g += `<line x1="${x}" x2="${x}" y1="${TLY - 10}" y2="${TLY + 10}" stroke="${k === 0 ? OR : '#4A4A55'}" stroke-width="3" opacity="${f2(p)}"/>`;
+    g += T(x, TLY + 50, l, { size: 30, w: 700, fill: k === 0 ? OR : SEC, anchor: 'middle', op: p });
+  });
+  const fresh = clamp((t - TM.fresh) / 0.5);
+  // header
+  g += pop(rv(t, TM.cards), CX + 160, 420, T(CX, 432, "Today’s AI skills", { size: 42, w: 800, fill: mix(TXT, MUTED, fresh) }));
+  // skill cards
+  SKILLS.forEach((s, i) => {
+    const p = rv(t, TM.cards + 0.12 + i * 0.12, 0.37);
+    const y = CY0 + i * (CHh + CG);
+    const col = mix(OR, MUTED, fresh), tc = mix(TXT, '#7A7A84', fresh);
+    const inner = `${card(CX, y, CW, CHh, { fill: mix(CARD, '#131316', fresh) })}${icon(i, CX + 24, y + 28, col)}${T(CX + 92, y + 63, s, { size: 40, w: 700, fill: tc })}`;
+    g += pop(p, CX + CW / 2, y + CHh / 2, `<g opacity="${f2(lerp(1, .6, fresh))}">${inner}</g>`);
+  });
+  // best-before marker on timeline + stamp
+  if (!isCurve) {
+    const mk = rv(t, TM.stamp + 0.45, 0.4) * lerp(1, 0.5, clamp((t - TM.curve) / 0.5));
+    if (mk > 0) {
+      g += `<line x1="770" x2="770" y1="${TLY - 12}" y2="${f2(lerp(TLY - 12, 690, mk))}" stroke="${RED}" stroke-width="3" stroke-dasharray="8 8" opacity="${f2(mk)}"/>`;
+      g += `<circle cx="770" cy="${TLY}" r="9" fill="${RED}" opacity="${f2(mk)}"/>`;
+    }
+    const sp = eo((t - TM.stamp) / 0.4);
+    if (sp > 0) {
+      const settle = eo((t - TM.stamp - 0.35) / 0.25);
+      const sc = lerp(1.06, 1, settle) ;
+      const cx = 890 + (1 - sp) * 380, cy = 600, rot = lerp(4, -8, sp);
+      const w = 360, h = 156;
+      g += `<g opacity="${f2(clamp(sp * 1.6))}" transform="translate(${f2(cx)} ${cy}) rotate(${f2(rot)}) scale(${f2(sp < 1 ? 1 : sc)})">
+        <rect x="${-w / 2}" y="${-h / 2}" width="${w}" height="${h}" rx="14" fill="#F3E9D8" ${SH}/>
+        <rect x="${-w / 2 + 10}" y="${-h / 2 + 10}" width="${w - 20}" height="${h - 20}" rx="8" fill="none" stroke="#B5452F" stroke-width="3"/>
+        ${T(0, -22, 'BEST BEFORE', { size: 28, w: 800, fill: '#B5452F', anchor: 'middle', ls: 4 })}
+        ${T(0, 44, '~3 months', { size: 58, w: 800, fill: '#1A1414', anchor: 'middle' })}
+      </g>`;
+    }
+  }
+  // exponential curve
+  const cp = eio((t - TM.curve) / 1.6);
+  if (cp > 0) {
+    const N = 120, pts = [];
+    for (let k = 0; k <= N; k++) { const u = (k / N) * cp; pts.push(curveXY(u)); }
+    const d = 'M ' + pts.map(([x, y]) => `${f2(x)} ${f2(y)}`).join(' L ');
+    const [ex, ey] = pts[pts.length - 1];
+    const area = `${d} L ${f2(ex)} ${Ybase} L ${U0x} ${Ybase} Z`;
+    g += `<defs><linearGradient id="ag" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="${OR}" stop-opacity=".22"/><stop offset="1" stop-color="${OR}" stop-opacity="0"/></linearGradient></defs>`;
+    g += `<path d="${area}" fill="url(#ag)"/>`;
+    g += `<path d="${d}" stroke="${OR}" stroke-width="14" fill="none" opacity=".35" filter="url(#glow)"/>`;
+    g += `<path d="${d}" stroke="${OR}" stroke-width="6" fill="none" stroke-linecap="round" stroke-linejoin="round"/>`;
+    g += `<circle cx="${f2(ex)}" cy="${f2(ey)}" r="11" fill="${OR}"/><circle cx="${f2(ex)}" cy="${f2(ey)}" r="26" fill="${OR}" opacity=".35" filter="url(#glow)"/>`;
+    const lp = rv(t, TM.curve + 1.3, 0.4);
+    g += pop(lp, 1680, 760, `${T(1760, 780, 'exponential', { size: 50, w: 800, fill: OR, anchor: 'end' })}${T(1760, 826, 'what AI can do', { size: 30, w: 600, fill: SEC, anchor: 'end' })}`);
+  }
+  // new unknown cards along the curve
+  [0.6, 0.8, 0.95].forEach((u, k) => {
+    const p = rv(t, TM.fresh + 0.2 + k * 0.3, 0.37);
+    if (p <= 0) return;
+    const [x, y] = curveXY(u);
+    const w = 150, h = 84, x0 = x - 36 - w, y0 = y - h / 2;
+    const pulse = 0.5 + 0.5 * Math.sin((t - TM.fresh) * 3 + k);
+    g += pop(p, x0 + w / 2, y, `${card(x0, y0, w, h, { stroke: OR, sw: 2, dash: '8 7', fill: '#1A1512' })}
+      ${T(x0 + w / 2, y0 + 62, '?', { size: 54, w: 800, fill: OR, anchor: 'middle', op: 0.8 + 0.2 * pulse })}
+      <circle cx="${f2(x)}" cy="${f2(y)}" r="8" fill="${TXT}"/>`);
+  });
+  return svgWrap(g);
+}
+window.renderAt = t => { stage.innerHTML = frame(t); };
+window.ready = (async () => { await loadFonts(); window.renderAt(0); return true; })();
+</script></body></html>

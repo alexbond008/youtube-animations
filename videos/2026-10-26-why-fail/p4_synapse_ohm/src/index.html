@@ -1,0 +1,474 @@
+<!doctype html>
+<html><head><meta charset="utf-8">
+<style>
+@font-face{font-family:Inter;font-weight:400;src:url(fonts/inter-latin-400-normal.woff2)}
+@font-face{font-family:Inter;font-weight:600;src:url(fonts/inter-latin-600-normal.woff2)}
+@font-face{font-family:Inter;font-weight:700;src:url(fonts/inter-latin-700-normal.woff2)}
+@font-face{font-family:Inter;font-weight:800;src:url(fonts/inter-latin-800-normal.woff2)}
+@font-face{font-family:"JetBrains Mono";font-weight:500;src:url(fonts/jetbrains-mono-latin-500-normal.woff2)}
+@font-face{font-family:"JetBrains Mono";font-weight:700;src:url(fonts/jetbrains-mono-latin-700-normal.woff2)}
+html,body{margin:0;padding:0;background:#0E0E10;overflow:hidden}
+#stage{position:relative;overflow:hidden;width:1920px;height:1080px;background:#0E0E10;
+  background-image:radial-gradient(circle at 12px 12px,#23232A 1.2px,transparent 1.7px);background-size:24px 24px}
+#stage svg{position:absolute;left:0;top:0;display:block}
+</style></head>
+<body>
+<svg width="0" height="0" style="position:absolute"><defs>
+  <filter id="glow" x="-50%" y="-50%" width="200%" height="200%"><feGaussianBlur stdDeviation="8" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
+  <filter id="glowS" x="-20%" y="-20%" width="140%" height="140%"><feGaussianBlur stdDeviation="3.5" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
+  <filter id="shadow" x="-20%" y="-20%" width="140%" height="160%"><feDropShadow dx="0" dy="20" stdDeviation="25" flood-color="#000" flood-opacity=".55"/></filter>
+</defs></svg>
+<div id="stage"></div>
+<script>
+const Q = new URLSearchParams(location.search);
+const OFF = parseFloat(Q.get('off') || '0');
+const VW = 1920, H = 1080;
+const stage = document.getElementById('stage');
+
+const CARD = '#16161A', BORDER = '#2A2A30', TXT = '#F5F5F7', SEC = '#A1A1AA', OR = '#D97757', BLUE = '#4DA3FF', GREEN = '#3DDC97', LINE = '#E4E4E8';
+const clamp = (x, a = 0, b = 1) => Math.min(b, Math.max(a, x));
+const eo = x => 1 - Math.pow(1 - clamp(x), 3);
+const eio = x => { x = clamp(x); return x < .5 ? 4 * x * x * x : 1 - Math.pow(-2 * x + 2, 3) / 2; };
+const lerp = (a, b, t) => a + (b - a) * t;
+const hash = n => { const x = Math.sin(n * 127.1 + 311.7) * 43758.5453; return x - Math.floor(x); };
+const f2 = x => (+x).toFixed(2);
+const esc = s => String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;');
+const rv = (t, s, d) => eo((t - s) / d);
+const dr = p => p >= 0.999 ? '' : `pathLength="1" stroke-dasharray="1 2" stroke-dashoffset="${f2(1 - clamp(p))}"`;
+const NS = 'vector-effect="non-scaling-stroke"';
+
+const meas = document.createElement('canvas').getContext('2d');
+const mw = (s, font) => { meas.font = font; return meas.measureText(s).width; };
+function T(x, y, s, o = {}) {
+  const fam = o.mono ? "'JetBrains Mono'" : 'Inter';
+  return `<text x="${f2(x)}" y="${f2(y)}" font-family="${fam}" font-size="${o.size || 48}" font-weight="${o.w || 700}" fill="${o.fill || TXT}" text-anchor="${o.anchor || 'middle'}" opacity="${o.op == null ? 1 : f2(o.op)}">${esc(s)}</text>`;
+}
+// small label pill (screen space). base = text baseline
+function pill(cx, base, s, p, o = {}) {
+  if (p <= 0.001) return '';
+  const size = o.size || 30, w = o.w || 600;
+  const tw = mw(s, `${w} ${size}px ${o.mono ? '"JetBrains Mono"' : 'Inter'}`);
+  const padX = 22, h = size * 1.75;
+  const ty = 12 * (1 - p);
+  return `<g opacity="${f2(p)}" transform="translate(0 ${f2(ty)})"><rect x="${f2(cx - tw / 2 - padX)}" y="${f2(base - size * 1.18)}" width="${f2(tw + padX * 2)}" height="${f2(h)}" rx="${f2(h / 2)}" fill="${CARD}" stroke="#34343C" stroke-width="2"/>${T(cx, base, s, { size, w, fill: o.fill || TXT, mono: o.mono })}</g>`;
+}
+
+// ---------- camera ----------
+// keyframes: [t, cx, cy, scale]; log-scale interpolation, eio between keys
+// micro push-ins (10.5-15.3, 17.4-18.2, 18.95-end) removed: camera holds still between the designed moves
+const CAM = [[0, 960, 540, 1], [10.5, 960, 540, 1], [15.3, 960, 540, 1], [16.3, 960, 560, 0.9], [16.5, 960, 560, 0.9],
+  [17.4, 1650, 560, 3.6], [18.2, 1650, 560, 3.6], [18.95, 960, 545, 1.0], [22.5, 960, 545, 1.0]];
+function cam(t) {
+  if (t <= CAM[0][0]) return { x: CAM[0][1], y: CAM[0][2], s: CAM[0][3] };
+  for (let i = 1; i < CAM.length; i++) if (t <= CAM[i][0]) {
+    const a = CAM[i - 1], b = CAM[i];
+    const big = Math.abs(Math.log(b[3] / a[3])) > 0.3;
+    const k = big ? eio((t - a[0]) / (b[0] - a[0])) : (t - a[0]) / (b[0] - a[0]);
+    const kk = big ? k : eio(k) * 0.5 + k * 0.5;
+    const s = Math.exp(lerp(Math.log(a[3]), Math.log(b[3]), kk));
+    // when zooming, move centre in proportion to log-zoom progress so the target stays framed
+    return { x: lerp(a[1], b[1], kk), y: lerp(a[2], b[2], kk), s };
+  }
+  const l = CAM[CAM.length - 1]; return { x: l[1], y: l[2], s: l[3] };
+}
+let C = { x: 960, y: 540, s: 1 };
+const SX = (x) => (x - C.x) * C.s + 960, SY = (y) => (y - C.y) * C.s + 540;
+
+// ---------- geometry ----------
+const SOMA = { x: 430, y: 560, r: 50 };
+function cub(p0, p1, p2, p3, u) { const v = 1 - u; return v * v * v * p0 + 3 * v * v * u * p1 + 3 * v * u * u * p2 + u * u * u * p3; }
+const AX0 = [476, 560], AX1 = [760, 600], AX2 = [1150, 520], AX3 = [1480, 560];
+const AXN = 220, AXP = [];
+for (let i = 0; i <= AXN; i++) { const u = i / AXN; AXP.push([cub(AX0[0], AX1[0], AX2[0], AX3[0], u), cub(AX0[1], AX1[1], AX2[1], AX3[1], u)]); }
+// arc-length param
+const AXL = [0]; for (let i = 1; i <= AXN; i++) AXL.push(AXL[i - 1] + Math.hypot(AXP[i][0] - AXP[i - 1][0], AXP[i][1] - AXP[i - 1][1]));
+const AXLEN = AXL[AXN];
+function axAt(s) { // s in [0,1] by arc length -> {x,y,nx,ny}
+  const L = clamp(s) * AXLEN; let i = 1; while (i < AXN && AXL[i] < L) i++;
+  const k = (L - AXL[i - 1]) / Math.max(1e-6, AXL[i] - AXL[i - 1]);
+  const x = lerp(AXP[i - 1][0], AXP[i][0], k), y = lerp(AXP[i - 1][1], AXP[i][1], k);
+  const dx = AXP[i][0] - AXP[i - 1][0], dy = AXP[i][1] - AXP[i - 1][1], d = Math.hypot(dx, dy);
+  return { x, y, nx: -dy / d, ny: dx / d };
+}
+const axR = s => lerp(12, 9, s);
+function axLine(side, s0, s1, n = 120) { // side +1 bottom, -1 top
+  let d = '';
+  for (let i = 0; i <= n; i++) { const s = lerp(s0, s1, i / n), p = axAt(s), r = axR(s) * side; d += (i ? 'L' : 'M') + f2(p.x + p.nx * r) + ' ' + f2(p.y + p.ny * r); }
+  return d;
+}
+const AX_TOP = axLine(-1, 0, 1), AX_BOT = axLine(1, 0, 1);
+const AX_FILL = (() => { let d = axLine(-1, 0, 1); let b = ''; for (let i = 120; i >= 0; i--) { const s = i / 120, p = axAt(s), r = axR(s); b += 'L' + f2(p.x + p.nx * r) + ' ' + f2(p.y + p.ny * r); } return d + b + 'Z'; })();
+const axX = x => { let best = 0, bd = 1e9; for (let i = 0; i <= 200; i++) { const p = axAt(i / 200); const d = Math.abs(p.x - x); if (d < bd) { bd = d; best = i / 200; } } return best; };
+
+// soma blob
+const SOMA_D = (() => {
+  const n = 9, pts = [];
+  for (let i = 0; i < n; i++) { const a = i / n * Math.PI * 2; const r = SOMA.r * (0.86 + 0.24 * hash(i + 3)); pts.push([SOMA.x + Math.cos(a) * r * 1.08, SOMA.y + Math.sin(a) * r * 0.92]); }
+  return closedCR(pts);
+})();
+function closedCR(pts) {
+  const n = pts.length; let d = `M${f2(pts[0][0])} ${f2(pts[0][1])}`;
+  for (let i = 0; i < n; i++) {
+    const p0 = pts[(i - 1 + n) % n], p1 = pts[i], p2 = pts[(i + 1) % n], p3 = pts[(i + 2) % n];
+    d += `C${f2(p1[0] + (p2[0] - p0[0]) / 6)} ${f2(p1[1] + (p2[1] - p0[1]) / 6)} ${f2(p2[0] - (p3[0] - p1[0]) / 6)} ${f2(p2[1] - (p3[1] - p1[1]) / 6)} ${f2(p2[0])} ${f2(p2[1])}`;
+  }
+  return d + 'Z';
+}
+function openCR(pts) {
+  const n = pts.length; let d = `M${f2(pts[0][0])} ${f2(pts[0][1])}`;
+  for (let i = 0; i < n - 1; i++) {
+    const p0 = pts[Math.max(0, i - 1)], p1 = pts[i], p2 = pts[i + 1], p3 = pts[Math.min(n - 1, i + 2)];
+    d += `C${f2(p1[0] + (p2[0] - p0[0]) / 6)} ${f2(p1[1] + (p2[1] - p0[1]) / 6)} ${f2(p2[0] - (p3[0] - p1[0]) / 6)} ${f2(p2[1] - (p3[1] - p1[1]) / 6)} ${f2(p2[0])} ${f2(p2[1])}`;
+  }
+  return d;
+}
+// dendrite tree
+const DEND = [];
+let seed = 1;
+function branch(x, y, ang, len, depth, t0) {
+  const bend = (hash(seed++) - .5) * 0.3;
+  const mx = x + Math.cos(ang + bend) * len * 0.5, my = y + Math.sin(ang + bend) * len * 0.5;
+  const ex = x + Math.cos(ang) * len, ey = y + Math.sin(ang) * len;
+  const dur = 0.38 + 0.08 * depth;
+  DEND.push({ d: `M${f2(x)} ${f2(y)}Q${f2(mx)} ${f2(my)} ${f2(ex)} ${f2(ey)}`, t0, dur, w: [2.8, 2.1, 1.5, 1.1][depth], depth });
+  if (depth < 3) {
+    const spread = 0.34 + 0.16 * hash(seed++);
+    branch(ex, ey, ang - spread, len * (0.62 + 0.1 * hash(seed++)), depth + 1, t0 + dur * 0.85);
+    if (depth < 2 || hash(seed++) > 0.35) branch(ex, ey, ang + spread, len * (0.58 + 0.1 * hash(seed++)), depth + 1, t0 + dur * 0.85);
+  }
+}
+[[200, 120], [158, 112], [238, 110], [118, 96], [275, 82], [85, 82], [320, 70]].forEach(([deg, len], i) => {
+  const a = deg * Math.PI / 180;
+  branch(SOMA.x + Math.cos(a) * SOMA.r * 0.9, SOMA.y + Math.sin(a) * SOMA.r * 0.85, a, len, 0, 10.05 + i * 0.07);
+});
+// terminals: [end x, end y, bouton r]
+const TERM = [[1528, 490, 13], [1618, 560, 22], [1556, 655, 13]];
+const TERM_D = TERM.map(([x, y, r], i) => {
+  const ex = x - (i === 1 ? r - 2 : r * 0.7), ey = y + (i === 0 ? r * 0.6 : i === 2 ? -r * 0.6 : 0);
+  return `M1478 560Q${f2(1478 + (ex - 1478) * 0.55)} ${f2(560 + (ey - 560) * 0.1)} ${f2(ex)} ${f2(ey)}`;
+});
+// postsynaptic dendrite (next neuron), centreline + radius
+const PS = [[1930, 330], [1800, 360], [1712, 430], [1690, 560], [1700, 690], [1740, 800], [1790, 900]];
+const PSR = 38;
+function crEval(pts, u) {
+  const n = pts.length - 1, k = Math.min(n - 1, Math.floor(u * n)), f = u * n - k;
+  const p0 = pts[Math.max(0, k - 1)], p1 = pts[k], p2 = pts[k + 1], p3 = pts[Math.min(n, k + 2)];
+  const c = (a, b, c2, d) => 0.5 * ((2 * b) + (-a + c2) * f + (2 * a - 5 * b + 4 * c2 - d) * f * f + (-a + 3 * b - 3 * c2 + d) * f * f * f);
+  return [c(p0[0], p1[0], p2[0], p3[0]), c(p0[1], p1[1], p2[1], p3[1])];
+}
+const PS_L = [], PS_R = [];
+for (let i = 0; i <= 160; i++) {
+  const a = crEval(PS, Math.max(0, i / 160 - 0.002)), b = crEval(PS, Math.min(1, i / 160 + 0.002)), c = crEval(PS, i / 160);
+  const dx = b[0] - a[0], dy = b[1] - a[1], d = Math.hypot(dx, dy) || 1;
+  PS_L.push([c[0] - dy / d * PSR, c[1] + dx / d * PSR]); PS_R.push([c[0] + dy / d * PSR, c[1] - dx / d * PSR]);
+}
+const PS_MX = (() => { let best = PS_L[0], bd = 1e9; PS_L.forEach(p => { const d = Math.abs(p[1] - 560); if (d < bd && p[0] < 1700) { bd = d; best = p; } }); return best[0]; })();
+const PSB = [[1712, 430, -20, 1925, 300], [1700, 690, 30, 1925, 760]];
+// brain outline (side view), normalised coords
+const BR = { x: 250, y: 115, w: 1420, h: 870 };
+const bp = pts => pts.map(([u, v]) => [BR.x + u * BR.w, BR.y + v * BR.h]);
+const BRAIN_D = (() => {
+  const outline = bp([[0.16, 0.62], [0.06, 0.48], [0.06, 0.3], [0.16, 0.14], [0.32, 0.04], [0.52, 0.01], [0.72, 0.06], [0.88, 0.18], [0.97, 0.36], [0.98, 0.52], [0.93, 0.63],
+    [0.95, 0.73], [0.9, 0.84], [0.79, 0.88], [0.7, 0.84], [0.67, 0.86], [0.655, 0.96], [0.615, 0.96], [0.61, 0.84], [0.5, 0.8], [0.36, 0.8], [0.25, 0.76], [0.2, 0.69]]);
+  return closedCR(outline);
+})();
+const SULCI = [
+  bp([[0.22, 0.64], [0.36, 0.58], [0.5, 0.54], [0.62, 0.46]]),  // lateral sulcus
+  bp([[0.5, 0.02], [0.48, 0.15], [0.51, 0.27], [0.47, 0.4], [0.45, 0.5]]), // central sulcus
+  bp([[0.93, 0.63], [0.82, 0.68], [0.7, 0.8]]), // cerebellum boundary
+  bp([[0.15, 0.3], [0.24, 0.24], [0.3, 0.32], [0.36, 0.22]]),
+  bp([[0.62, 0.14], [0.68, 0.24], [0.76, 0.2], [0.82, 0.32]]),
+  bp([[0.3, 0.7], [0.4, 0.68], [0.48, 0.71]]),
+  bp([[0.76, 0.76], [0.84, 0.77], [0.91, 0.74]]),
+].map(openCR);
+
+// ---------- equations layer (0 – 10.6 s) ----------
+const BG_EQ = [['F = ma', 330, 230], ['Q = CV', 1580, 250], ['P = VI', 300, 860], ['dV/dt = I/C', 1560, 860], ['y = mx + c', 360, 545], ['E = ½CV²', 1580, 560]];
+function eqLayer(t) {
+  let g = '';
+  // textbook card
+  const cin = rv(t, 0, 0.35), lift = eio((t - 1.6) / 0.8);
+  const cardOp = cin * lerp(1, 0.22, lift) * (1 - eo((t - 9.9) / 0.6));
+  if (cardOp > 0.002) {
+    const cs = lerp(0.96, 1, cin) * lerp(1, 0.95, lift), cy = 540 + 28 * lift;
+    let c = `<rect x="480" y="270" width="960" height="540" rx="16" fill="${CARD}" stroke="${BORDER}" stroke-width="1" filter="url(#shadow)"/>`;
+    c += T(540, 340, '2.1   Ohm’s law', { anchor: 'start', size: 34, w: 600, fill: SEC });
+    c += T(1380, 340, 'p. 42', { anchor: 'end', size: 30, w: 400, fill: '#6E6E78' });
+    c += `<line x1="540" y1="368" x2="1380" y2="368" stroke="${BORDER}" stroke-width="2"/>`;
+    for (let i = 0; i < 3; i++) c += `<rect x="540" y="${722 + i * 26}" width="${[700, 820, 520][i]}" height="10" rx="5" fill="#24242B"/>`;
+    c += T(960, 770 - 0, '', {});
+    g += `<g opacity="${f2(cardOp)}" transform="translate(960 ${f2(cy)}) scale(${f2(cs)}) translate(-960 -540)">${c}</g>`;
+    // legend under the equation sits on the card
+    g += `<g opacity="${f2(cardOp * (1 - lift))}">${T(960, 680, 'V: voltage · I: current · R: resistance', { size: 34, w: 400, fill: SEC })}</g>`;
+  }
+  // floating background equations
+  const bgIn = rv(t, 1.9, 1.2), dim = lerp(0.6, 0.2, clamp((t - 3.5) / 5.5)), bgOut = 1 - eo((t - 9.9) / 0.7);
+  BG_EQ.forEach(([s, x, y], i) => {
+    const op = bgIn * dim * bgOut * clamp((t - 1.9 - i * 0.18) / 0.5);
+    if (op < 0.003) return;
+    const dx = 14 * Math.sin(0.35 * t + i * 1.7), dy = 10 * Math.sin(0.28 * t + i * 2.3) - 8 * (t - 2);
+    g += T(x + dx, y + dy * 0.3, s, { mono: true, size: 52, w: 500, fill: SEC, op });
+  });
+  return g;
+}
+
+// ---------- V = IR (screen space, travels between anchors) ----------
+function dockPt() { const s = axX(1040), p = axAt(s); return { x: SX(p.x), y: SY(p.y - axR(s)) - 26, mx: SX(p.x), my: SY(p.y - axR(s)) }; }
+function vir(t) {
+  // anchors as functions of t
+  const A0 = () => ({ x: 960, y: 520, sz: 170 });
+  const A1 = () => ({ x: 960 + 34 * Math.sin(0.42 * (t - 2.4)), y: 500 + 14 * Math.sin(0.7 * (t - 2.4)), sz: 186 });
+  const A2 = () => ({ x: 960, y: 205 + 6 * Math.sin(1.1 * t), sz: 96 });
+  const A3 = () => { const d = dockPt(); return { x: d.x, y: d.y - 22, sz: 64 }; };
+  const A4 = () => ({ x: 1440, y: 762, sz: 60 });
+  const seq = [[1.6, 0.8, A0, A1], [9.9, 0.8, A1, A2], [14.0, 0.7, A2, A3], [16.6, 0.9, A3, A4], [18.2, 0.75, A4, A3]];
+  let P = A0();
+  for (const [ts, d, fa, fb] of seq) { if (t >= ts) { const k = eio((t - ts) / d); const a = fa(), b = fb(); P = { x: lerp(a.x, b.x, k), y: lerp(a.y, b.y, k), sz: lerp(a.sz, b.sz, k) }; } }
+  const glowK = clamp((t - 1.6) / 0.5) * (1 - 0.5 * clamp((t - 10) / 1));
+  const docked = clamp((t - 14.25) / 0.45);
+  const inZoom = clamp((t - 17.0) / 0.4) * (1 - clamp((t - 18.2) / 0.3));
+  let g = '';
+  const tw = mw('V = IR', `700 ${P.sz}px "JetBrains Mono"`);
+  const base = P.y + P.sz * 0.36;
+  if (docked > 0) {
+    const pw = tw + 48, ph = P.sz * 1.45;
+    g += `<rect x="${f2(P.x - pw / 2)}" y="${f2(P.y - ph / 2)}" width="${f2(pw)}" height="${f2(ph)}" rx="${f2(ph / 2)}" fill="${CARD}" stroke="${OR}" stroke-opacity=".7" stroke-width="2" opacity="${f2(docked)}"/>`;
+    // connector tick to the membrane (only when docked on axon)
+    const d = dockPt(), onAx = 1 - clamp((t - 16.6) / 0.3) + clamp((t - 18.75) / 0.2);
+    if (onAx > 0.01) g += `<g opacity="${f2(docked * clamp(onAx))}"><line x1="${f2(P.x)}" y1="${f2(P.y + ph / 2)}" x2="${f2(d.mx)}" y2="${f2(d.my - 3)}" stroke="${OR}" stroke-width="2.5"/><circle cx="${f2(d.mx)}" cy="${f2(d.my - 2)}" r="5" fill="${OR}"/></g>`;
+  }
+  if (inZoom > 0.01) {
+    // dashed leader to resistor
+    g += `<line x1="${f2(P.x - tw / 2 - 30)}" y1="${f2(P.y)}" x2="1030" y2="${f2(P.y - 12)}" stroke="${OR}" stroke-width="2" stroke-dasharray="6 7" opacity="${f2(inZoom * 0.8)}"/>`;
+  }
+  g += `<text x="${f2(P.x)}" y="${f2(base)}" font-family="'JetBrains Mono'" font-weight="700" font-size="${f2(P.sz)}" fill="${glowK > 0 ? '#FBE3D8' : TXT}" text-anchor="middle" ${glowK > 0.05 ? 'filter="url(#glow)"' : ''}>V = IR</text>`;
+  // accent tint on the equation when lifted
+  if (glowK > 0.01) g += `<text x="${f2(P.x)}" y="${f2(base)}" font-family="'JetBrains Mono'" font-weight="700" font-size="${f2(P.sz)}" fill="${OR}" text-anchor="middle" opacity="${f2(0.55 * glowK)}">V = IR</text>`;
+  return g;
+}
+
+// ---------- world (neuron) ----------
+function world(t) {
+  let g = '';
+  // brain outline
+  const bIn = clamp((t - 15.5) / 1.1);
+  if (bIn > 0) {
+    const bop = 0.3 * eo(bIn) * (1 - 0.6 * clamp((t - 16.6) / 0.6) + 0.25 * clamp((t - 18.6) / 0.6));
+    g += `<g fill="none" stroke="${SEC}" stroke-linecap="round" opacity="${f2(bop)}">`;
+    g += `<path d="${BRAIN_D}" stroke-width="2.5" ${NS} ${dr(eio(bIn))}/>`;
+    SULCI.forEach((d, i) => g += `<path d="${d}" stroke-width="1.6" ${NS} ${dr(eio((t - 15.8 - i * 0.07) / 0.8))}/>`);
+    g += `</g>`;
+  }
+  const breathe = 0.85 + 0.15 * Math.sin(t * 1.6);
+  // postsynaptic dendrite (next neuron)
+  const psIn = clamp((t - 11.9) / 0.9);
+  if (psIn > 0) {
+    const pk = eio(psIn);
+    g += `<g fill="none" stroke="${GREEN}" stroke-linecap="round" opacity="0.62">`;
+    const L = PS_L, R = PS_R;
+    const poly = 'M' + L.map(p => f2(p[0]) + ' ' + f2(p[1])).join('L') + 'L' + R.slice().reverse().map(p => f2(p[0]) + ' ' + f2(p[1])).join('L') + 'Z';
+    g += `<path d="${poly}" fill="${GREEN}" fill-opacity=".08" stroke="none" opacity="${f2(clamp((t - 12.5) / 0.5))}"/>`;
+    const pl = a => 'M' + a.map(p => f2(p[0]) + ' ' + f2(p[1])).join('L');
+    g += `<path d="${pl(L)}" stroke-width="2.2" ${NS} ${dr(pk)}/><path d="${pl(R)}" stroke-width="2.2" ${NS} ${dr(pk)}/>`;
+    PSB.forEach(([x, y, ang, ex, ey]) => g += `<path d="M${x} ${y}Q${(x + ex) / 2} ${y + ang} ${ex} ${ey}" stroke-width="1.6" ${NS} ${dr(eio((t - 12.3) / 0.6))}/>`);
+    // receptors on the postsynaptic membrane facing the cleft
+    const rop = clamp((t - 12.6) / 0.5);
+    for (let i = -3; i <= 3; i++) {
+      const y = 560 + i * 7.5;
+      g += `<rect x="${f2(PS_MX - 1)}" y="${f2(y - 2)}" width="5" height="4" rx="1" fill="${GREEN}" opacity="${f2(rop * 0.9)}"/>`;
+    }
+    g += `</g>`;
+  }
+  // neuron
+  g += `<g fill="none" stroke="${BLUE}" stroke-linecap="round" stroke-linejoin="round">`;
+  DEND.forEach(b => {
+    const p = eio((t - b.t0) / b.dur);
+    if (p <= 0) return;
+    g += `<path d="${b.d}" stroke-width="${b.w}" ${NS} ${dr(p)} opacity="${f2(0.95 - b.depth * 0.12)}"/>`;
+  });
+  const sIn = clamp((t - 9.9) / 0.6);
+  if (sIn > 0) {
+    g += `<path d="${SOMA_D}" fill="${BLUE}" fill-opacity="${f2(0.16 * clamp((t - 10.3) / 0.4) * breathe)}" stroke-width="3" ${NS} ${dr(eio(sIn))}/>`;
+    g += `<circle cx="${SOMA.x - 4}" cy="${SOMA.y + 2}" r="17" stroke-width="1.8" ${NS} opacity="${f2(0.7 * clamp((t - 10.4) / 0.4))}"/>`;
+    g += `<circle cx="${SOMA.x - 4}" cy="${SOMA.y + 2}" r="4.5" fill="${BLUE}" stroke="none" opacity="${f2(0.6 * clamp((t - 10.5) / 0.4))}"/>`;
+  }
+  const aIn = eio((t - 10.6) / 1.3);
+  if (aIn > 0) {
+    g += `<path d="${AX_FILL}" fill="${BLUE}" fill-opacity="${f2(0.09 * clamp((t - 11.6) / 0.5))}" stroke="none"/>`;
+    g += `<path d="${AX_TOP}" stroke-width="2.4" ${NS} ${dr(aIn)}/><path d="${AX_BOT}" stroke-width="2.4" ${NS} ${dr(aIn)}/>`;
+    // axon hillock taper
+    g += `<path d="M462 538Q470 548 ${f2(AXP[0][0] + 4)} ${f2(AXP[0][1] - 12)}M462 582Q470 572 ${f2(AXP[0][0] + 4)} ${f2(AXP[0][1] + 12)}" stroke-width="2.4" ${NS} ${dr(eio((t - 10.5) / 0.3))}/>`;
+  }
+  const tIn = eio((t - 11.75) / 0.5);
+  if (tIn > 0) {
+    TERM_D.forEach(d => g += `<path d="${d}" stroke-width="2.4" ${NS} ${dr(tIn)}/>`);
+    TERM.forEach(([x, y, r], i) => {
+      const bp = eio((t - 12.05 - i * 0.06) / 0.4);
+      if (bp <= 0) return;
+      g += `<circle cx="${x}" cy="${y}" r="${r}" fill="${BLUE}" fill-opacity="${f2(0.14 * bp)}" stroke-width="2.4" ${NS} ${dr(bp)} transform="rotate(${i === 1 ? 180 : 150} ${x} ${y})"/>`;
+    });
+    // vesicles in the synapse bouton
+    const vop = clamp((t - 12.4) / 0.5);
+    const VES = [[1610, 551], [1621, 548], [1607, 564], [1626, 569], [1630, 557], [1616, 575]];
+    VES.forEach(([x, y], i) => {
+      const jx = 0.8 * Math.sin(t * 1.3 + i), jy = 0.8 * Math.cos(t * 1.1 + i * 2);
+      g += `<circle cx="${f2(x + jx)}" cy="${f2(y + jy)}" r="3.4" stroke-width="1.2" ${NS} fill="${BLUE}" fill-opacity=".25" opacity="${f2(vop)}"/>`;
+    });
+  }
+  g += `</g>`;
+  // neurotransmitter drifting in the cleft (always gently moving once built)
+  const nop = clamp((t - 12.8) / 0.6);
+  if (nop > 0) {
+    const release = clamp((t - 20.25) / 0.5);
+    const n = 7 + Math.round(10 * release);
+    for (let i = 0; i < n; i++) {
+      const ph = hash(i * 7.3) * 6.28, sp = 0.4 + hash(i * 3.1) * 0.6;
+      const x = (1640 + PS_MX) / 2 + (PS_MX - 1640) * 0.3 * Math.sin(t * sp + ph);
+      const y = 560 + (hash(i * 5.7) - 0.5) * 40 + 4 * Math.sin(t * 0.7 * sp + ph * 2);
+      g += `<circle cx="${f2(x)}" cy="${f2(y)}" r="1.1" fill="${OR}" opacity="${f2(nop * (i < 7 ? 0.7 : release * 0.95))}"/>`;
+    }
+  }
+  // action potential pulse
+  if (t >= 18.6 && t < 21.0) {
+    const s = (t - 18.6) / 1.7;
+    const head = clamp(s), tail = clamp(s - 0.09);
+    const fade = 1 - clamp((s - 1) / 0.25);
+    if (head > tail) {
+      const p = axAt(head);
+      g += `<g filter="url(#glowS)" opacity="${f2(fade)}" fill="none" stroke-linecap="round">`;
+      g += `<path d="${axLine(-1, tail, head, 30)}" stroke="${OR}" stroke-width="4.5" ${NS}/>`;
+      g += `<path d="${axLine(1, tail, head, 30)}" stroke="${OR}" stroke-width="4.5" ${NS}/>`;
+      g += `<circle cx="${f2(p.x)}" cy="${f2(p.y)}" r="${f2(axR(head) * 1.05)}" fill="#FFC9AE" opacity=".85" stroke="none"/>`;
+      g += `</g>`;
+    }
+  }
+  // terminal flash on arrival
+  const fl = clamp((t - 20.3) / 0.12) * (1 - clamp((t - 20.45) / 0.8));
+  if (fl > 0) TERM.forEach(([x, y, r]) => g += `<circle cx="${x}" cy="${y}" r="${f2(r + 6)}" fill="${OR}" opacity="${f2(0.35 * fl)}" filter="url(#glow)"/>`);
+  return g;
+}
+
+// ---------- RC circuit across the membrane (screen space) ----------
+function rc(cx, yR, yC, hw, sc, p, o = {}) {
+  if (p <= 0.001) return '';
+  const zl = 44 * sc, amp = 15 * sc, gap = 9 * sc, pl = 26 * sc;
+  let zz = `M${f2(cx - hw)} ${f2(yR)}L${f2(cx - zl)} ${f2(yR)}`;
+  for (let i = 0; i < 6; i++) zz += `L${f2(cx - zl + (i + 0.5) * (2 * zl / 6))} ${f2(yR + (i % 2 ? amp : -amp))}`;
+  zz += `L${f2(cx + zl)} ${f2(yR)}L${f2(cx + hw)} ${f2(yR)}`;
+  const cap = `M${f2(cx - hw)} ${f2(yC)}L${f2(cx - gap)} ${f2(yC)}M${f2(cx + gap)} ${f2(yC)}L${f2(cx + hw)} ${f2(yC)}`;
+  const plates = `M${f2(cx - gap)} ${f2(yC - pl)}L${f2(cx - gap)} ${f2(yC + pl)}M${f2(cx + gap)} ${f2(yC - pl)}L${f2(cx + gap)} ${f2(yC + pl)}`;
+  const ym = (yR + yC) / 2, lead = 26 * sc;
+  const rails = `M${f2(cx - hw)} ${f2(yR)}L${f2(cx - hw)} ${f2(yC)}M${f2(cx + hw)} ${f2(yR)}L${f2(cx + hw)} ${f2(yC)}M${f2(cx - hw)} ${f2(ym)}L${f2(cx - hw - lead)} ${f2(ym)}M${f2(cx + hw)} ${f2(ym)}L${f2(cx + hw + lead)} ${f2(ym)}`;
+  const k1 = eio(p / 0.5), k2 = eio((p - 0.3) / 0.5), k3 = eio((p - 0.6) / 0.4);
+  let g = `<g fill="none" stroke="${LINE}" stroke-width="${f2(3 * Math.max(0.8, sc))}" stroke-linecap="round" stroke-linejoin="round">`;
+  g += `<path d="${rails}" ${dr(k1)}/><path d="${zz}" stroke="${OR}" ${dr(k2)}/><path d="${cap}" ${dr(k2)}/><path d="${plates}" stroke="${BLUE}" stroke-width="${f2(4 * Math.max(0.8, sc))}" opacity="${f2(k3)}"/>`;
+  g += `<circle cx="${f2(cx - hw - lead)}" cy="${f2(ym)}" r="${f2(5 * sc)}" fill="${LINE}" opacity="${f2(k3)}"/><circle cx="${f2(cx + hw + lead)}" cy="${f2(ym)}" r="${f2(5 * sc)}" fill="${LINE}" opacity="${f2(k3)}"/>`;
+  g += `</g>`;
+  const ls = Math.max(28, 30 * sc);
+  g += `<g opacity="${f2(k3)}">${T(cx + zl + 10 * sc, yR - amp - 2 * sc, 'R', { mono: true, size: ls, fill: OR, anchor: 'start' })}${T(cx + gap + 18 * sc, yC + pl + ls * 0.9, 'C', { mono: true, size: ls, fill: BLUE, anchor: 'start' })}`;
+  if (o.sides) g += T(cx - hw - lead - 14, ym + 10, 'Outside', { size: 28, w: 600, fill: SEC, anchor: 'end' }) + T(cx + hw + lead + 14, ym + 10, 'Inside', { size: 28, w: 600, fill: SEC, anchor: 'start' });
+  g += `</g>`;
+  return g;
+}
+
+// ---------- action-potential trace panel ----------
+const TP = { x: 540, y: 806, w: 760, h: 210 };
+const PROBE_S = axX(880);
+const T_PROBE = 18.6 + PROBE_S * 1.7;
+function apV(tau) { // tau seconds after trace start; spike centred on probe crossing
+  const u = tau - (T_PROBE - 18.6) + 0.05;
+  if (u < 0) return -70;
+  if (u < 0.12) { const k = u / 0.12; return -70 + 110 * (k * k * (3 - 2 * k)); }
+  if (u < 0.42) { const k = (u - 0.12) / 0.3; return 40 - 122 * (k * k * (3 - 2 * k)); }
+  return -70 - 12 * Math.exp(-(u - 0.42) / 0.22);
+}
+function tracePanel(t) {
+  const op = eo((t - 18.45) / 0.45);
+  if (op <= 0.001) return '';
+  const { x, y, w, h } = TP;
+  const px0 = x + 170, px1 = x + w - 34, vy = v => lerp(y + 168, y + 92, (v + 70) / 110);
+  let g = `<g opacity="${f2(op)}" transform="translate(0 ${f2(16 * (1 - op))})">`;
+  g += `<rect x="${x}" y="${y}" width="${w}" height="${h}" rx="16" fill="${CARD}" stroke="${BORDER}" filter="url(#shadow)"/>`;
+  g += T(x + 32, y + 46, 'Electrical signal', { anchor: 'start', size: 30, w: 600, fill: TXT });
+  g += T(px0 - 18, vy(40) + 10, '+40 mV', { anchor: 'end', size: 28, w: 500, mono: true, fill: SEC });
+  g += T(px0 - 18, vy(-70) + 10, '−70 mV', { anchor: 'end', size: 28, w: 500, mono: true, fill: SEC });
+  g += `<line x1="${px0}" y1="${f2(vy(40))}" x2="${px1}" y2="${f2(vy(40))}" stroke="#34343C" stroke-width="1.5" stroke-dasharray="4 8"/>`;
+  g += `<line x1="${px0}" y1="${f2(vy(-70))}" x2="${px1}" y2="${f2(vy(-70))}" stroke="#34343C" stroke-width="1.5" stroke-dasharray="4 8"/>`;
+  const WIN = 2.9, tau = clamp(t - 18.6, 0, WIN);
+  if (tau > 0) {
+    let d = '', N = Math.max(2, Math.round(tau / WIN * 260));
+    let lx = 0, ly = 0;
+    for (let i = 0; i <= N; i++) { const tt = tau * i / N; lx = lerp(px0, px1, tt / WIN); ly = vy(apV(tt)); d += (i ? 'L' : 'M') + f2(lx) + ' ' + f2(ly); }
+    g += `<path d="${d}" fill="none" stroke="${OR}" stroke-width="3.5" stroke-linejoin="round" filter="url(#glowS)"/>`;
+    if (tau < WIN) g += `<circle cx="${f2(lx)}" cy="${f2(ly)}" r="6" fill="#FFC9AE" filter="url(#glowS)"/>`;
+  }
+  g += `</g>`;
+  return g;
+}
+
+// ---------- labels ----------
+function labels(t) {
+  let g = '';
+  // Neuron
+  const nOp = rv(t, 12.3, 0.4) * (1 - clamp((t - 16.5) / 0.3)) + rv(t, 18.95, 0.4) * 0;
+  const nOp2 = clamp((t - 18.9) / 0.4);
+  const nl = Math.max(nOp, nOp2);
+  if (nl > 0.001) {
+    const sx = SX(SOMA.x), sy = SY(SOMA.y - SOMA.r);
+    const ly = SY(SOMA.y) - 318 * C.s;
+    g += `<g opacity="${f2(nl * 0.8)}"><line x1="${f2(sx)}" y1="${f2(ly + 18)}" x2="${f2(sx)}" y2="${f2(sy - 6)}" stroke="${SEC}" stroke-width="1.5" stroke-dasharray="3 5"/></g>`;
+    g += pill(sx, ly, 'Neuron', nl, { size: 30 });
+  }
+  // Synapse
+  const zIn = clamp((t - 17.0) / 0.4) * (1 - clamp((t - 18.15) / 0.3));
+  const sOut = clamp((t - 18.95) / 0.4);
+  if (zIn > 0.001) {
+    const x = SX((1640 + PS_MX) / 2), y = SY(560 - 22) - 60;
+    g += `<line x1="${f2(x)}" y1="${f2(y + 18)}" x2="${f2(x)}" y2="${f2(SY(560 - 10))}" stroke="${SEC}" stroke-width="1.5" opacity="${f2(zIn)}"/>`;
+    g += pill(x, y, 'Synapse', zIn, { size: 34 });
+  }
+  if (sOut > 0.001) {
+    const x = SX((1640 + PS_MX) / 2), y = SY(560) + 150;
+    g += `<line x1="${f2(x)}" y1="${f2(y - 40)}" x2="${f2(x)}" y2="${f2(SY(572))}" stroke="${SEC}" stroke-width="1.5" opacity="${f2(sOut)}"/>`;
+    g += pill(x, y, 'Synapse', sOut, { size: 30 });
+  }
+  // Membrane circuit in zoom
+  const cP = clamp((t - 17.05) / 0.9), cOut = 1 - clamp((t - 18.15) / 0.3);
+  if (cP > 0 && cOut > 0) {
+    const mx = SX(PS_MX);
+    g += `<g opacity="${f2(cOut)}">${rc(mx, 760, 880, 105, 1, cP, { sides: true })}</g>`;
+    g += pill(960, 1000, 'Membrane ≈ resistor + capacitor', clamp((t - 17.4) / 0.4) * cOut, { size: 34 });
+  }
+  // after pull-back: compact card top-right
+  const kIn = eo((t - 18.75) / 0.5);
+  if (kIn > 0.001) {
+    const x = 1300, y = 70, w = 520, h = 250;
+    g += `<g opacity="${f2(kIn)}" transform="translate(0 ${f2(14 * (1 - kIn))})">`;
+    g += `<rect x="${x}" y="${y}" width="${w}" height="${h}" rx="16" fill="${CARD}" stroke="${BORDER}" filter="url(#shadow)"/>`;
+    g += `<line x1="${x + w / 2}" y1="${y + 26}" x2="${x + w / 2}" y2="${y + 176}" stroke="${GREEN}" stroke-width="3" stroke-dasharray="2 7" stroke-linecap="round" opacity=".8"/>`;
+    g += rc(x + w / 2, y + 66, y + 140, 92, 0.85, 1);
+    g += T(x + w / 2, y + 226, 'Membrane ≈ resistor + capacitor', { size: 30, w: 600, fill: TXT });
+    g += `</g>`;
+  }
+  // probe from axon to trace panel
+  const pOp = clamp((t - 18.8) / 0.35);
+  if (pOp > 0) {
+    const p = axAt(PROBE_S), x = SX(p.x), y = SY(p.y + axR(PROBE_S));
+    g += `<g opacity="${f2(pOp)}"><line x1="${f2(x)}" y1="${f2(y + 6)}" x2="${f2(x)}" y2="${TP.y - 4}" stroke="${SEC}" stroke-width="2" stroke-dasharray="5 7"/><circle cx="${f2(x)}" cy="${f2(y + 2)}" r="5.5" fill="${SEC}"/></g>`;
+  }
+  return g;
+}
+
+window.renderAt = function (t0) {
+  const t = t0 + OFF;
+  C = cam(t);
+  const worldG = `<g filter="url(#glowS)"><g transform="translate(960 540) scale(${f2(C.s)}) translate(${f2(-C.x)} ${f2(-C.y)})">${world(t)}</g></g>`;
+  stage.innerHTML = `<svg width="${VW}" height="${H}" viewBox="0 0 ${VW} ${H}" xmlns="http://www.w3.org/2000/svg">${eqLayer(t)}${worldG}${labels(t)}${tracePanel(t)}${vir(t)}</svg>`;
+};
+window.ready = (async () => {
+  await Promise.all(['400 40px Inter', '600 40px Inter', '700 48px Inter', '500 40px "JetBrains Mono"', '700 48px "JetBrains Mono"'].map(f => document.fonts.load(f)));
+  await document.fonts.ready;
+  window.renderAt(0);
+  return true;
+})();
+</script></body></html>

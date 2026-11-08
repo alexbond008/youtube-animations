@@ -1,0 +1,282 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>p4 sub-agents fan-out</title>
+<link rel="stylesheet" href="fonts.css">
+<style>
+  html, body { margin: 0; padding: 0; background: #0E0E10; }
+  #stage { position: relative; width: 1920px; height: 1080px; overflow: hidden; background: #0E0E10; font-family: 'Inter', sans-serif; }
+  #grid { position: absolute; inset: 0; background-image: radial-gradient(circle at 12px 12px, #1D1D23 1.2px, transparent 1.6px); background-size: 24px 24px; }
+  canvas { position: absolute; left: 0; top: 0; width: 1920px; height: 1080px; }
+  #vig { position: absolute; inset: 0; background: radial-gradient(ellipse 75% 70% at 50% 50%, rgba(0,0,0,0) 55%, rgba(0,0,0,.55) 100%); pointer-events: none; }
+  #card { position: absolute; left: 0; top: 0; box-sizing: border-box; background: #16161A; border: 1px solid #2A2A30; border-radius: 16px;
+    box-shadow: 0 0 0 1px rgba(217,119,87,.0), 0 20px 60px rgba(0,0,0,.55), 0 0 80px rgba(217,119,87,.16); overflow: hidden; }
+  #head { position: absolute; left: 0; top: 0; height: 84px; display: flex; align-items: center; gap: 14px; padding: 0 26px; white-space: nowrap; }
+  #head .ico { width: 42px; height: 42px; border-radius: 11px; background: rgba(217,119,87,.16); border: 1px solid rgba(217,119,87,.5); display: flex; align-items: center; justify-content: center;
+    font: 700 19px 'JetBrains Mono'; color: #D97757; letter-spacing: -1px; }
+  #head .txt { font-weight: 750; font-size: 32px; letter-spacing: -.5px; color: #F5F5F7; }
+  #found { position: absolute; left: 30px; top: 100px; font-weight: 650; font-size: 27px; color: #A1A1AA; letter-spacing: -.2px; white-space: nowrap; }
+  #found b { color: #3DDC97; font-weight: 700; }
+  #divider { position: absolute; left: 0; right: 0; top: 84px; height: 1px; background: #2A2A30; }
+  .chip { position: absolute; left: 0; top: 0; height: 56px; box-sizing: border-box; display: flex; align-items: center; gap: 14px; padding: 0 18px 0 14px;
+    background: #1D1D22; border: 1px solid #34343C; border-radius: 12px; box-shadow: 0 10px 30px rgba(0,0,0,.5); white-space: nowrap; transform-origin: 0 50%;
+    font: 500 24px 'JetBrains Mono'; color: #F5F5F7; }
+  .chip .fi { width: 30px; height: 30px; flex: none; }
+  .chip .ext { color: #D97757; }
+  .chip .ok { width: 24px; height: 24px; margin-left: auto; flex: none; }
+  #hud { position: absolute; left: 112px; top: 70px; display: flex; align-items: center; gap: 16px; background: #16161A; border: 1px solid #2A2A30; border-radius: 16px;
+    padding: 14px 24px 14px 20px; box-shadow: 0 20px 60px rgba(0,0,0,.55); white-space: nowrap; transform-origin: 0 50%; }
+  #hud .dot { width: 14px; height: 14px; border-radius: 50%; background: #D97757; box-shadow: 0 0 12px rgba(217,119,87,.8); }
+  #hud .a { font-weight: 750; font-size: 28px; color: #F5F5F7; letter-spacing: -.4px; }
+  #hud .sep { width: 1px; height: 28px; background: #34343C; }
+  #hud .b { font: 500 23px 'JetBrains Mono'; color: #A1A1AA; }
+  #hud .b span { color: #F5F5F7; }
+</style>
+</head>
+<body>
+<div id="stage">
+  <div id="grid"></div>
+  <canvas id="bg"></canvas>
+  <div id="card"><div id="head"><div class="ico">&gt;_</div><div class="txt">you + Claude</div></div><div id="divider"></div><div id="found">Found:</div></div>
+  <canvas id="fg"></canvas>
+  <div id="chips"></div>
+  <div id="vig"></div>
+  <div id="hud"><div class="dot" id="hudDot"></div><div class="a">10 sub-agents</div><div class="sep"></div><div class="b"><span id="cnt">0</span> sites scanned</div></div>
+</div>
+<script src="common.js"></script>
+<script>
+window.SCENE = { dur: 10.0 };           // 9.0 s of motion + 1.0 s clean hold
+const QA_TIMES = [0.70, 2.20, 3.90, 5.40, 6.90, 9.50];
+const W = 1920, H = 1080, CX = 960, CY = 540;
+const R = rng(424242);
+/* ---------------- web graph: Poisson-disc site dots + nearest-neighbour links ---------------- */
+const dots = [];
+(function poisson() {
+  const minD = 50, cell = minD / Math.SQRT2, gw = Math.ceil(2200 / cell), gh = Math.ceil(1360 / cell), grid = new Int32Array(gw * gh).fill(-1);
+  const X0 = -140, Y0 = -140, act = [];
+  const add = (x, y) => { const i = dots.length; dots.push({ x, y, r: 1.4 + R() * 1.9, hit: 1e9, hub: R() < .06 }); act.push(i); grid[Math.floor((y - Y0) / cell) * gw + Math.floor((x - X0) / cell)] = i; };
+  add(CX + 3, CY + 2);
+  while (act.length) {
+    const k = Math.floor(R() * act.length), p = dots[act[k]]; let ok = false;
+    for (let a = 0; a < 24; a++) {
+      const ang = R() * Math.PI * 2, rr = minD * (1 + R()), x = p.x + Math.cos(ang) * rr, y = p.y + Math.sin(ang) * rr;
+      if (x < X0 || y < Y0 || x >= X0 + 2200 || y >= Y0 + 1360) continue;
+      const gx = Math.floor((x - X0) / cell), gy = Math.floor((y - Y0) / cell); let bad = false;
+      for (let j = Math.max(0, gy - 2); j <= Math.min(gh - 1, gy + 2) && !bad; j++) for (let i = Math.max(0, gx - 2); i <= Math.min(gw - 1, gx + 2); i++) { const q = grid[j * gw + i]; if (q >= 0 && Math.hypot(dots[q].x - x, dots[q].y - y) < minD) { bad = true; break; } }
+      if (!bad) { add(x, y); ok = true; break; }
+    }
+    if (!ok) act.splice(k, 1);
+  }
+})();
+dots.forEach(d => { if (d.hub) d.r += 1.6; });
+const edges = [];
+dots.forEach((d, i) => {
+  const near = dots.map((e, j) => [Math.hypot(e.x - d.x, e.y - d.y), j]).filter(v => v[1] !== i && v[0] < 125).sort((a, b) => a[0] - b[0]).slice(0, d.hub ? 5 : 2);
+  near.forEach(([, j]) => { if (i < j || !edges.some(e => e[0] === j && e[1] === i)) edges.push([i, j]); });
+});
+const LABELS = ['forum', 'wiki', 'repo', 'archive', '*.gov', '*.edu', 'docs', 'papers', 'cad-lib', 'mirror', 'ftp', 'blog', 'q&a', 'datasets', 'models', 'gallery'];
+const hubs = dots.filter(d => d.hub && d.x > 140 && d.x < 1780 && d.y > 150 && d.y < 1000 && Math.hypot((d.x - CX) / 1.4, d.y - CY) > 330);
+hubs.slice(0, LABELS.length).forEach((d, i) => d.label = LABELS[i]);
+const nearestDot = (x, y) => dots.reduce((b, d) => (Math.hypot(d.x - x, d.y - y) < Math.hypot(b.x - x, b.y - y) ? d : b), dots[0]);
+
+/* ---------------- agents ---------------- */
+// card geometry (final): centred, chips stack under "Found:"
+const CARD = { w: 600, h: 520, x: CX - 300, y: CY - 260 };
+const PILL = { w: 360, h: 84 };
+const SLOT = i => ({ x: CARD.x + 26, y: CARD.y + 150 + i * 68 });
+const FILES = [['perseverance', '.glb', 'cube'], ['curiosity', '.stl', 'cube'], ['satellite', '.stl', 'cube'], ['mars-rover', '.blend', 'cube'], ['nasa-3d-resources', '', 'link']];
+const CARRIER = { 1: 0, 6: 1, 3: 2, 8: 3, 4: 4 };       // agent index -> file index (deliveries alternate right / left)
+const FIND_T = [3.55, 3.80, 4.05, 4.30, 4.55];          // per file
+const DOCK_T = [6.00, 6.42, 6.84, 7.26, 7.68];          // per file (one delivery at a time)
+const agents = [];
+for (let k = 0; k < 10; k++) {
+  const th = (-90 + 18 + k * 36 + (R() - .5) * 14) * Math.PI / 180;
+  const pt = (rr, dth) => { const a = th + dth; const x = clamp(CX + Math.cos(a) * rr, 90, 1830), y = clamp(CY + Math.sin(a) * rr * .58, 80, 1000); const d = nearestDot(x, y); return { x: d.x, y: d.y }; };
+  const ws = [pt(300 + R() * 60, (R() - .5) * .35), pt(520 + R() * 80, (R() - .5) * .45), pt(720 + R() * 90, (R() - .5) * .35), pt(860 + R() * 80, (R() - .5) * .5)];
+  if (k in CARRIER) { const w = ws[3]; const d = nearestDot(clamp(w.x, 200, 1720), clamp(w.y, 190, 900)); ws[3] = { x: d.x, y: d.y }; }   // find spots stay well inside the frame
+  const ts = 0.36 + k * 0.06;
+  const start = { x: CX + Math.cos(th) * PILL.w * .45, y: CY + Math.sin(th) * PILL.h * .45 };
+  const keys = [{ t: ts, ...start }];
+  let tt = ts + .08;
+  const nW = (k in CARRIER) ? 4 : 3 + (k % 2);
+  for (let i = 0; i < nW; i++) {
+    const w = ws[i]; const travel = i === 0 ? .62 : .55 + R() * .12;
+    tt += travel; keys.push({ t: tt, ...w, pulse: true }); tt += .22; keys.push({ t: tt, ...w });
+  }
+  const a = { k, th, ts, keys, side: k % 2 ? 1 : -1, file: (k in CARRIER) ? CARRIER[k] : -1 };
+  const last = keys[keys.length - 1];
+  if (a.file >= 0) {
+    a.findT = FIND_T[a.file];
+    // wait at the find spot, then fly the file back to its slot in the card
+    keys.push({ t: Math.max(last.t, a.findT + .35, DOCK_T[a.file] - 1.30), x: last.x, y: last.y });
+    const sl = SLOT(a.file);
+    a.dockSide = last.x < CX ? -1 : 1;
+    const ax = a.dockSide < 0 ? CARD.x - 64 : CARD.x + CARD.w + 64;
+    keys.push({ t: DOCK_T[a.file] - .40, x: ax, y: sl.y + 28, ret: true });
+    a.endT = DOCK_T[a.file] - .22;
+  } else {
+    const back = 4.30 + (k % 5) * .09;
+    keys.push({ t: Math.max(last.t, back), x: last.x, y: last.y });
+    keys.push({ t: Math.max(last.t, back) + .62, x: CX + Math.cos(th) * 176, y: CY + Math.sin(th) * 40, ret: true });
+    a.endT = keys[keys.length - 1].t;
+  }
+  agents.push(a);
+}
+function agentPos(a, t) {
+  const K = a.keys;
+  if (t <= K[0].t) return { x: K[0].x, y: K[0].y };
+  for (let i = 0; i < K.length - 1; i++) {
+    const A = K[i], B = K[i + 1];
+    if (t <= B.t) {
+      const u = (t - A.t) / Math.max(1e-6, B.t - A.t), e = easeInOut(u);
+      const dx = B.x - A.x, dy = B.y - A.y, L = Math.hypot(dx, dy);
+      if (L < 1) return { x: A.x, y: A.y };
+      const bow = .16 * a.side * (B.ret ? -1 : 1);
+      const cx = (A.x + B.x) / 2 - dy * bow, cy = (A.y + B.y) / 2 + dx * bow;
+      const v = 1 - e; return { x: v * v * A.x + 2 * v * e * cx + e * e * B.x, y: v * v * A.y + 2 * v * e * cy + e * e * B.y };
+    }
+  }
+  const Z = K[K.length - 1]; return { x: Z.x, y: Z.y };
+}
+/* pulses (one per waypoint arrival) -> first time each site lights up */
+const pulses = [];
+agents.forEach(a => a.keys.forEach(kf => { if (kf.pulse) pulses.push({ x: kf.x, y: kf.y, t0: kf.t, R: 130 + (a.k % 3) * 18, D: .75 }); }));
+dots.forEach(d => { for (const p of pulses) { const dd = Math.hypot(d.x - p.x, d.y - p.y); if (dd < p.R) d.hit = Math.min(d.hit, p.t0 + (dd / p.R) * p.D); } });
+// sites brushed by an agent's flight path also count as scanned
+agents.forEach(a => { for (let t = a.ts; t < a.endT; t += 1 / 60) { const p = agentPos(a, t); for (const d of dots) { if (d.hit > t && Math.abs(d.x - p.x) < 28 && Math.abs(d.y - p.y) < 28 && Math.hypot(d.x - p.x, d.y - p.y) < 28) d.hit = t; } } });
+const hitTimes = dots.map(d => d.hit).filter(h => h < 1e8).sort((a, b) => a - b);
+
+/* ---------------- DOM: chips ---------------- */
+const ICON = {
+  cube: '<svg class="fi" viewBox="0 0 30 30"><path d="M15 3l10.5 6v12L15 27 4.5 21V9z" fill="rgba(217,119,87,.14)" stroke="#D97757" stroke-width="2" stroke-linejoin="round"/><path d="M4.5 9L15 15l10.5-6M15 15v12" fill="none" stroke="#D97757" stroke-width="2" stroke-linejoin="round"/></svg>',
+  link: '<svg class="fi" viewBox="0 0 30 30"><circle cx="15" cy="15" r="11" fill="rgba(77,163,255,.14)" stroke="#4DA3FF" stroke-width="2"/><path d="M4 15h22M15 4c-4 4.5-4 17.5 0 22M15 4c4 4.5 4 17.5 0 22" fill="none" stroke="#4DA3FF" stroke-width="1.8"/></svg>' };
+const OK = '<svg class="ok" viewBox="0 0 24 24"><circle cx="12" cy="12" r="11" fill="#3DDC97"/><path d="M6.8 12.4l3.4 3.3 7-7.2" fill="none" stroke="#0E0E10" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/></svg>';
+const chipsEl = document.getElementById('chips');
+const chips = FILES.map(([n, ext, ic], i) => { const el = document.createElement('div'); el.className = 'chip'; el.innerHTML = `${ICON[ic]}<span>${n}<span class="ext">${ext}</span></span>${OK}`; chipsEl.appendChild(el); return { el, ok: el.querySelector('.ok'), i }; });
+function measureChips() { chips.forEach(c => { c.el.style.display = 'flex'; c.el.style.width = 'auto'; c.ok.style.display = 'none'; c.w = c.el.offsetWidth; c.ok.style.display = ''; }); }
+measureChips();
+window.sceneReady = () => { measureChips(); renderAt(0); };
+const card = document.getElementById('card'), head = document.getElementById('head'), found = document.getElementById('found'), divider = document.getElementById('divider');
+const hud = document.getElementById('hud'), cnt = document.getElementById('cnt'), hudDot = document.getElementById('hudDot');
+
+/* ---------------- canvases ---------------- */
+const bg = document.getElementById('bg'), fg = document.getElementById('fg');
+const DPR = window.devicePixelRatio || 1;
+for (const c of [bg, fg]) { c.width = W * DPR; c.height = H * DPR; }
+const g = bg.getContext('2d'), f = fg.getContext('2d');
+const ORANGE = [217, 119, 87];
+const mix = (a, b, u) => `rgb(${Math.round(lerp(a[0], b[0], u))},${Math.round(lerp(a[1], b[1], u))},${Math.round(lerp(a[2], b[2], u))})`;
+const BASE = [74, 74, 86];
+function siteGlow(d, t) {           // 0..1 flash, then settles at a "visited" level
+  t = Math.min(t, 8.6);             // frozen before the 1 s clean hold
+  if (t < d.hit) return 0;
+  const u = t - d.hit; return .42 + .58 * Math.exp(-u / .35);
+}
+const T_CARD = 5.24, CARD_DUR = .42;
+function renderAt(t) {
+  const zoom = lerp(1.07, 1.0, easeInOut(prog(t, 0, 8.4)));
+  /* --- background: links, sites, pulses --- */
+  g.setTransform(DPR, 0, 0, DPR, 0, 0); g.clearRect(0, 0, W, H);
+  g.translate(CX, CY); g.scale(zoom, zoom); g.translate(-CX, -CY);
+  g.lineWidth = 1;
+  for (const [i, j] of edges) {
+    const a = dots[i], b = dots[j], v = Math.max(siteGlow(a, t), siteGlow(b, t));
+    g.strokeStyle = v > 0 ? `rgba(217,119,87,${(.08 + .17 * v).toFixed(3)})` : 'rgba(130,130,150,.13)';
+    g.beginPath(); g.moveTo(a.x, a.y); g.lineTo(b.x, b.y); g.stroke();
+  }
+  for (const d of dots) {
+    const v = siteGlow(d, t);
+    g.fillStyle = v > 0 ? mix(BASE, ORANGE, Math.min(1, v * 1.1)) : (d.hub ? '#5A5A66' : '#4A4A56');
+    g.beginPath(); g.arc(d.x, d.y, d.r * (1 + .5 * Math.max(0, v - .42) / .58), 0, Math.PI * 2); g.fill();
+    if (d.label) { g.font = '500 15px "JetBrains Mono"'; g.fillStyle = v > 0 ? `rgba(240,200,180,${(.35 + .5 * Math.min(1, v)).toFixed(3)})` : 'rgba(110,110,125,.55)'; g.fillText(d.label, d.x + 9, d.y - 7); }
+  }
+  for (const p of pulses) {
+    const u = (t - p.t0) / p.D; if (u < 0 || u > 1) continue;
+    const e = easeOut(u);
+    g.strokeStyle = `rgba(217,119,87,${(.65 * (1 - u)).toFixed(3)})`; g.lineWidth = 2;
+    g.beginPath(); g.arc(p.x, p.y, p.R * e, 0, Math.PI * 2); g.stroke();
+    g.fillStyle = `rgba(217,119,87,${(.10 * (1 - u)).toFixed(3)})`; g.beginPath(); g.arc(p.x, p.y, p.R * e, 0, Math.PI * 2); g.fill();
+  }
+  /* tethers while the agents are spawning */
+  const teth = smooth(prog(t, .35, .6)) * (1 - smooth(prog(t, 1.4, 2.2)));
+  if (teth > 0) { g.setLineDash([5, 7]); g.lineWidth = 1.4; for (const a of agents) { if (t < a.ts) continue; const p = agentPos(a, t); g.strokeStyle = `rgba(217,119,87,${(.45 * teth).toFixed(3)})`; g.beginPath(); g.moveTo(CX, CY); g.lineTo(p.x, p.y); g.stroke(); } g.setLineDash([]); }
+  /* --- foreground: agents + trails --- */
+  f.setTransform(DPR, 0, 0, DPR, 0, 0); f.clearRect(0, 0, W, H);
+  f.translate(CX, CY); f.scale(zoom, zoom); f.translate(-CX, -CY);
+  for (const a of agents) {
+    if (t < a.ts) continue;
+    const life = smooth(prog(t, a.ts, a.ts + .22)) * (1 - smooth(prog(t, a.endT - .18, a.endT + .02)));
+    if (life <= 0) continue;
+    // trail
+    f.lineCap = 'round';
+    let prev = agentPos(a, t);
+    for (let s = 1; s <= 14; s++) {
+      const tt = t - s / 55; if (tt < a.ts) break;
+      const p = agentPos(a, tt);
+      f.strokeStyle = `rgba(217,119,87,${(.55 * (1 - s / 14) * life).toFixed(3)})`; f.lineWidth = 4.2 * (1 - s / 16);
+      f.beginPath(); f.moveTo(prev.x, prev.y); f.lineTo(p.x, p.y); f.stroke(); prev = p;
+    }
+    const p = agentPos(a, t), sc = .3 + .7 * life;
+    f.shadowColor = 'rgba(217,119,87,.9)'; f.shadowBlur = 22;
+    f.fillStyle = '#D97757'; f.beginPath(); f.arc(p.x, p.y, 9 * sc, 0, Math.PI * 2); f.fill();
+    f.shadowBlur = 0;
+    f.fillStyle = '#FFE3D6'; f.beginPath(); f.arc(p.x, p.y, 3.6 * sc, 0, Math.PI * 2); f.fill();
+    f.strokeStyle = `rgba(217,119,87,${(.45 * life).toFixed(3)})`; f.lineWidth = 1.6; f.beginPath(); f.arc(p.x, p.y, 15 * sc, 0, Math.PI * 2); f.stroke();
+    // spawn flash
+    const sf = prog(t, a.ts, a.ts + .35); if (sf > 0 && sf < 1) { f.strokeStyle = `rgba(255,200,180,${(.8 * (1 - sf)).toFixed(3)})`; f.lineWidth = 2; f.beginPath(); f.arc(p.x, p.y, 10 + 26 * easeOut(sf), 0, Math.PI * 2); f.stroke(); }
+    // find flash (green)
+    if (a.file >= 0) { const ff = prog(t, a.findT, a.findT + .5); if (ff > 0 && ff < 1) { f.strokeStyle = `rgba(61,220,151,${(.9 * (1 - ff)).toFixed(3)})`; f.lineWidth = 2.4; f.beginPath(); f.arc(p.x, p.y, 12 + 40 * easeOut(ff), 0, Math.PI * 2); f.stroke(); } }
+  }
+  /* --- centre node grows into the results card --- */
+  const ce = easeOut(prog(t, T_CARD, T_CARD + CARD_DUR));
+  const cw = lerp(PILL.w, CARD.w, ce), ch = lerp(PILL.h, CARD.h, ce);
+  const cxL = CX - cw / 2, cyT = lerp(CY - PILL.h / 2, CARD.y, ce);
+  card.style.width = cw + 'px'; card.style.height = ch + 'px'; card.style.transform = `translate(${cxL}px, ${cyT}px)`;
+  card.style.borderRadius = lerp(42, 16, ce) + 'px';
+  const ci = easeOut(prog(t, 0, .3));
+  card.style.opacity = ci;
+  const glowPulse = .16 + .10 * Math.max(0, Math.sin((t - .3) * 2.4)) * (1 - smooth(prog(t, 4.6, 5.1)));
+  card.style.boxShadow = `0 0 0 1px rgba(217,119,87,${(.35 + .2 * (1 - ce)).toFixed(3)}), 0 20px 60px rgba(0,0,0,.55), 0 0 90px rgba(217,119,87,${glowPulse.toFixed(3)})`;
+  head.style.left = lerp(0, 0, ce) + 'px';
+  head.style.width = cw + 'px'; head.style.justifyContent = ce < .5 ? 'center' : 'flex-start';
+  head.style.padding = `0 ${lerp(0, 26, ce)}px`;
+  divider.style.opacity = smooth(prog(t, T_CARD + .2, T_CARD + .45));
+  const fo = easeOut(prog(t, T_CARD + .28, T_CARD + .6));
+  found.style.opacity = fo; found.style.transform = `scale(${lerp(.92, 1, fo)})`; found.style.transformOrigin = '0 50%';
+  /* --- file chips: pop at the find, ride home with the agent, dock in the list --- */
+  for (const c of chips) {
+    const a = agents.find(x => x.file === c.i);
+    const pop = easeOut(prog(t, a.findT, a.findT + .32));
+    if (t < a.findT) { c.el.style.display = 'none'; continue; }
+    c.el.style.display = 'flex';
+    const p = agentPos(a, Math.min(t, a.endT - .02));
+    const sl = SLOT(c.i), DT = DOCK_T[c.i];
+    const dk = easeInOut(prog(t, DT - .42, DT));
+    const rs = .9, cw = c.w * rs;
+    // chip rides on the outer side; on the final approach it drops to its own row so it slides in level
+    let rx = p.x < CX ? p.x - 22 - cw : p.x + 22, ry = p.y - lerp(74, 28, smooth(prog(t, DT - 1.0, DT - .45)));
+    rx = clamp(rx, 104, 1816 - cw); ry = clamp(ry, 140, 1020 - 52);
+    const x = lerp(rx, sl.x, dk), y = lerp(ry, sl.y, dk);
+    const s = lerp(rs, 1, dk) * lerp(.92, 1, pop);
+    c.el.style.opacity = pop;
+    c.el.style.width = dk > .5 ? '548px' : c.w + 'px';
+    c.el.style.transform = `translate(${x}px, ${y}px) scale(${s})`;
+    c.el.style.zIndex = 10 + c.i;
+    const okk = easeOut(prog(t, DT + .02, DT + .3));
+    c.ok.style.opacity = okk; c.ok.style.transform = `scale(${lerp(.6, 1, okk)})`;
+    c.el.style.borderColor = dk > .99 ? '#34343C' : `rgba(61,220,151,${(.55 * (1 - dk)).toFixed(3)})`;
+  }
+  /* --- HUD --- */
+  let n = 0; while (n < hitTimes.length && hitTimes[n] <= t) n++;
+  cnt.textContent = (n * 7).toLocaleString('en-GB');
+  const hi = easeOut(prog(t, .05, .4)); hud.style.opacity = hi; hud.style.transform = `scale(${lerp(.92, 1, hi)})`;
+  const done = smooth(prog(t, 7.7, 8.1));
+  hudDot.style.background = mix(ORANGE, [61, 220, 151], done); hudDot.style.boxShadow = `0 0 12px ${done > .5 ? 'rgba(61,220,151,.8)' : 'rgba(217,119,87,.8)'}`;
+}
+window.renderAt = renderAt;
+renderAt(0);
+if (!location.search.includes('capture')) { const t0 = performance.now(); const loop = () => { renderAt(((performance.now() - t0) / 1000) % SCENE.dur); requestAnimationFrame(loop); }; loop(); }
+</script>
+</body>
+</html>

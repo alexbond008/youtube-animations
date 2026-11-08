@@ -1,0 +1,279 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>p2 paper flood</title>
+<link rel="stylesheet" href="fonts.css">
+<style>
+  html, body { margin: 0; padding: 0; background: #0E0E10; }
+  #stage { position: relative; width: 1920px; height: 1080px; overflow: hidden; background: #0E0E10; font-family: 'Inter', sans-serif; }
+  #grid { position: absolute; inset: 0; background-image: radial-gradient(circle at 12px 12px, #23232A 1.2px, transparent 1.6px); background-size: 24px 24px; }
+  #vig { position: absolute; inset: 0; background: radial-gradient(ellipse 80% 75% at 50% 45%, rgba(0,0,0,0) 60%, rgba(0,0,0,.45) 100%); pointer-events: none; }
+  .layer { position: absolute; inset: 0; }
+
+  /* paper cards (AI layer) */
+  .card { position: absolute; left: 0; top: 0; width: 380px; height: 214px; box-sizing: border-box; padding: 18px 22px 0;
+    background: #16161A; border: 1px solid #2A2A30; border-radius: 16px; box-shadow: 0 20px 60px rgba(0,0,0,.55);
+    transform-origin: 50% 50%; overflow: hidden; color: #F5F5F7; }
+  .card .row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 11px; }
+  .card .tag { font: 600 14px 'JetBrains Mono'; padding: 4px 9px; border-radius: 7px; letter-spacing: .2px; }
+  .card .pp { font: 500 14px 'JetBrains Mono'; color: #71717A; }
+  .card .title { font-weight: 650; font-size: 22.5px; line-height: 1.22; letter-spacing: -.2px; height: 55px; overflow: hidden; }
+  .card .auth { font-size: 14.5px; color: #A1A1AA; margin: 9px 0 7px; }
+  .card .abs { font-size: 13px; line-height: 1.42; color: #6E6E78; height: 56px; overflow: hidden; }
+  .card .shade { position: absolute; inset: -1px; background: #0E0E10; opacity: 0; border-radius: 16px; pointer-events: none; }
+  .t-rl { color: #D97757; background: rgba(217,119,87,.13); }
+  .t-llm { color: #4DA3FF; background: rgba(77,163,255,.13); }
+  .t-ag { color: #3DDC97; background: rgba(61,220,151,.12); }
+  .t-ef { color: #F5B800; background: rgba(245,184,0,.12); }
+  .t-th { color: #C4B5FD; background: rgba(196,181,253,.12); }
+  .t-ev { color: #A1A1AA; background: rgba(161,161,170,.14); }
+
+  /* output cards */
+  .out { position: absolute; left: 0; top: 0; width: 640px; height: 214px; box-sizing: border-box; padding: 24px 30px;
+    background: #17171B; border: 1.5px solid rgba(217,119,87,.75); border-radius: 18px; transform-origin: 50% 0%;
+    box-shadow: 0 0 0 1px rgba(217,119,87,.30), 0 0 46px rgba(217,119,87,.34), 0 0 120px rgba(217,119,87,.22), 0 24px 70px rgba(0,0,0,.6); color: #F5F5F7; }
+  .out .row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px; }
+  .out .tag { font: 600 17px 'JetBrains Mono'; padding: 5px 11px; border-radius: 8px; }
+  .out .title { font-weight: 750; font-size: 33px; line-height: 1.16; letter-spacing: -.5px; }
+  .out .auth { font-size: 18px; color: #A1A1AA; margin-top: 12px; }
+  .badge { display: inline-flex; align-items: center; gap: 9px; font-weight: 700; font-size: 21px; color: #3DDC97;
+    background: rgba(61,220,151,.12); border: 1px solid rgba(61,220,151,.45); border-radius: 999px; padding: 6px 16px 6px 10px; transform-origin: 100% 50%; }
+  .badge svg { width: 24px; height: 24px; }
+
+  /* counter chip */
+  #chip { position: absolute; left: 112px; top: 70px; z-index: 8; display: flex; align-items: center; gap: 16px;
+    background: #16161A; border: 1px solid #2A2A30; border-radius: 16px; padding: 14px 26px 14px 18px; box-shadow: 0 20px 60px rgba(0,0,0,.55); transform-origin: 0 50%; }
+  #chip .ico { width: 38px; height: 46px; }
+  #chip .num { font-weight: 800; font-size: 46px; letter-spacing: -1px; font-variant-numeric: tabular-nums; color: #F5F5F7; min-width: 86px; text-align: right; }
+  #chip .lbl { font-weight: 600; font-size: 25px; color: #A1A1AA; }
+
+  #funnelBack, #funnelFront { position: absolute; left: 0; top: 0; width: 1920px; height: 1080px; overflow: visible; }
+  #flabel { position: absolute; z-index: 5; left: 960px; top: 352px; transform-origin: 50% 50%; display: flex; align-items: center; gap: 14px;
+    font-weight: 800; font-size: 46px; letter-spacing: -.6px; color: #fff; white-space: nowrap; text-shadow: 0 2px 18px rgba(0,0,0,.5);
+    font-feature-settings: 'cv08' 1; }  /* serifed capital I so "AI" never reads as "Al" */
+  #flabel svg { width: 38px; height: 38px; }
+</style>
+</head>
+<body>
+<div id="stage">
+  <div id="grid" style="z-index:0"></div>
+  <svg id="funnelBack" viewBox="0 0 1920 1080" style="z-index:1"></svg>
+  <div class="layer" id="cards" style="z-index:2"></div>
+  <svg id="links" class="layer" viewBox="0 0 1920 1080" style="overflow:visible;z-index:3"></svg>
+  <svg id="funnelFront" viewBox="0 0 1920 1080" style="z-index:4"></svg>
+  <div id="flabel"><svg viewBox="0 0 40 40"><path d="M20 2 C21.5 13 27 18.5 38 20 C27 21.5 21.5 27 20 38 C18.5 27 13 21.5 2 20 C13 18.5 18.5 13 20 2Z" fill="#D97757"/></svg>AI filter</div>
+  <div class="layer" id="outs" style="z-index:6"></div>
+  <div id="vig" style="z-index:7"></div>
+  <div id="chip">
+    <svg class="ico" viewBox="0 0 38 46"><path d="M4 3h21l10 10v30H4z" fill="none" stroke="#A1A1AA" stroke-width="2.6" stroke-linejoin="round"/><path d="M25 3v10h10" fill="none" stroke="#A1A1AA" stroke-width="2.6" stroke-linejoin="round"/><path d="M10 22h18M10 28h18M10 34h12" stroke="#A1A1AA" stroke-width="2.6" stroke-linecap="round"/></svg>
+    <span class="num" id="num">0</span><span class="lbl">papers to read</span>
+  </div>
+</div>
+<script src="common.js"></script>
+<script>
+window.SCENE = { dur: 9.0 };            // 8.0 s of motion + 1.0 s clean hold
+const QA_TIMES = [0.80, 2.40, 3.90, 5.20, 6.90, 8.60];
+
+/* ---------------- fictional paper metadata ---------------- */
+const TITLES = [
+  'Scaling Laws for Reward Models', 'Rethinking Warm Starts in Policy Optimisation', 'A Simple Baseline for Long-Context Distillation',
+  'Low-Rank Adapters Revisited: When Do They Fail?', 'On the Stability of Off-Policy Preference Tuning', 'Calibrated Reward Shaping for Code Agents',
+  'Benchmarks Saturate Faster Than We Think', 'Tool-Use Traces as Free Supervision', 'Grounded Critiques Improve Small Verifiers',
+  'Quantised KV Caches Under Distribution Shift', 'Synthetic Preferences From Weak Judges', 'Hierarchical Planning for Repository-Level Coding',
+  'Sample-Efficient Exploration With Language Priors', 'Do Agents Need Memory? An Empirical Audit', 'Shallow Alignment and Deep Shortcuts',
+  'Curvature-Aware Optimisers for Transformers', 'Contrastive Rollouts for Credit Assignment', 'Token-Level Advantages Without a Critic',
+  'Mixture Routing Collapse and How to Avoid It', 'Distilling Search Into a Single Forward Pass', 'Long-Horizon Evaluation Is Mostly Noise',
+  'Self-Correction Emerges From Sparse Rewards', 'Speculative Decoding for Reasoning Traces', 'Data Pruning for Instruction Tuning at Scale',
+  'Why Small Models Struggle With Planning', 'Entropy Bonuses Considered Harmful', 'Retrieval Heads in Mid-Sized Models',
+  'A Field Guide to RL Fine-Tuning Instabilities', 'Reward Ensembles for Robust Post-Training', 'Length Bias in Pairwise Judges'];
+const TAGS = [['RL', 't-rl'], ['LLMs', 't-llm'], ['Agents', 't-ag'], ['Efficiency', 't-ef'], ['Theory', 't-th'], ['Evaluation', 't-ev']];
+const AUTH = ['Anonymous authors · under review', 'et al. · 2026', 'Anonymous authors · preprint', 'et al. · workshop paper', 'et al. · 2026 · v3'];
+const ABS = ['We show that a small change to the training objective improves sample efficiency across six benchmarks while reducing variance between seeds.',
+  'We revisit a widely used baseline and find that most reported gains disappear once the evaluation protocol is held fixed.',
+  'Our method requires no additional labels and scales to models with tens of billions of parameters with modest compute.',
+  'Experiments on reasoning, coding and dialogue tasks suggest the effect is robust to model size and data mixture.'];
+
+const R = rng(2026);
+const N = 78, CW = 380, CH = 214;
+const cardsEl = document.getElementById('cards');
+const cards = [];
+for (let i = 0; i < N; i++) {
+  const tg = TAGS[Math.floor(R() * TAGS.length)];
+  const el = document.createElement('div'); el.className = 'card';
+  el.innerHTML = `<div class="row"><span class="tag ${tg[1]}">${tg[0]}</span><span class="pp">${8 + Math.floor(R() * 40)} pages</span></div>
+    <div class="title">${TITLES[i % TITLES.length]}</div><div class="auth">${AUTH[Math.floor(R() * AUTH.length)]}</div>
+    <div class="abs">${ABS[Math.floor(R() * ABS.length)]}</div><div class="shade"></div>`;
+  cardsEl.appendChild(el);
+  cards.push({ el, shade: el.querySelector('.shade') });
+}
+
+/* ---------------- stage 1: deterministic rain + pile ---------------- */
+// spawn times accelerate; first few cards are already falling at t = 0
+const BIN = 10, X0 = -300, NB = Math.ceil((1920 + 600) / BIN);
+const H = new Float32Array(NB).fill(1150);              // pile surface (y), floor just below the frame
+const RISE = 64;                                         // how much one card raises the pile
+// stratified x so the pile grows evenly
+const slots = []; for (let i = 0; i < N; i++) slots.push((i * 0.618034) % 1);
+for (let i = 0; i < N; i++) {
+  const c = cards[i];
+  c.t0 = -1.5 + 4.95 * Math.pow(i / (N - 1), 0.82);      // ~10 cards already in flight / landed at t = 0
+  c.x = 150 + slots[i] * 1620 + (R() - .5) * 90;
+  c.rf = (R() < .5 ? -1 : 1) * (2 + R() * 9);           // final rotation (deg)
+  c.r0 = c.rf + (R() - .5) * 40;
+  const th = Math.abs(c.rf) * Math.PI / 180;
+  const hw = (CW * Math.cos(th) + CH * Math.sin(th)) / 2, hh = (CW * Math.sin(th) + CH * Math.cos(th)) / 2;
+  const b0 = Math.max(0, Math.floor((c.x - hw * .82 - X0) / BIN)), b1 = Math.min(NB - 1, Math.ceil((c.x + hw * .82 - X0) / BIN));
+  let mn = 1e9, mean = 0; for (let b = b0; b <= b1; b++) { mn = Math.min(mn, H[b]); mean += H[b]; } mean /= (b1 - b0 + 1);
+  const surf = 0.6 * mn + 0.4 * mean;                    // cards settle partly into gaps -> even pile
+  c.yl = surf + CH * 0.42 - hh;                          // cards overlap the layer below
+  const top = surf - RISE * (0.8 + 0.4 * R());
+  for (let b = b0; b <= b1; b++) H[b] = Math.min(H[b], top + (Math.abs((b * BIN + X0) - c.x) / hw) * 30);
+  c.ys = -260 - R() * 160;
+  c.fall = 1.12 * Math.sqrt(2 * (c.yl - c.ys) / 4300);  // ~gravity, eased landing
+  c.tl = c.t0 + c.fall;
+  c.z = i;
+}
+const byLand = cards.slice().sort((a, b) => a.tl - b.tl); byLand.forEach((c, r) => c.rank = r);
+/* ---------------- stage 2: suction into the funnel ---------------- */
+const MOUTH = { x: 960, y: 238 };
+const SUCK0 = 4.42, SUCK1 = 6.35, FLIGHT = 0.62;
+const order = cards.slice().sort((a, b) => b.z - a.z);  // top layer first
+order.forEach((c, k) => { c.ts = SUCK0 + (SUCK1 - SUCK0 - FLIGHT) * Math.pow(k / (N - 1), 0.9); });
+const suckEase = bezier(.45, 0, .7, .75);
+const fallEase = bezier(.5, 0, .82, 1);                  // gravity-like, with a short soft landing
+
+/* ---------------- funnel geometry ---------------- */
+const F = { cx: 960, ry: 44, rx: 318, top: 238, coneB: 528, hwB: 46, spB: 606, hwS: 34 };
+const fb = document.getElementById('funnelBack'), ff = document.getElementById('funnelFront');
+fb.innerHTML = `<defs><radialGradient id="mouthG" cx="50%" cy="40%" r="60%"><stop offset="0" stop-color="#2a1610"/><stop offset="1" stop-color="#140d0b"/></radialGradient></defs>
+  <g id="fbg"><ellipse cx="${F.cx}" cy="${F.top}" rx="${F.rx}" ry="${F.ry}" fill="url(#mouthG)"/>
+  <path d="M${F.cx - F.rx} ${F.top} A${F.rx} ${F.ry} 0 0 1 ${F.cx + F.rx} ${F.top}" fill="none" stroke="#B85F42" stroke-width="3"/></g>`;
+ff.innerHTML = `<defs>
+  <linearGradient id="coneG" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#D97757" stop-opacity=".30"/><stop offset="1" stop-color="#D97757" stop-opacity=".12"/></linearGradient>
+  <linearGradient id="shine" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="#fff" stop-opacity="0"/><stop offset=".5" stop-color="#FFD9C9" stop-opacity=".22"/><stop offset="1" stop-color="#fff" stop-opacity="0"/></linearGradient>
+  <filter id="glow" x="-40%" y="-40%" width="180%" height="180%"><feGaussianBlur stdDeviation="16" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
+  <clipPath id="coneClip"><path id="coneP"/></clipPath></defs>
+  <g id="ffg">
+    <path id="coneGlow" fill="none" stroke="#D97757" stroke-width="10" stroke-opacity=".35" filter="url(#glow)"/>
+    <path id="cone" fill="url(#coneG)" stroke="#D97757" stroke-width="3.2" stroke-linejoin="round"/>
+    <g clip-path="url(#coneClip)" id="scan"></g>
+    <path id="shineP" fill="url(#shine)"/>
+    <path id="rimFront" fill="none" stroke="#F2A688" stroke-width="3.4"/>
+    <ellipse id="spoutEnd" fill="#D97757" fill-opacity=".9"/>
+    <ellipse id="spoutFlash" fill="#FFD2BF" fill-opacity="0" filter="url(#glow)"/>
+  </g>`;
+(function buildFunnel() {
+  const L = F.cx - F.rx, Rr = F.cx + F.rx;
+  const d = `M${L} ${F.top} L${F.cx - F.hwB} ${F.coneB} L${F.cx - F.hwS} ${F.spB} L${F.cx + F.hwS} ${F.spB} L${F.cx + F.hwB} ${F.coneB} L${Rr} ${F.top} A${F.rx} ${F.ry} 0 0 1 ${L} ${F.top} Z`;
+  for (const id of ['cone', 'coneGlow', 'coneP']) ff.querySelector('#' + id).setAttribute('d', d);
+  ff.querySelector('#shineP').setAttribute('d', `M${L + 70} ${F.top + 30} L${F.cx - F.hwB + 10} ${F.coneB - 6} L${F.cx - F.hwB + 26} ${F.coneB - 6} L${L + 150} ${F.top + 36} Z`);
+  ff.querySelector('#rimFront').setAttribute('d', `M${L} ${F.top} A${F.rx} ${F.ry} 0 0 0 ${Rr} ${F.top}`);
+  const se = ff.querySelector('#spoutEnd'); se.setAttribute('cx', F.cx); se.setAttribute('cy', F.spB); se.setAttribute('rx', F.hwS); se.setAttribute('ry', 7);
+  const sf = ff.querySelector('#spoutFlash'); sf.setAttribute('cx', F.cx); sf.setAttribute('cy', F.spB + 6); sf.setAttribute('rx', 70); sf.setAttribute('ry', 26);
+  let sc = ''; for (let i = 0; i < 7; i++) sc += `<rect class="sl" x="${L}" y="0" width="${2 * F.rx}" height="2.2" fill="#FFC2A8" fill-opacity="0"/>`;
+  ff.querySelector('#scan').innerHTML = sc;
+})();
+const scanLines = [...ff.querySelectorAll('.sl')];
+const flabel = document.getElementById('flabel');
+
+/* ---------------- output cards ---------------- */
+const OUTS = [
+  { title: 'Sparse Experts for Efficient Post\u2011Training', tag: ['Efficiency', 't-ef'], auth: 'et al. · 2026 · 18 pages', x: 300, y: 708, t0: 6.30, tb: 7.05, path: [-1] },
+  { title: 'Verifier\u2011Guided Rollouts for Long\u2011Horizon Agents', tag: ['Agents', 't-ag'], auth: 'Anonymous authors · under review', x: 980, y: 708, t0: 6.78, tb: 7.45, path: [1] },
+];
+const outsEl = document.getElementById('outs'), links = document.getElementById('links');
+const CHECK = '<svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="11" fill="#3DDC97"/><path d="M6.8 12.4l3.4 3.3 7-7.2" fill="none" stroke="#0E0E10" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/></svg>';
+for (const o of OUTS) {
+  o.el = document.createElement('div'); o.el.className = 'out';
+  o.el.innerHTML = `<div class="row"><span class="tag ${o.tag[1]}">${o.tag[0]}</span><span class="badge">${CHECK}Worth reading</span></div><div class="title">${o.title}</div><div class="auth">${o.auth}</div>`;
+  outsEl.appendChild(o.el);
+  o.badge = o.el.querySelector('.badge');
+  const ex = o.x + 320, ey = o.y, id = 'm' + OUTS.indexOf(o);
+  o.d = `M${F.cx} ${F.spB + 8} C${F.cx} ${F.spB + 70}, ${ex} ${ey - 80}, ${ex} ${ey}`;
+  const g = document.createElementNS('http://www.w3.org/2000/svg', 'g');
+  g.innerHTML = `<mask id="${id}" maskUnits="userSpaceOnUse" x="0" y="0" width="1920" height="1080"><path d="${o.d}" fill="none" stroke="#fff" stroke-width="8" pathLength="1" stroke-dasharray="0 1"/></mask>
+    <path d="${o.d}" fill="none" stroke="#D97757" stroke-width="2.6" stroke-dasharray="8 8" stroke-opacity=".8" mask="url(#${id})"/>`;
+  links.appendChild(g); o.link = g; o.reveal = g.querySelector('mask path');
+}
+const chip = document.getElementById('chip'), num = document.getElementById('num');
+const TOTAL = 214;
+
+function bez3(p0, p1, p2, p3, u) { const v = 1 - u, a = v * v * v, b = 3 * v * v * u, c = 3 * v * u * u, d = u * u * u; return [a * p0[0] + b * p1[0] + c * p2[0] + d * p3[0], a * p0[1] + b * p1[1] + c * p2[1] + d * p3[1]]; }
+function bez2(p0, p1, p2, u) { const a = (1 - u) * (1 - u), b = 2 * (1 - u) * u, c = u * u; return [a * p0[0] + b * p1[0] + c * p2[0], a * p0[1] + b * p1[1] + c * p2[1]]; }
+
+function renderAt(t) {
+  /* --- stage 2 dim of the remaining pile --- */
+  const dim = smooth(prog(t, 4.0, 4.4)) * .52;
+  let landed = 0, absorbed = 0;
+  let landedF = 0; for (const c of cards) landedF += smooth(prog(t, c.tl, c.tl + .25));
+  for (const c of cards) {
+    const depth = Math.max(0, landedF - 1 - c.rank) * (t >= c.tl ? 1 : 0);
+    let x, y, r, s = 1, op = 1, sh = Math.min(.62, dim + Math.min(.5, depth * .016));
+    if (t < c.t0) { c.el.style.display = 'none'; continue; }
+    if (t < c.tl) {                                     // falling
+      const u = (t - c.t0) / c.fall;
+      y = c.ys + (c.yl - c.ys) * fallEase(u); x = c.x + Math.sin(u * 3 + c.z) * 14 * (1 - u);
+      r = lerp(c.r0, c.rf, easeOut(u));
+    } else { x = c.x; y = c.yl; r = c.rf; landed++; }
+    if (t >= c.ts) {                                    // being pulled into the funnel
+      const u = clamp((t - c.ts) / FLIGHT), e = suckEase(u);
+      const sg = x < MOUTH.x ? -1 : 1, side = Math.abs(x - MOUTH.x) < 360 ? MOUTH.x + sg * 470 : x;
+      const p0 = [x, y], p1 = [side, Math.min(y - 120, 420)], p2 = [MOUTH.x + sg * 70, -60], p3 = [MOUTH.x, MOUTH.y + 8];
+      [x, y] = bez3(p0, p1, p2, p3, e);
+      r = lerp(c.rf, c.rf * 0.2 + (c.z % 2 ? 50 : -50), e);
+      s = lerp(1, .22, e); op = 1 - smooth(prog(u, .80, 1)); sh = sh * (1 - smooth(prog(u, 0, .2)));
+      if (u >= 1) { c.el.style.display = 'none'; absorbed++; continue; }
+    }
+    c.el.style.display = 'block';
+    c.el.style.opacity = op;
+    const bl = 3.2 * smooth(prog(t, 4.0, 4.4)) * (t >= c.ts ? 1 - smooth(prog(t, c.ts, c.ts + .12)) : 1);
+    c.el.style.filter = bl > .05 ? `blur(${bl.toFixed(2)}px)` : 'none';
+    c.el.style.zIndex = t >= c.ts ? 1000 + c.z : c.z;
+    c.el.style.transform = `translate(${x - CW / 2}px, ${y - CH / 2}px) rotate(${r}deg) scale(${s})`;
+    c.shade.style.opacity = sh;
+  }
+  /* --- funnel --- */
+  const fin = easeOut(prog(t, 4.02, 4.40));
+  const fsc = lerp(.92, 1, fin);
+  const ftr = `translate(${F.cx}px, ${(F.top + F.spB) / 2}px) scale(${fsc}) translate(${-F.cx}px, ${-(F.top + F.spB) / 2}px)`;
+  for (const el of [fb, ff]) { el.style.opacity = fin; el.style.transform = ftr; el.style.transformOrigin = '0 0'; }
+  const lin = easeOut(prog(t, 4.22, 4.58));
+  flabel.style.opacity = lin; flabel.style.transform = `translate(-50%, -50%) scale(${lerp(.92, 1, lin)})`;
+  // processing shimmer while cards pour in (stops before the hold)
+  const busy = smooth(prog(t, 4.4, 4.7)) * (1 - smooth(prog(t, 6.6, 7.2)));
+  scanLines.forEach((l, i) => { const ph = ((t * 0.9 + i / scanLines.length) % 1); l.setAttribute('y', F.top + 10 + ph * (F.spB - F.top - 10)); l.setAttribute('fill-opacity', (.38 * busy * Math.sin(ph * Math.PI)).toFixed(3)); });
+  ff.querySelector('#coneGlow').setAttribute('stroke-opacity', (.30 + .25 * busy).toFixed(3));
+  // spout flash when each paper comes out
+  let fl = 0; for (const o of OUTS) fl = Math.max(fl, Math.max(0, 1 - Math.abs(t - o.t0 - .05) / .22));
+  ff.querySelector('#spoutFlash').setAttribute('fill-opacity', (.85 * fl).toFixed(3));
+  /* --- output cards --- */
+  for (const o of OUTS) {
+    const u = prog(t, o.t0, o.t0 + .62), e = easeOut(u);
+    if (t < o.t0) { o.el.style.display = 'none'; o.link.style.display = 'none'; continue; }
+    o.el.style.display = 'block'; o.link.style.display = 'block';
+    const sx = F.cx - 320, sy = F.spB + 4;
+    const x = lerp(sx, o.x, e), y = lerp(sy, o.y, e) - Math.sin(e * Math.PI) * 10;
+    o.el.style.transform = `translate(${x}px, ${y}px) scale(${lerp(.18, 1, e)})`;
+    o.el.style.opacity = smooth(prog(u, 0, .25));
+    const lp = easeOut(prog(t, o.t0 + .05, o.t0 + .62));
+    o.reveal.setAttribute('stroke-dasharray', `${lp.toFixed(4)} 1`);
+    const bu = easeOut(prog(t, o.tb, o.tb + .33));
+    o.badge.style.opacity = bu; o.badge.style.transform = `scale(${lerp(.92, 1, bu)})`;
+  }
+  /* --- counter --- */
+  const up = Math.round(TOTAL * smooth(prog(t, 0.0, 3.95)));
+  const downK = clamp(absorbed / N);
+  const n = t < 4.42 ? up : Math.max(2, Math.round(lerp(TOTAL, 2, downK)));
+  num.textContent = n;
+  const green = smooth(prog(t, 6.9, 7.3));
+  num.style.color = `rgb(${lerp(245, 61, green)}, ${lerp(245, 220, green)}, ${lerp(247, 151, green)})`;
+  const ci = easeOut(prog(t, 0.05, 0.4));
+  chip.style.opacity = ci; chip.style.transform = `scale(${lerp(.92, 1, ci)})`;
+}
+window.renderAt = renderAt;
+renderAt(0);
+if (!location.search.includes('capture')) { const t0 = performance.now(); const loop = () => { renderAt(((performance.now() - t0) / 1000) % SCENE.dur); requestAnimationFrame(loop); }; loop(); }
+</script>
+</body>
+</html>

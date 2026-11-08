@@ -1,0 +1,132 @@
+<!doctype html>
+<html><head><meta charset="utf-8">
+<style>
+@font-face{font-family:Inter;font-weight:400;src:url(fonts/inter-latin-400-normal.woff2)}
+@font-face{font-family:Inter;font-weight:600;src:url(fonts/inter-latin-600-normal.woff2)}
+@font-face{font-family:Inter;font-weight:700;src:url(fonts/inter-latin-700-normal.woff2)}
+@font-face{font-family:Inter;font-weight:800;src:url(fonts/inter-latin-800-normal.woff2)}
+@font-face{font-family:"JetBrains Mono";font-weight:500;src:url(fonts/jetbrains-mono-latin-500-normal.woff2)}
+@font-face{font-family:"JetBrains Mono";font-weight:700;src:url(fonts/jetbrains-mono-latin-700-normal.woff2)}
+html,body{margin:0;padding:0;background:#0E0E10;overflow:hidden}
+#stage{position:relative;overflow:hidden;width:1920px;height:1080px;background:#0E0E10;
+  background-image:radial-gradient(circle at 12px 12px,#23232A 1.2px,transparent 1.7px);background-size:24px 24px}
+#stage svg{position:absolute;left:0;top:0;display:block}
+</style></head>
+<body><div id="stage"></div>
+<script src="common.js"></script>
+<script>
+// Clip 1: p3_flight_trade — boarding pass vs lecture calendar, then fees per hour.
+window.cam = t => ({ s: 1, x: 0, y: 0 }); // static camera (micro drift/push-in removed)
+const OUT = 10.25; // phase A exit
+function plane(cx, cy, s, c) { // simple vector plane, nose to the right
+  return `<g transform="translate(${cx} ${cy}) scale(${s})"><path d="M -30 -4 L 18 -4 Q 32 -4 32 0 Q 32 4 18 4 L -30 4 Z M -2 -4 L -16 -26 L -8 -26 L 12 -4 Z M -2 4 L -16 26 L -8 26 L 12 4 Z M -28 -4 L -34 -15 L -28 -15 L -20 -4 Z M -28 4 L -34 15 L -28 15 L -20 4 Z" fill="${c}"/></g>`;
+}
+function calendar(t) {
+  const p = rv(t, 0.2, 12 * FR);
+  if (p <= 0) return '';
+  let g = card(100, 150, 780, 640);
+  g += T(140, 222, 'Lectures', { anchor: 'start', size: 46, w: 800 });
+  g += T(140, 266, 'Last 2 weeks of term', { anchor: 'start', size: 32, w: 600, fill: SEC });
+  const days = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri'];
+  days.forEach((d, i) => g += T(312 + 116 * i, 330, d, { size: 30, w: 600, fill: SEC }));
+  for (let r = 0; r < 2; r++) {
+    const y0 = 358 + r * 196;
+    g += T(140, y0 + 100, r ? 'Wk 12' : 'Wk 11', { anchor: 'start', size: 30, w: 700, fill: SEC });
+    for (let c = 0; c < 5; c++) for (let k = 0; k < 2; k++) {
+      const i = r * 10 + c * 2 + k;
+      const gp = eo((t - (0.8 + i * 0.05)) / (5 * FR));
+      const x = 260 + 116 * c, y = y0 + k * 92;
+      const fill = gp > 0 ? `rgba(${Math.round(lerp(77, 38, gp))},${Math.round(lerp(163, 38, gp))},${Math.round(lerp(255, 44, gp))},${f2(lerp(.2, 1, gp))})` : 'rgba(77,163,255,.2)';
+      const st = gp > 0.5 ? DIM : BLUE;
+      g += `<rect x="${x}" y="${y}" width="104" height="80" rx="10" fill="${fill}" stroke="${st}" stroke-width="2"/>`;
+      g += T(x + 52, y + 50, k ? '2pm' : '9am', { size: 28, mono: true, w: 500, fill: gp > 0.5 ? '#5C5C66' : TXT });
+      if (gp > 0) g += `<line x1="${x + 14}" y1="${y + 40}" x2="${f2(x + 14 + 76 * gp)}" y2="${y + 40}" stroke="${RED}" stroke-opacity=".75" stroke-width="3" stroke-linecap="round"/>`;
+    }
+  }
+  const pulse = 1 + 0.015 * Math.sin((t - 2) * 3);
+  g += `<g transform="translate(490 790) scale(${f2(pulse)}) translate(-490 -790)">${chip(490, 790, '−20 lectures', RED, rv(t, 1.9))}</g>`;
+  return `<g opacity="${f2(p)}" transform="translate(${f2(-60 * (1 - p))} 0)">${g}</g>`;
+}
+function pass(t) {
+  const p = rv(t, 0.0, 12 * FR);
+  if (p <= 0) return '';
+  const X = 980, Y = 150, Wd = 840, Hd = 640;
+  let g = `<clipPath id="pc"><rect x="${X}" y="${Y}" width="${Wd}" height="${Hd}" rx="16"/></clipPath>`;
+  g += card(X, Y, Wd, Hd);
+  g += `<rect x="${X}" y="${Y}" width="${Wd}" height="104" fill="${OR}" clip-path="url(#pc)"/>`;
+  g += plane(X + 70, Y + 52, 1.05, BG);
+  g += T(X + 118, Y + 72, 'FLY', { anchor: 'start', size: 58, w: 800, fill: BG, extra: 'font-style="italic"' });
+  g += T(X + Wd - 40, Y + 64, 'BOARDING PASS', { anchor: 'end', size: 28, w: 800, fill: BG, extra: 'letter-spacing="3"' });
+  g += T(X + 50, Y + 158, 'From', { anchor: 'start', size: 28, w: 600, fill: SEC });
+  g += T(X + Wd - 50, Y + 158, 'To', { anchor: 'end', size: 28, w: 600, fill: SEC });
+  g += T(X + 50, Y + 238, 'LDN', { anchor: 'start', size: 84, w: 800 });
+  g += T(X + Wd - 50, Y + 238, 'HOME', { anchor: 'end', size: 84, w: 800 });
+  // route arrow
+  g += `<line x1="${X + 290}" y1="${Y + 210}" x2="${X + 470}" y2="${Y + 210}" stroke="${SEC}" stroke-width="3" stroke-dasharray="8 10"/>`;
+  g += `<path d="M ${X + 470} ${Y + 196} L ${X + 492} ${Y + 210} L ${X + 470} ${Y + 224} Z" fill="${SEC}"/>`;
+  g += plane(X + 380, Y + 210 - 4 * Math.sin(t * 2.2), 0.75, OR);
+  // perforation
+  g += `<line x1="${X + 34}" y1="${Y + 292}" x2="${X + Wd - 34}" y2="${Y + 292}" stroke="#34343C" stroke-width="3" stroke-dasharray="10 12"/>`;
+  g += `<circle cx="${X}" cy="${Y + 292}" r="20" fill="${BG}"/><circle cx="${X + Wd}" cy="${Y + 292}" r="20" fill="${BG}"/>`;
+  g += T(X + 50, Y + 352, 'Pick a flight', { anchor: 'start', size: 30, w: 600, fill: SEC });
+  const hp = rv(t, 4.0);
+  const rows = [['Fri, end of term', '£64', 0], ['2 weeks earlier', '£49', 1]];
+  rows.forEach(([lab, price, cheap], i) => {
+    const y = Y + 378 + i * 108;
+    const on = cheap ? hp : 0, dim = cheap ? 1 : 1 - 0.55 * hp;
+    const stroke = cheap && hp > 0.01 ? GREEN : '#34343C';
+    g += `<g opacity="${f2(dim)}"><rect x="${X + 34}" y="${y}" width="${Wd - 68}" height="92" rx="14" fill="${GREEN}" fill-opacity="${f2(0.13 * on)}" stroke="${stroke}" stroke-width="${f2(2 + 1.5 * on)}"/>`;
+    g += `<circle cx="${X + 82}" cy="${y + 46}" r="16" fill="none" stroke="${cheap && on > .01 ? GREEN : SEC}" stroke-width="3"/>`;
+    if (on > 0.01) g += `<circle cx="${X + 82}" cy="${y + 46}" r="${f2(9 * on)}" fill="${GREEN}"/>`;
+    g += T(X + 120, y + 59, lab, { anchor: 'start', size: 38, w: 700 });
+    g += T(X + Wd - 64, y + 61, price, { anchor: 'end', size: 46, w: 700, mono: true, fill: on > .5 ? GREEN : TXT });
+    g += '</g>';
+  });
+  const pulse = 1 + 0.015 * Math.sin((t - 5) * 3);
+  g += `<g transform="translate(${X + Wd / 2} 790) scale(${f2(pulse)}) translate(${-(X + Wd / 2)} -790)">${chip(X + Wd / 2, 790, 'Save £15', GREEN, rv(t, 5.0))}</g>`;
+  return `<g opacity="${f2(p)}" transform="translate(${f2(160 * (1 - p))} 0)">${g}</g>`;
+}
+function phaseB(t) {
+  let g = '';
+  const fp = rv(t, 10.5);
+  if (fp > 0) {
+    let c = card(560, 130, 800, 290);
+    c += `<text x="960" y="212" font-family="Inter" text-anchor="middle"><tspan font-size="38" font-weight="700" fill="${TXT}">UK home fees</tspan><tspan font-size="30" font-weight="600" fill="${SEC}" dx="12">(2025/26)</tspan></text>`;
+    c += T(960, 340, '£9,535 / year', { size: 104, w: 800 });
+    g += pop(c, 960, 275, fp);
+  }
+  const hp = rv(t, 12.6);
+  if (hp > 0) {
+    const ay = 440 + 8 * Math.sin((t - 12.6) * 2.5);
+    g += `<g opacity="${f2(hp)}"><line x1="960" y1="${f2(ay)}" x2="960" y2="${f2(ay + 44)}" stroke="${OR}" stroke-width="5" stroke-linecap="round"/><path d="M 944 ${f2(ay + 40)} L 960 ${f2(ay + 60)} L 976 ${f2(ay + 40)}" fill="none" stroke="${OR}" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"/></g>`;
+    g += pop(T(960, 580, '≈ £40 per hour of teaching', { size: 64, w: 800, fill: OR }), 960, 560, hp);
+    g += T(960, 990, '≈ £9,535 ÷ ~240 contact hours; international fees are higher', { size: 28, w: 600, fill: SEC, op: hp });
+  }
+  const lp = rv(t, 13.1);
+  if (lp > 0) {
+    let c = card(330, 650, 560, 250, { stroke: GREEN, sw: 2.5 });
+    c += `<rect x="330" y="650" width="560" height="250" rx="16" fill="${GREEN}" fill-opacity=".08"/>`;
+    c += T(610, 770, 'Save £15', { size: 80, w: 800, fill: GREEN });
+    c += T(610, 835, 'on the flight', { size: 34, w: 600, fill: SEC });
+    g += pop(c, 610, 775, lp);
+  }
+  const vp = rv(t, 13.4);
+  if (vp > 0) g += T(960, 793, 'vs', { size: 48, w: 800, fill: SEC, op: vp });
+  const rp = rv(t, 13.6);
+  if (rp > 0) {
+    let c = card(1030, 650, 560, 250, { stroke: RED, sw: 2.5 });
+    c += `<rect x="1030" y="650" width="560" height="250" rx="16" fill="${RED}" fill-opacity=".08"/>`;
+    c += T(1310, 760, '≈ £800', { size: 80, w: 800, fill: RED });
+    c += T(1310, 815, 'of teaching missed', { size: 36, w: 700 });
+    c += T(1310, 862, '20 lectures × ≈ £40', { size: 28, w: 600, fill: SEC });
+    g += pop(c, 1310, 775, rp);
+  }
+  return g;
+}
+function scene(t) {
+  let a = `<g transform="translate(0 50)">${calendar(t) + pass(t)}</g>`;
+  const xp = eo((t - OUT) / (8 * FR));
+  if (xp > 0) a = xp >= 1 ? '' : `<g opacity="${f2(1 - xp)}" transform="translate(0 ${f2(-40 * xp)})">${a}</g>`;
+  return a + phaseB(t);
+}
+</script></body></html>

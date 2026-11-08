@@ -1,0 +1,506 @@
+<!doctype html>
+<html><head><meta charset="utf-8">
+<style>
+@font-face{font-family:Inter;font-weight:400;src:url(fonts/inter-latin-400-normal.woff2)}
+@font-face{font-family:Inter;font-weight:600;src:url(fonts/inter-latin-600-normal.woff2)}
+@font-face{font-family:Inter;font-weight:700;src:url(fonts/inter-latin-700-normal.woff2)}
+@font-face{font-family:Inter;font-weight:800;src:url(fonts/inter-latin-800-normal.woff2)}
+@font-face{font-family:"JetBrains Mono";font-weight:500;src:url(fonts/jetbrains-mono-latin-500-normal.woff2)}
+@font-face{font-family:"JetBrains Mono";font-weight:700;src:url(fonts/jetbrains-mono-latin-700-normal.woff2)}
+html,body{margin:0;padding:0;background:#0E0E10;overflow:hidden}
+#stage{position:relative;overflow:hidden;background:#0E0E10;
+  background-image:radial-gradient(circle at 12px 12px,#23232A 1.2px,transparent 1.7px);background-size:24px 24px;
+  font-family:Inter,sans-serif;color:#F5F5F7}
+.abs{position:absolute}
+.card{position:absolute;background:#16161A;border:1px solid #2A2A30;border-radius:16px;box-shadow:0 20px 60px rgba(0,0,0,.55);box-sizing:border-box}
+.chrome{position:absolute;left:0;right:0;top:0;height:60px;border-bottom:1px solid #2A2A30;display:flex;align-items:center;padding:0 22px;box-sizing:border-box}
+.dot{width:13px;height:13px;border-radius:50%;background:#34343C;margin-right:9px}
+.fname{font:600 19px Inter;color:#A1A1AA;margin-left:14px}
+.pill{margin-left:auto;font:700 17px Inter;padding:6px 14px;border-radius:999px;letter-spacing:.02em}
+.mono,.rk,.rv,.fh{font-variant-ligatures:none;font-feature-settings:"liga" 0,"calt" 0}
+.mono{font-family:"JetBrains Mono",monospace;font-weight:500;white-space:pre}
+.line{position:absolute;left:0;right:0;display:flex;align-items:center}
+.gut{width:44px;text-align:right;color:#4A4A55;margin-right:22px;flex:none}
+.cursor{display:inline-block;background:#D97757;vertical-align:middle}
+.col{position:absolute;background:#16161A;border:1px solid #2A2A30;border-radius:16px;box-shadow:0 20px 60px rgba(0,0,0,.55);box-sizing:border-box;overflow:hidden}
+.ctitle{position:absolute;left:18px;top:16px;font:700 26px Inter;color:#F5F5F7}
+.csub{position:absolute;left:18px;font:600 15px Inter;color:#A1A1AA;letter-spacing:.06em;text-transform:uppercase}
+.row{white-space:nowrap;position:absolute;left:12px;right:12px;border-radius:9px;background:#1D1D22;display:flex;align-items:center;justify-content:space-between;padding:0 12px;box-sizing:border-box}
+.rk{font-family:"JetBrains Mono";font-weight:500;color:#A1A1AA}
+.rv{font-family:"JetBrains Mono";font-weight:500;color:#F5F5F7}
+.blk{position:absolute;left:12px;right:12px;border-radius:12px;background:#1D1D22;border:1.5px solid #4DA3FF;box-sizing:border-box;overflow:hidden}
+.bh{height:34px;display:flex;align-items:center;justify-content:space-between;padding:0 12px;font:700 17px Inter;color:#F5F5F7;background:rgba(77,163,255,.14)}
+.bh span.sz{font:600 14px Inter;color:#A1A1AA}
+.br{height:34px;display:flex;align-items:center;justify-content:space-between;padding:0 12px;border-top:1px solid #2A2A30}
+.frame{position:absolute;left:12px;right:12px;border-radius:12px;border:1px solid #33333B;background:#1A1A1F;box-sizing:border-box;overflow:hidden}
+.fh{height:30px;display:flex;align-items:center;padding:0 12px;font:600 15px "JetBrains Mono";color:#A1A1AA;background:#202026}
+.pbox{position:absolute;background:#1D1D22;border:1.5px solid #4DA3FF;border-radius:14px;box-sizing:border-box;overflow:hidden}
+.pbox .bh{height:42px;font-size:19px}
+.pbox .br{height:40px}
+#head{position:absolute;font-weight:800;white-space:nowrap;text-shadow:0 2px 20px rgba(0,0,0,.4)}
+#head em{font-style:normal;color:#D97757}
+svg{position:absolute;left:0;top:0;overflow:visible}
+</style></head>
+<body>
+<svg width="0" height="0" style="position:absolute"><defs>
+  <filter id="glow" x="-50%" y="-50%" width="200%" height="200%"><feGaussianBlur stdDeviation="6" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
+  <filter id="glowL" x="-50%" y="-50%" width="200%" height="200%"><feGaussianBlur stdDeviation="14" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
+  <marker id="ahO" viewBox="0 0 10 10" refX="7" refY="5" markerWidth="5.5" markerHeight="5.5" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#D97757"/></marker>
+  <marker id="ahG" viewBox="0 0 10 10" refX="7" refY="5" markerWidth="5" markerHeight="5" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#5A5A66"/></marker>
+</defs></svg>
+<div id="stage"></div>
+<script>
+const Q = new URLSearchParams(location.search);
+const VERT = Q.get('mode') === 'vert';
+const VW = VERT ? 1080 : 1920, H = VERT ? 1350 : 1080;
+const stage = document.getElementById('stage');
+stage.style.width = VW + 'px'; stage.style.height = H + 'px';
+
+const TXT = '#F5F5F7', SEC = '#A1A1AA', OR = '#D97757', BLUE = '#4DA3FF', GREEN = '#3DDC97', AMBER = '#F5B800';
+const clamp = (x, a = 0, b = 1) => Math.min(b, Math.max(a, x));
+const eo = x => 1 - Math.pow(1 - clamp(x), 3);
+const eio = x => { x = clamp(x); return x < .5 ? 4 * x * x * x : 1 - Math.pow(-2 * x + 2, 3) / 2; };
+const lerp = (a, b, t) => a + (b - a) * t;
+const FR = 1001 / 30000;
+const IN = 10 * FR, OUT = 7 * FR;       // entrance 10 frames, exit 7 frames
+const rv = (t, s, d = IN) => eo((t - s) / d);
+const esc = s => String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+function el(tag, cls, parent, html) { const e = document.createElement(tag); if (cls) e.className = cls; if (html != null) e.innerHTML = html; (parent || stage).appendChild(e); return e; }
+function svgEl(tag, attrs, parent) { const e = document.createElementNS('http://www.w3.org/2000/svg', tag); for (const k in attrs) e.setAttribute(k, attrs[k]); parent.appendChild(e); return e; }
+const set = (e, o) => Object.assign(e.style, o);
+
+// ---------------------------------------------------------------- layout
+const LY = VERT ? {
+  head: { x: 70, y: 74, fs: 42 },
+  cpp: { w: 940, x0: 70, y0: 250, s0: 1, x1: 70 + (940 - 940 * .8) / 2, y1: 160, s1: .8 },
+  mach: { x: 70, y: 790, w: 940, h: 490, gap: 22 },
+  py: { w: 900, x: 90, yA: 520, yB: 160 },
+  pan: { x: 70, y: 460, w: 940, h: 820 },
+} : {
+  head: { x: 96, y: 70, fs: 48 },
+  cpp: { w: 860, x0: (1920 - 860) / 2, y0: 170, s0: 1, x1: 96, y1: 170, s1: 1 },
+  mach: { x: 992, y: 170, w: 832, h: 748, gap: 34 },
+  py: { w: 1000, x: 460, yA: 414, yB: 160 },
+  pan: { x: 250, y: 470, w: 1420, h: 420 },
+};
+
+// ---------------------------------------------------------------- timeline (seconds from clip start)
+const T = {
+  type0: 0.25, cps: 32,
+  term0: 8.6, termOk: 10.3,
+  slide: 14.6, cpu: 14.95, stk: 15.4, heap: 15.85, bus: 17.2,
+  push: 19.8, sub: 20.8,
+  oop: 23.0,
+  alloc: 28.3, blk: 28.62, store: 29.25,
+  call: 31.0, recFrame: 31.25, buf: 32.0, bufPtr: 32.45, ret: 33.8,
+  exit: 35.0, pyIn: 35.22, pyType: 35.6,
+  peel: 38.9, lift: 39.05, unroll: 39.3, ar1: 40.15, ar2: 40.65, ar3: 41.15,
+  hand: 44.4, close: 44.4, cradle: 44.78, END: 45.6,
+};
+const HEADS = [
+  [2.2, 'Second language: <em>C++</em>'],
+  [16.8, 'How a <em>machine</em> works'],
+  [19.8, 'What it’s actually <em>computing</em>'],
+  [23.0, '<em>Object-oriented</em> programming'],
+  [28.3, 'Dynamic memory <em>allocation</em>'],
+  [35.0, 'Then you read <em>Python</em>'],
+  [38.9, '…and know what’s <em>under the hood</em>'],
+  [44.4, 'Python holds your <em>hand</em>'],
+];
+
+// ---------------------------------------------------------------- heading
+const head = el('div', null, stage); head.id = 'head';
+set(head, { left: LY.head.x + 'px', top: LY.head.y + 'px', fontSize: LY.head.fs + 'px', transformOrigin: 'left center' });
+function drawHead(t) {
+  let i = -1; for (let k = 0; k < HEADS.length; k++) if (t >= HEADS[k][0]) i = k;
+  if (i < 0) { head.style.opacity = 0; return; }
+  const Ti = HEADS[i][0];
+  let html, o, dy = 0, sc = 1;
+  if (i > 0 && t < Ti + OUT) { html = HEADS[i - 1][1]; o = 1 - clamp((t - Ti) / OUT); }
+  else { html = HEADS[i][1]; const p = rv(t, i > 0 ? Ti + OUT : Ti); o = p; dy = (1 - p) * 10; sc = lerp(.92, 1, p); }
+  if (head._h !== html) { head.innerHTML = html; head._h = html; }
+  set(head, { opacity: o, transform: `translateY(${dy}px) scale(${sc})` });
+}
+
+// ---------------------------------------------------------------- C++ card
+const COL = { k: OR, t: BLUE, n: GREEN, s: GREEN, c: '#6B6B76', p: SEC, f: TXT, i: TXT };
+const CPP = [
+  [['k', '#include'], ['i', ' '], ['s', '<vector>']],
+  [],
+  [['k', 'class', 'cls'], ['i', ' '], ['t', 'Sensor'], ['p', ' {']],
+  [['i', ' '], ['k', 'public'], ['p', ':']],
+  [['i', '  '], ['k', 'void'], ['i', ' '], ['f', 'record'], ['p', '('], ['k', 'int'], ['i', ' v'], ['p', ') { '], ['i', 'readings'], ['p', '.'], ['f', 'push_back'], ['p', '('], ['i', 'v'], ['p', '); }']],
+  [['i', ' '], ['k', 'private'], ['p', ':']],
+  [['i', '  '], ['t', 'std::vector'], ['p', '<'], ['k', 'int'], ['p', '>'], ['i', ' readings'], ['p', ';']],
+  [['p', '};']],
+  [],
+  [['k', 'int'], ['i', ' '], ['f', 'main'], ['p', '() {']],
+  [['i', '  '], ['t', 'Sensor'], ['p', '*'], ['i', ' s '], ['p', '= '], ['k', 'new'], ['i', ' '], ['t', 'Sensor'], ['p', '();'], ['c', '  // on the heap']],
+  [['i', '  s'], ['p', '->'], ['f', 'record'], ['p', '('], ['n', '42'], ['p', ');']],
+  [['i', '  '], ['k', 'delete'], ['i', ' s'], ['p', ';']],
+  [['p', '}']],
+];
+const TERM = [['p', '$ '], ['i', 'g++ -std=c++17 main.cpp -o main && ./main']];
+const FS = 26, LH = 42, CH = 60, PADT = 22, FOOT = 58;
+const cppH = CH + PADT + CPP.length * LH + 18 + FOOT;
+const cpp = el('div', 'card', stage);
+set(cpp, { width: LY.cpp.w + 'px', height: cppH + 'px', transformOrigin: '0 0' });
+cpp.innerHTML = `<div class="chrome"><div class="dot"></div><div class="dot"></div><div class="dot"></div><div class="fname">main.cpp</div><div class="pill" style="color:${OR};background:rgba(217,119,87,.14)">C++</div></div>`;
+const hlBar = el('div', 'abs', cpp); set(hlBar, { left: '10px', right: '10px', height: LH + 'px', borderRadius: '8px', background: 'rgba(245,184,0,.16)', boxShadow: 'inset 3px 0 0 ' + AMBER, transformOrigin: 'left center' });
+const oopBrk = el('div', 'abs', cpp); set(oopBrk, { left: '14px', width: '4px', borderRadius: '2px', background: OR, top: (CH + PADT + 2 * LH + 6) + 'px', height: (6 * LH - 12) + 'px', transformOrigin: 'top' });
+const oopTags = [[3, 'behaviour  ·  methods'], [5, 'data  ·  hidden state']].map(([li, txt]) => {
+  const d = el('div', 'abs', cpp, txt);
+  set(d, { right: '24px', top: (CH + PADT + li * LH + (LH - 32) / 2) + 'px', height: '32px', lineHeight: '32px', padding: '0 14px', borderRadius: '999px', font: '600 17px Inter', color: '#FFD9CB', background: 'rgba(217,119,87,.18)', border: '1px solid rgba(217,119,87,.45)' });
+  return d;
+});
+const lineEls = CPP.map((_, i) => { const d = el('div', 'line mono', cpp); set(d, { top: (CH + PADT + i * LH) + 'px', height: LH + 'px', fontSize: FS + 'px' }); return d; });
+const termEl = el('div', 'abs mono', cpp);
+set(termEl, { left: 0, right: 0, bottom: 0, height: FOOT + 'px', borderTop: '1px solid #2A2A30', display: 'flex', alignItems: 'center', padding: '0 22px', boxSizing: 'border-box', fontSize: '20px', background: '#131316', borderRadius: '0 0 16px 16px' });
+const lenOf = l => l.reduce((a, tk) => a + tk[1].length, 0);
+const cppTotal = CPP.reduce((a, l) => a + lenOf(l) + 1, 0);
+const termTotal = lenOf(TERM);
+const cursorHTML = (h, w) => `<span class="cursor" style="width:${w}px;height:${h}px"></span>`;
+function toksHTML(toks, n, extra) {
+  let out = '', left = n;
+  for (const [c, s, id] of toks) {
+    if (left <= 0) break;
+    const part = s.slice(0, left); left -= part.length;
+    let st = `color:${COL[c]}`;
+    if (c === 'f') st += ';font-weight:700';
+    if (c === 'c') st += ';font-style:normal';
+    if (id && extra && extra[id]) st += ';' + extra[id];
+    out += `<span style="${st}">${esc(part)}</span>`;
+  }
+  return out;
+}
+const CPP_LINE_TOP = i => CH + PADT + i * LH;
+function drawCpp(t) {
+  // position: centred, then slides left (landscape) / shrinks up (vertical) at T.slide
+  const ps = eio((t - T.slide) / (14 * FR));
+  const x = lerp(LY.cpp.x0, LY.cpp.x1, ps), y = lerp(LY.cpp.y0, LY.cpp.y1, ps), s = lerp(LY.cpp.s0, LY.cpp.s1, ps);
+  const pin = rv(t, 0, 9 * FR), pex = clamp((t - T.exit) / OUT);
+  set(cpp, { left: x + 'px', top: y + 'px', opacity: pin * (1 - pex), transform: `translateY(${(1 - pin) * 24}px) scale(${s * lerp(1, .97, pex) * lerp(.97, 1, pin)})`, display: pex >= 1 ? 'none' : 'block' });
+  if (pex >= 1) return;
+  // typing
+  const typed = Math.floor(Math.max(0, t - T.type0) * T.cps);
+  let left = Math.min(typed, cppTotal), curLine = -1;
+  const blinkOn = (Math.floor(t * 2) % 2 === 0);
+  const termTyped = Math.floor(Math.max(0, t - T.term0) * 33);
+  const typingDone = typed >= cppTotal;
+  // OOP emphasis
+  const oop = clamp((t - T.oop) / (12 * FR)) * (1 - clamp((t - T.alloc) / (8 * FR)));
+  const sweep = eo((t - T.oop - 4 * FR) / (12 * FR)) * (1 - clamp((t - T.alloc) / (8 * FR)));
+  const extra = { cls: `background:linear-gradient(rgba(245,184,0,.42),rgba(245,184,0,.42)) no-repeat 0 55%/${(sweep * 100).toFixed(1)}% 78%;border-radius:4px;padding:0 2px;margin:0 -2px;color:${sweep > .5 ? '#FFD9CB' : OR}` };
+  let start = 0, curL = -1;
+  const tc = Math.min(typed, cppTotal);
+  for (let i = 0; i < CPP.length; i++) {
+    const L = lenOf(CPP[i]);
+    if (curL < 0 && (tc < start + L + 1 || i === CPP.length - 1)) curL = i;
+    const n = clamp(tc - start, 0, L);
+    const vis = t >= T.type0 && tc >= start;
+    let html = `<span class="gut">${vis ? (i + 1) : ''}</span>` + toksHTML(CPP[i], n, extra);
+    if (i === curL && t >= T.type0 * .3 && t < T.term0 && (!typingDone || blinkOn)) html += cursorHTML(LH * .7, FS * .58);
+    start += L + 1;
+    const dim = (i >= 2 && i <= 7) ? 1 : lerp(1, .32, oop);
+    if (lineEls[i]._h !== html) { lineEls[i].innerHTML = html; lineEls[i]._h = html; }
+    lineEls[i].style.opacity = dim;
+  }
+  oopTags.forEach((d, k) => { const p = rv(t, T.oop + 0.7 + k * 0.8); set(d, { opacity: p * (1 - clamp((t - T.alloc) / (8 * FR))), transform: `scale(${lerp(.92, 1, p)})` }); });
+  oopBrk.style.opacity = oop; oopBrk.style.transform = `scaleY(${eo((t - T.oop) / (12 * FR))})`;
+  // terminal strip
+  let th = '';
+  if (t >= T.term0 - .4) {
+    th = toksHTML(TERM, termTyped);
+    if (t >= T.term0 && termTyped < termTotal + 1) th += cursorHTML(24, 12);
+    else if (t < T.term0 && blinkOn) th += cursorHTML(24, 12);
+    if (t >= T.termOk) {
+      const o = rv(t, T.termOk);
+      th += `<span style="margin-left:auto;font:600 18px Inter;color:${GREEN};opacity:${o};display:flex;align-items:center;gap:8px"><span style="width:10px;height:10px;border-radius:50%;background:${GREEN};box-shadow:0 0 10px ${GREEN}"></span>compiled · exit 0</span>`;
+    }
+  }
+  if (termEl._h !== th) { termEl.innerHTML = th; termEl._h = th; }
+  termEl.style.opacity = rv(t, T.term0 - .4) * lerp(1, .32, oop);
+  // execution-line highlight
+  let hl = -1, h0 = 0;
+  if (t >= T.push && t < T.oop) { hl = 9; h0 = T.push; }
+  else if (t >= T.alloc && t < T.call) { hl = 10; h0 = T.alloc; }
+  else if (t >= T.call) { hl = 11; h0 = T.call; }
+  if (hl >= 0) { set(hlBar, { display: 'block', top: CPP_LINE_TOP(hl) + 'px', transform: `scaleX(${eo((t - h0) / (10 * FR))})`, opacity: 1 }); }
+  else hlBar.style.display = 'none';
+}
+
+// ---------------------------------------------------------------- machine (CPU / stack / heap)
+const M = LY.mach;
+const mach = el('div', 'abs', stage); set(mach, { left: M.x + 'px', top: M.y + 'px', width: M.w + 'px', height: M.h + 'px' });
+const CWU = (M.w - 2 * M.gap) / 3.14;
+const cwA = [1.14 * CWU, CWU, CWU];
+const cx = [0, cwA[0] + M.gap, cwA[0] + CWU + 2 * M.gap];
+const RH = VERT ? 40 : 46, TOP0 = VERT ? 86 : 100, RGAP = VERT ? 8 : 10, VFS = VERT ? 19 : 20;
+const cols = ['CPU', 'Stack', 'Heap'].map((n, i) => {
+  const c = el('div', 'col', mach);
+  set(c, { left: cx[i] + 'px', top: 0, width: cwA[i] + 'px', height: M.h + 'px' });
+  el('div', 'ctitle', c, n);
+  const sub = el('div', 'csub', c, ['registers', 'local variables', 'dynamic memory'][i]); sub.style.top = (VERT ? 50 : 52) + 'px';
+  return c;
+});
+// CPU registers
+const REGN = ['rip', 'rsp', 'rdi', 'rax'];
+const regEls = REGN.map((n, i) => {
+  const r = el('div', 'row', cols[0]); set(r, { top: (TOP0 + i * (RH + RGAP)) + 'px', height: RH + 'px', fontSize: VFS + 'px' });
+  el('span', 'rk', r, n); const v = el('span', 'rv', r, ''); return { r, v };
+});
+const REGV = [
+  [0, ['0x401136', '0x7ffc…de48', '0x1', '0x0']],
+  [T.push, ['0x401137', '0x7ffc…de40', '0x1', '0x0']],
+  [T.sub, ['0x40113b', '0x7ffc…de30', '0x1', '0x0']],
+  [T.alloc, ['0x401030', '0x7ffc…de28', '0x18', '0x0']],
+  [T.blk, ['0x401154', '0x7ffc…de30', '0x18', '0x5555…92b0']],
+  [T.store, ['0x401158', '0x7ffc…de30', '0x18', '0x5555…92b0']],
+  [T.call, ['0x4011a6', '0x7ffc…de28', '0x5555…92b0', '0x5555…92b0']],
+  [T.ret, ['0x401170', '0x7ffc…de30', '0x5555…92b0', '0x5555…92b0']],
+];
+const INSN = [[0, ''], [T.push, 'push rbp'], [T.sub, 'sub rsp, 16'], [T.alloc, 'call operator new'], [T.store, 'mov [rbp-8], rax'], [T.call, 'call Sensor::record'], [T.ret, 'ret']];
+const tick = el('div', 'abs', cols[0]);
+const tickH = VERT ? 78 : 92;
+set(tick, { left: '12px', right: '12px', bottom: '12px', height: tickH + 'px', borderRadius: '10px', background: '#121215', border: '1px solid #2A2A30', boxSizing: 'border-box', padding: '12px 14px' });
+tick.innerHTML = `<div style="font:600 13px Inter;color:${SEC};letter-spacing:.08em;text-transform:uppercase">executing</div><div class="mono tv" style="margin-top:${VERT ? 8 : 12}px;font-size:${VERT ? 17 : 18}px;color:${OR};font-weight:700"></div>`;
+const tickV = tick.querySelector('.tv');
+// stack frames
+const FHH = 30;
+const mainF = el('div', 'frame', cols[1]);
+set(mainF, { top: TOP0 + 'px', height: (FHH + 2 * (RH - 4) + 3 * 6) + 'px' });
+mainF.innerHTML = `<div class="fh">main()</div>`;
+const slotEl = (parent, k, top) => { const r = el('div', 'row', parent); set(r, { top: top + 'px', height: (RH - 4) + 'px', left: '6px', right: '6px', fontSize: (VFS - 2) + 'px', padding: '0 10px' }); el('span', 'rk', r, k); const v = el('span', 'rv', r, ''); return { r, v }; };
+const sRbp = slotEl(mainF, 'rbp', FHH + 6), sS = slotEl(mainF, 's', FHH + 6 + RH - 4 + 6);
+const recTop = TOP0 + FHH + 2 * (RH - 4) + 3 * 6 + 14;
+const recF = el('div', 'frame', cols[1]);
+set(recF, { top: recTop + 'px', height: (FHH + 2 * (RH - 4) + 3 * 6) + 'px', borderColor: '#4a3a33' });
+recF.innerHTML = `<div class="fh">record()</div>`;
+const sThis = slotEl(recF, 'this', FHH + 6), sV = slotEl(recF, 'v', FHH + 6 + RH - 4 + 6);
+sThis.v.textContent = '0x5555…92b0'; sV.v.textContent = '42'; sV.v.style.color = GREEN;
+// heap
+const freeEl = el('div', 'abs', cols[2]);
+set(freeEl, { left: '12px', right: '12px', top: TOP0 + 'px', bottom: '12px', border: '1.5px dashed #2E2E36', borderRadius: '12px', display: 'flex', alignItems: 'flex-end', justifyContent: 'center', paddingBottom: '16px', boxSizing: 'border-box', font: '600 15px Inter', color: '#55555F', letterSpacing: '.08em', textTransform: 'uppercase' });
+freeEl.textContent = 'free';
+const sensB = el('div', 'blk', cols[2]);
+const BR = VERT ? 34 : 36;
+set(sensB, { top: (TOP0 + 8) + 'px', height: (34 + 3 * BR) + 'px' });
+sensB.innerHTML = `<div class="bh">Sensor<span class="sz">24 B</span></div>` + ['data', 'size', 'cap'].map(k => `<div class="br" style="height:${BR}px"><span class="rk" style="font-size:${VFS - 1}px">${k}</span><span class="rv hv" style="font-size:${VFS - 1}px"></span></div>`).join('');
+const sensV = [...sensB.querySelectorAll('.hv')];
+const bufTop = TOP0 + 8 + 34 + 3 * BR + (VERT ? 46 : 70);
+const bufB = el('div', 'blk', cols[2]);
+set(bufB, { top: bufTop + 'px', height: (34 + 54) + 'px', borderColor: GREEN });
+bufB.innerHTML = `<div class="bh" style="background:rgba(61,220,151,.13)">int[1]<span class="sz">4 B</span></div><div style="height:54px;display:flex;align-items:center;padding:0 12px"><span class="mono" style="font-size:28px;font-weight:700;color:${GREEN};border:1.5px solid #2f6b55;border-radius:8px;padding:2px 16px">42</span></div>`;
+// machine svg overlay
+const msvg = svgEl('svg', { width: M.w, height: M.h }, mach);
+const busY = TOP0 + 4 * (RH + RGAP) + (VERT ? 14 : 40);
+function busPath(i) { const x0 = cx[i] + cwA[i] + 6, x1 = cx[i + 1] - 6; return `M${x0},${busY} L${x1},${busY}`; }
+const bus = [0, 1].map(i => svgEl('path', { d: busPath(i), stroke: '#5A5A66', 'stroke-width': 3, fill: 'none', 'marker-start': 'url(#ahG)', 'marker-end': 'url(#ahG)', pathLength: 1 }, msvg));
+// pointer: stack slot s -> Sensor block
+const sSlotY = TOP0 + FHH + 6 + RH - 4 + 6 + (RH - 4) / 2;
+const ptr1 = svgEl('path', { d: `M${cx[1] + cwA[1] - 22},${sSlotY} C${cx[1] + cwA[1] + 30},${sSlotY} ${cx[2] - 10},${TOP0 + 8 + 17} ${cx[2] + 12},${TOP0 + 8 + 17}`, stroke: OR, 'stroke-width': 3.5, fill: 'none', 'marker-end': 'url(#ahO)', pathLength: 1, filter: 'url(#glow)' }, msvg);
+const ptr1dot = svgEl('circle', { cx: cx[1] + cwA[1] - 22, cy: sSlotY, r: 6, fill: OR }, msvg);
+// pointer: Sensor.data -> int[1]
+const dataY = TOP0 + 8 + 34 + BR / 2;
+const dX = cx[2] + cwA[2] - 30;
+const ptr2 = svgEl('path', { d: `M${dX},${dataY} C${dX + 22},${dataY + 20} ${dX + 22},${bufTop - 40} ${dX - 40},${bufTop - 2}`, stroke: OR, 'stroke-width': 3.5, fill: 'none', 'marker-end': 'url(#ahO)', pathLength: 1, filter: 'url(#glow)' }, msvg);
+const ptr2dot = svgEl('circle', { cx: dX, cy: dataY, r: 6, fill: OR }, msvg);
+const pulse = svgEl('circle', { r: 8, fill: AMBER, filter: 'url(#glow)' }, msvg);
+function pulseAlong(segs, t) {   // segs: [[path, t0, dur, reverse]]
+  for (const [p, t0, d, rev] of segs) {
+    if (t >= t0 && t < t0 + d) { const L = p.getTotalLength(); let u = eio((t - t0) / d); if (rev) u = 1 - u; const pt = p.getPointAtLength(u * L); set(pulse, { opacity: 1 }); pulse.setAttribute('cx', pt.x); pulse.setAttribute('cy', pt.y); return; }
+  }
+  pulse.style.opacity = 0;
+}
+const dash = (p, u) => { p.setAttribute('stroke-dasharray', '1 2'); p.setAttribute('stroke-dashoffset', (1 - clamp(u)).toFixed(4)); p.style.opacity = u > 0.002 ? 1 : 0; };
+function valAt(list, t) { let v = list[0][1], ch = -99; for (const [ti, x] of list) if (t >= ti) { v = x; ch = ti; } return [v, ch]; }
+
+function drawMach(t) {
+  const pex = clamp((t - T.exit) / OUT);
+  const show = t >= T.cpu - .1 && pex < 1;
+  mach.style.display = show ? 'block' : 'none';
+  if (!show) return;
+  const dimOOP = lerp(1, .38, clamp((t - T.oop) / (12 * FR)) * (1 - clamp((t - T.alloc) / (8 * FR))));
+  set(mach, { opacity: dimOOP * (1 - pex), transform: `scale(${lerp(1, .97, pex)})` });
+  [T.cpu, T.stk, T.heap].forEach((t0, i) => { const p = rv(t, t0); set(cols[i], { opacity: p, transform: `translateY(${(1 - p) * 26}px) scale(${lerp(.95, 1, p)})` }); });
+  // registers
+  const [vals, chT] = valAt(REGV, t);
+  const prev = REGV[Math.max(0, REGV.findIndex(r => r[0] === chT) - 1)][1];
+  regEls.forEach((r, i) => {
+    if (r.v.textContent !== vals[i]) r.v.textContent = vals[i];
+    const changed = prev[i] !== vals[i] && chT > 0;
+    const f = changed ? 1 - clamp((t - chT) / 0.9) : 0;
+    r.r.style.background = `rgba(245,184,0,${(.28 * f).toFixed(3)})`;
+    r.r.style.boxShadow = f > 0 ? `inset 3px 0 0 rgba(245,184,0,${f.toFixed(2)})` : 'none';
+    r.v.style.color = f > .05 ? '#FFE7A8' : TXT;
+  });
+  const [ins, insT] = valAt(INSN, t);
+  if (tickV.textContent !== ins) tickV.textContent = ins;
+  const ip = rv(t, insT, 8 * FR); tickV.style.opacity = ins ? ip : 0; tickV.style.transform = `translateY(${(1 - ip) * 8}px)`;
+  tick.style.borderColor = ins && t - insT < .6 ? 'rgba(217,119,87,.7)' : '#2A2A30';
+  // bus
+  bus.forEach((b, i) => { dash(b, eo((t - T.bus - i * .25) / .45)); b.setAttribute('stroke-dasharray', '1 0'); b.style.opacity = rv(t, T.bus + i * .25, .45); });
+  // stack frames
+  const mf = rv(t, T.push + .15); set(mainF, { opacity: mf, transform: `translateY(${(1 - mf) * -14}px)` });
+  sRbp.v.textContent = '0x7ffc…de50';
+  sRbp.r.style.opacity = rv(t, T.push + .15);
+  sS.r.style.opacity = rv(t, T.sub + .15);
+  const sVal = t >= T.store ? '0x5555…92b0' : '?';
+  if (sS.v.textContent !== sVal) sS.v.textContent = sVal;
+  const sf = t >= T.store ? 1 - clamp((t - T.store) / .9) : 0;
+  sS.r.style.background = `rgba(245,184,0,${(.28 * sf).toFixed(3)})`;
+  sS.v.style.color = t >= T.store ? '#FFD9CB' : SEC;
+  const rf = rv(t, T.recFrame) * (1 - clamp((t - T.ret) / (8 * FR)));
+  set(recF, { opacity: rf, transform: `translateY(${(1 - rv(t, T.recFrame)) * -14}px)` });
+  // heap
+  const b1 = rv(t, T.blk, 9 * FR); set(sensB, { opacity: b1, transform: `scale(${lerp(.85, 1, b1)})`, boxShadow: `0 0 ${(30 * (1 - clamp((t - T.blk) / 1.2))).toFixed(1)}px rgba(77,163,255,.6)` });
+  const b2 = rv(t, T.buf, 9 * FR); set(bufB, { opacity: b2, transform: `scale(${lerp(.85, 1, b2)})`, boxShadow: `0 0 ${(30 * (1 - clamp((t - T.buf) / 1.2))).toFixed(1)}px rgba(61,220,151,.6)` });
+  freeEl.style.opacity = rv(t, T.heap) * lerp(1, .6, b1);
+  const hasBuf = t >= T.bufPtr;
+  const sv = [hasBuf ? '●' : 'null', hasBuf ? '1' : '0', hasBuf ? '1' : '0'];
+  sv.forEach((v, i) => { if (sensV[i].textContent !== v) sensV[i].textContent = v; sensV[i].style.color = (hasBuf && t - T.bufPtr < .9) ? '#FFE7A8' : (i === 0 && hasBuf ? 'transparent' : TXT); });
+  dash(ptr1, eo((t - T.store - .05) / .55)); ptr1dot.style.opacity = rv(t, T.store, 6 * FR);
+  dash(ptr2, eo((t - T.bufPtr) / .5)); ptr2dot.style.opacity = rv(t, T.bufPtr, 6 * FR);
+  // computation pulses
+  pulseAlong([
+    [bus[0], T.push + .02, .45], [bus[0], T.sub + .02, .45],
+    [bus[0], T.alloc + .0, .25], [bus[1], T.alloc + .25, .3],
+    [bus[0], T.store - .3, .3],
+    [bus[0], T.call + .0, .3], [bus[1], T.buf - .32, .3],
+    [bus[0], T.ret - .3, .3, true],
+  ], t);
+}
+
+// ---------------------------------------------------------------- Python card
+const PY = [
+  [['i', 'readings '], ['p', '= []']],
+  [['i', 'readings'], ['p', '.'], ['f', 'append'], ['p', '('], ['n', '42'], ['p', ')']],
+];
+const PFS = VERT ? 40 : 42, PLH = 64;
+const pyH = CH + 30 + PY.length * PLH + 30;
+const py = el('div', 'card', stage);
+set(py, { width: LY.py.w + 'px', height: pyH + 'px', left: LY.py.x + 'px' });
+py.innerHTML = `<div class="chrome"><div class="dot"></div><div class="dot"></div><div class="dot"></div><div class="fname">main.py</div><div class="pill" style="color:${BLUE};background:rgba(77,163,255,.14)">Python</div></div>`;
+const pyLines = PY.map((_, i) => { const d = el('div', 'line mono', py); set(d, { top: (CH + 30 + i * PLH) + 'px', height: PLH + 'px', fontSize: PFS + 'px', paddingLeft: '44px' }); return d; });
+const seam = el('div', 'abs', py); set(seam, { left: '44px', width: (19 * PFS * 0.6 + 8) + 'px', top: (CH + 30 + 2 * PLH - 4) + 'px', height: '0', borderTop: `3px dashed ${OR}`, transformOrigin: 'left' });
+const pyTotal = PY.reduce((a, l) => a + lenOf(l) + 1, 0);
+
+// ---------------------------------------------------------------- under-the-hood panel
+const P = LY.pan;
+const pan = el('div', 'card', stage);
+set(pan, { left: P.x + 'px', top: P.y + 'px', width: P.w + 'px', height: P.h + 'px', overflow: 'hidden', background: '#131316' });
+el('div', 'abs', pan, `<span style="font:700 15px Inter;letter-spacing:.1em;text-transform:uppercase;color:${OR}">under the hood</span><span style="font:600 15px Inter;letter-spacing:.1em;text-transform:uppercase;color:${SEC}">&nbsp;&nbsp;·&nbsp;&nbsp;what CPython builds for that one line</span>`);
+pan.lastChild.style.left = '28px'; pan.lastChild.style.top = '24px';
+const BX = VERT ? {
+  A: { x: 30, y: 150, w: 380 }, B: { x: 530, y: 150, w: 380 }, C: { x: 530, y: 540, w: 380 }, D: { x: 30, y: 540, w: 380 },
+} : {
+  A: { x: 40, y: 92, w: 230 }, B: { x: 350, y: 92, w: 330 }, C: { x: 760, y: 92, w: 300 }, D: { x: 1136, y: 250, w: 248 },
+};
+const pb = {};
+function pbox(id, title, size, rowsHTML, color, h) {
+  const b = el('div', 'pbox', pan); const r = BX[id];
+  set(b, { left: r.x + 'px', top: r.y + 'px', width: r.w + 'px', height: h + 'px', borderColor: color });
+  b.innerHTML = `<div class="bh" style="background:${color === GREEN ? 'rgba(61,220,151,.13)' : color === SEC ? '#202026' : 'rgba(77,163,255,.14)'}">${title}<span class="sz">${size}</span></div>` + rowsHTML;
+  r.h = h; pb[id] = b; return b;
+}
+const prow = (k, v, vs = '') => `<div class="br"><span class="rk" style="font-size:19px">${k}</span><span class="rv" style="font-size:19px;${vs}">${v}</span></div>`;
+pbox('A', 'readings', 'stack', prow('PyObject*', '<span style="display:inline-block;width:12px"></span>'), SEC, 42 + 44);
+pbox('B', 'PyListObject', 'heap', prow('ob_refcnt', '1') + prow('ob_size', '1') + prow('allocated', '4') + prow('ob_item', '<span style="display:inline-block;width:12px"></span>'), BLUE, 42 + 4 * 40 + 4);
+const cells = [0, 1, 2, 3].map(i => `<span style="width:${VERT ? 64 : 52}px;height:46px;border:1.5px solid ${i ? '#33333B' : BLUE};border-radius:8px;display:inline-flex;align-items:center;justify-content:center;font:600 16px 'JetBrains Mono';color:#4A4A55">${i ? 'NULL' : ''}</span>`).join('');
+pbox('C', 'ob_item', 'PyObject*[4]', `<div style="height:76px;display:flex;align-items:center;gap:${VERT ? 22 : 12}px;padding:0 14px">${cells}</div>`, BLUE, 42 + 80);
+pbox('D', 'PyLongObject', 'heap', `<div style="height:76px;display:flex;align-items:center;padding:0 16px;gap:16px"><span class="mono" style="font-size:36px;font-weight:700;color:${GREEN}">42</span><span style="font:600 15px Inter;color:${SEC}">an int is an object</span></div>`, GREEN, 42 + 80);
+const psvg = svgEl('svg', { width: P.w, height: P.h }, pan);
+const A = BX.A, B = BX.B, C = BX.C, D = BX.D;
+const aDot = [A.x + A.w - 24, A.y + 42 + 20];
+const bDot = [B.x + B.w - 24, B.y + 42 + 3 * 40 + 20];
+const cCell = [C.x + 14 + (VERT ? 32 : 26), C.y + 42 + 38];
+let pa1, pa2, pa3;
+if (VERT) {
+  pa1 = `M${aDot[0]},${aDot[1]} C${aDot[0] + 80},${aDot[1]} ${B.x - 60},${B.y + 21} ${B.x + 2},${B.y + 21}`;
+  pa2 = `M${bDot[0]},${bDot[1]} C${bDot[0] + 30},${bDot[1] + 60} ${C.x + C.w - 60},${C.y - 80} ${C.x + C.w - 60},${C.y - 3}`;
+  pa3 = `M${cCell[0]},${cCell[1]} C${cCell[0]},${cCell[1] + 90} ${D.x + D.w + 60},${D.y + 80} ${D.x + D.w + 3},${D.y + 80}`;
+} else {
+  pa1 = `M${aDot[0]},${aDot[1]} C${aDot[0] + 50},${aDot[1]} ${B.x - 40},${B.y + 21} ${B.x + 2},${B.y + 21}`;
+  pa2 = `M${bDot[0]},${bDot[1]} C${bDot[0] + 60},${bDot[1]} ${C.x - 50},${C.y + 80} ${C.x + 2},${C.y + 80}`;
+  pa3 = `M${cCell[0]},${cCell[1]} C${cCell[0]},${cCell[1] + 150} ${D.x - 110},${D.y + 80} ${D.x + 2},${D.y + 80}`;
+}
+const parr = [pa1, pa2, pa3].map(d => svgEl('path', { d, stroke: OR, 'stroke-width': 3.5, fill: 'none', 'marker-end': 'url(#ahO)', pathLength: 1, filter: 'url(#glow)' }, psvg));
+const pdots = [aDot, bDot, cCell].map(p => svgEl('circle', { cx: p[0], cy: p[1], r: 6.5, fill: OR }, psvg));
+const ppulse = svgEl('circle', { r: 8, fill: AMBER, filter: 'url(#glow)' }, psvg);
+const curl = el('div', 'abs', stage);
+set(curl, { height: '30px', borderRadius: '15px', background: 'linear-gradient(#3a3a44,#202026 45%,#0c0c0e)', boxShadow: '0 10px 24px rgba(0,0,0,.6)' });
+
+// ---------------------------------------------------------------- cradle ("Python holds your hand")
+const csvg = svgEl('svg', { width: VW, height: H }, stage);
+const glowE = svgEl('ellipse', { fill: OR, opacity: 0, filter: 'url(#glowL)' }, csvg);
+const cradL = svgEl('path', { stroke: OR, 'stroke-width': 6, fill: 'none', 'stroke-linecap': 'round', pathLength: 1, filter: 'url(#glow)' }, csvg);
+const cradR = svgEl('path', { stroke: OR, 'stroke-width': 6, fill: 'none', 'stroke-linecap': 'round', pathLength: 1, filter: 'url(#glow)' }, csvg);
+
+function drawPy(t) {
+  const pin = rv(t, T.pyIn, 12 * FR);
+  const show = t >= T.pyIn;
+  py.style.display = show ? 'block' : 'none';
+  pan.style.display = show ? 'block' : 'none';
+  csvg.style.display = show ? 'block' : 'none';
+  curl.style.display = 'none';
+  if (!show) return;
+  // card y: centred -> lifted for the reveal -> back to centre for the cradle
+  const lift = eio((t - T.lift) / (14 * FR)), back = eio((t - T.close) / (13 * FR));
+  const yy = lerp(lerp(LY.py.yA, LY.py.yB, lift), LY.py.yA, back);
+  const tilt = Math.sin(Math.PI * clamp((t - T.lift) / (16 * FR))) * 6;
+  set(py, { top: yy + 'px', opacity: pin, transform: `perspective(1400px) translateY(${(1 - pin) * 30}px) scale(${lerp(.96, 1, pin)}) rotateX(${tilt}deg)`, transformOrigin: 'center top' });
+  // typing
+  const typed = Math.floor(Math.max(0, t - T.pyType) * T.cps);
+  const blinkOn = Math.floor(t * 2) % 2 === 0;
+  let start = 0, curL = -1; const tc = Math.min(typed, pyTotal);
+  for (let i = 0; i < PY.length; i++) {
+    const L = lenOf(PY[i]);
+    if (curL < 0 && (tc < start + L + 1 || i === PY.length - 1)) curL = i;
+    let html = toksHTML(PY[i], clamp(tc - start, 0, L));
+    if (i === curL && t < T.peel && (tc < pyTotal || blinkOn)) html += cursorHTML(PLH * .62, PFS * .58);
+    start += L + 1;
+    if (pyLines[i]._h !== html) { pyLines[i].innerHTML = html; pyLines[i]._h = html; }
+  }
+  // seam on the append line
+  const sm = eo((t - T.peel) / (8 * FR)) * (1 - clamp((t - T.close) / OUT));
+  set(seam, { transform: `scaleX(${sm})`, opacity: sm });
+  // panel unroll (and roll back at T.close)
+  const ur = eio((t - T.unroll) / (22 * FR)) * (1 - eio((t - T.close) / (11 * FR)));
+  const panTop = lerp(LY.py.yA, LY.py.yB, lift) + pyH + (VERT ? 30 : 40);
+  set(pan, { top: panTop + 'px', opacity: ur > 0 ? 1 : 0, clipPath: `inset(0 0 ${((1 - ur) * 100).toFixed(2)}% 0 round 16px)` });
+  if (ur > 0.01 && ur < .99) {
+    curl.style.display = 'block';
+    set(curl, { left: (P.x - 6) + 'px', width: (P.w + 12) + 'px', top: (panTop + ur * P.h - 15) + 'px', opacity: Math.min(1, ur * 6, (1 - ur) * 6) });
+  }
+  // arrows inside the panel
+  [T.ar1, T.ar2, T.ar3].forEach((a, i) => { dash(parr[i], eo((t - a) / .45)); pdots[i].style.opacity = rv(t, a, 6 * FR); });
+  const segs = [[0, 42.0], [1, 42.35], [2, 42.7], [0, 43.3], [1, 43.65], [2, 44.0]];
+  ppulse.style.opacity = 0;
+  for (const [k, t0] of segs) if (t >= t0 && t < t0 + .35) { const p = parr[k], L = p.getTotalLength(), pt = p.getPointAtLength(eio((t - t0) / .35) * L); ppulse.setAttribute('cx', pt.x); ppulse.setAttribute('cy', pt.y); ppulse.style.opacity = 1; }
+  // cradle
+  const x = LY.py.x, w = LY.py.w, y = yy, h = pyH, o = 26, R = 70, yt = y + h * 0.28;
+  const bx = x + w / 2, by = y + h + o;
+  cradL.setAttribute('d', `M${bx},${by} L${x - o + R},${by} Q${x - o},${by} ${x - o},${by - R} L${x - o},${yt}`);
+  cradR.setAttribute('d', `M${bx},${by} L${x + w + o - R},${by} Q${x + w + o},${by} ${x + w + o},${by - R} L${x + w + o},${yt}`);
+  const cp = eo((t - T.cradle) / (18 * FR));
+  [cradL, cradR].forEach(c => { dash(c, cp); c.style.opacity = cp > 0 ? 1 : 0; });
+  const gp = eo((t - T.cradle - .1) / .6);
+  glowE.setAttribute('cx', bx); glowE.setAttribute('cy', y + h * .7); glowE.setAttribute('rx', w * .5); glowE.setAttribute('ry', h * .55);
+  glowE.setAttribute('opacity', (.16 * gp).toFixed(3));
+  py.style.borderColor = gp > 0 ? `rgba(217,119,87,${(.55 * gp).toFixed(2)})` : '#2A2A30';
+  py.style.boxShadow = `0 20px 60px rgba(0,0,0,.55), 0 0 ${(50 * gp).toFixed(0)}px rgba(217,119,87,${(.28 * gp).toFixed(2)})`;
+  csvg.style.zIndex = 0; py.style.zIndex = 2;
+}
+
+window.renderAt = function (t) {
+  t = Math.min(t, T.END);
+  drawHead(t); drawCpp(t); drawMach(t); drawPy(t);
+};
+window.ready = (async () => {
+  await document.fonts.load('800 48px Inter'); await document.fonts.load('700 20px Inter'); await document.fonts.load('600 20px Inter');
+  await document.fonts.load('500 27px "JetBrains Mono"'); await document.fonts.load('700 27px "JetBrains Mono"');
+  await document.fonts.ready;
+  window.renderAt(0);
+})();
+</script>
+</body></html>

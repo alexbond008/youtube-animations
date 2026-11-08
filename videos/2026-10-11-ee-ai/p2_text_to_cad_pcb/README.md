@@ -1,0 +1,6 @@
+# p2_text_to_cad_pcb
+Two equal app windows side by side ("Text → CAD", "Text → PCB"), each with a typed prompt and a generated result. Generic and fictional, no real product names. HTML/CSS/SVG, frame-stepped in headless Chromium, encoded with ffmpeg. 29.97 fps, H.264 CRF14 yuv420p, no audio.
+- `p2_text_to_cad_pcb_1080p.mp4` 1920x1080, 14.0 s + 1.0 s hold = 15.0 s (450 frames)
+- `p2_text_to_cad_pcb_1080x1350.mp4` vertical-safe, windows stacked, same timing
+Key times (s): 0-1.0 windows fade/slide in; 1.0 CAD prompt types (30 chars/s, ends 3.2); 1.5 PCB prompt types (ends 3.2); 3.75 cursor clicks CAD Generate; 4.4 clicks PCB Generate; 4.0-8.0 CAD footprint, base, 4 M3 standoffs (5.5), walls rise (6.0-8.2), "4 x M3" chip 6.5; 8.6 USB-C cut-out highlighted orange, chip 9.0; 4.6 PCB outline; 5.3-6.6 USB-C, QFP, LDO, header placed; 7.0-10.7 nine traces route one by one (top copper orange, bottom blue, vias); 10.85 green "DRC passed" chip; 11-14 hold with slow CAD sway, pulsing trace glow and travelling signal dots; 14-15 frozen last frame.
+QA stills: `qa/`, `qa_vertical/`. Re-render: `cd src && nice -n 10 node render.mjs land 14 ../p2_text_to_cad_pcb_1080p.mp4` (`vert` for 1080x1350; optional QA dir and times as args 4-5).

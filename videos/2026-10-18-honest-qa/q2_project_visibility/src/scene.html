@@ -1,0 +1,441 @@
+<!doctype html>
+<html>
+<head>
+<meta charset="utf-8">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;700&display=block" rel="stylesheet">
+<style>
+  html, body { margin: 0; padding: 0; background: #0E0E10; overflow: hidden; }
+  #stage {
+    position: relative; overflow: hidden;
+    background-color: #0E0E10;
+    background-image: radial-gradient(circle, #23232A 1.2px, transparent 1.7px);
+    background-size: 24px 24px; background-position: 12px 12px;
+    font-family: 'Inter', sans-serif; color: #F5F5F7;
+  }
+  #vig { position: absolute; inset: 0; pointer-events: none;
+    background: radial-gradient(ellipse at 50% 50%, rgba(14,14,16,0) 45%, rgba(14,14,16,.85) 100%); }
+  #content { position: absolute; inset: 0; }
+  .abs { position: absolute; left: 0; top: 0; will-change: transform, opacity; }
+  .card { background: #16161A; border: 1px solid #2A2A30; border-radius: 16px;
+    box-shadow: 0 20px 60px rgba(0,0,0,.55); box-sizing: border-box; overflow: hidden; }
+  .mono { font-family: 'JetBrains Mono', monospace; }
+  .sec { color: #A1A1AA; }
+
+  /* project card */
+  .proj { width: 600px; }
+  .proj .thumb { width: 600px; height: 330px; display: block; }
+  .proj .foot { display: flex; align-items: center; gap: 14px; padding: 20px 24px 22px; border-top: 1px solid #2A2A30; }
+  .proj .name { font-family: 'JetBrains Mono', monospace; font-size: 32px; font-weight: 700; }
+  .proj .meta { margin-left: auto; font-size: 22px; color: #A1A1AA; font-weight: 500; }
+
+  /* drive group */
+  .dgroup { width: 360px; height: 360px; }
+  .dgroup > * { position: absolute; left: 50%; transform: translateX(-50%); }
+  .dlabel { top: 312px; font-size: 32px; font-weight: 700; color: #A1A1AA; white-space: nowrap; }
+
+  /* eye pill / search */
+  .pill { display: flex; align-items: center; gap: 14px; padding: 14px 26px; border-radius: 40px; white-space: nowrap; }
+  .pill .t { font-size: 32px; font-weight: 700; color: #A1A1AA; }
+  .search { height: 88px; border-radius: 44px; display: flex; align-items: center; padding: 0 18px 0 30px; gap: 18px; }
+  .search .q { font-size: 32px; font-weight: 500; color: #F5F5F7; white-space: nowrap; display: flex; align-items: center; }
+  .caret { display: inline-block; width: 15px; height: 36px; background: #D97757; margin-left: 4px; }
+  .nores { margin-left: auto; font-size: 26px; font-weight: 700; color: #FF5A4E; background: rgba(255,90,78,.14);
+    padding: 10px 20px; border-radius: 30px; white-space: nowrap; }
+
+  /* CV */
+  .cv { background: #ECECEF; border-radius: 12px; box-shadow: 0 20px 60px rgba(0,0,0,.55); padding: 44px 46px; box-sizing: border-box; color: #2A2A30; }
+  .cv .hdr { display: flex; align-items: center; gap: 22px; margin-bottom: 34px; }
+  .cv .av { width: 72px; height: 72px; border-radius: 50%; background: #C9C9D0; }
+  .bar { height: 14px; border-radius: 7px; background: #D2D2D8; margin: 12px 0; }
+  .cv .lab { font-size: 18px; font-weight: 800; letter-spacing: .14em; color: #8E8E96; margin: 26px 0 10px; }
+  .cv .bul { position: relative; font-size: 29px; font-weight: 500; color: #85858E; white-space: nowrap; padding: 4px 0; }
+  .cv .bul .hl { position: absolute; left: -8px; top: 2px; bottom: 2px; background: rgba(245,184,0,.30); border-radius: 6px; z-index: 0; }
+  .cv .bul span.tx { position: relative; z-index: 1; }
+
+  /* browser */
+  .browser .chrome { height: 72px; background: #1C1C21; border-bottom: 1px solid #2A2A30; display: flex; align-items: center; padding: 0 24px; gap: 10px; }
+  .dot3 { width: 14px; height: 14px; border-radius: 50%; background: #3A3A42; }
+  .url { position: relative; margin-left: 26px; height: 46px; border-radius: 23px; background: #0E0E10; border: 1px solid #2A2A30;
+    display: flex; align-items: center; gap: 12px; padding: 0 26px 0 18px; }
+  .url .dom { position: relative; font-size: 27px; font-weight: 600; color: #F5F5F7; letter-spacing: .01em; }
+  .url .dom .hl { position: absolute; left: -6px; top: 1px; bottom: 1px; background: rgba(217,119,87,.38); border-radius: 6px; }
+  .url .dom span.tx { position: relative; }
+  .page { display: flex; gap: 40px; padding: 48px 48px 0; align-items: center; }
+  .page .left { flex: 1; min-width: 0; }
+  .tag { font-family: 'JetBrains Mono', monospace; font-size: 20px; font-weight: 700; color: #D97757; letter-spacing: .06em; }
+  .h1 { font-size: 76px; font-weight: 800; letter-spacing: -.02em; margin: 10px 0 14px; line-height: 1; }
+  .lede { font-size: 25px; line-height: 1.4; color: #A1A1AA; font-weight: 500; }
+  .btns { display: flex; gap: 14px; margin-top: 30px; }
+  .btn { font-size: 22px; font-weight: 700; padding: 14px 22px; border-radius: 12px; white-space: nowrap; }
+  .btn.p { background: #D97757; color: #0E0E10; }
+  .btn.o { border: 1px solid #3A3A42; color: #F5F5F7; }
+  .hero { border-radius: 14px; overflow: hidden; border: 1px solid #2A2A30; flex: none; }
+  .hero svg { display: block; }
+  .chips { display: flex; gap: 14px; padding: 36px 48px 0; }
+  .chip { flex: 1; text-align: center; font-size: 22px; font-weight: 600; color: #A1A1AA; background: #1C1C21; border: 1px solid #2A2A30; border-radius: 12px; padding: 16px 0; white-space: nowrap; }
+
+  /* video */
+  .video { width: 680px; }
+  .vthumb { position: relative; width: 680px; height: 383px; overflow: hidden; }
+  .vthumb svg.bg { position: absolute; left: -20px; top: -10px; }
+  .vthumb .scrim { position: absolute; inset: 0; background: linear-gradient(180deg, rgba(0,0,0,0) 55%, rgba(0,0,0,.55)); }
+  .play { position: absolute; left: 50%; top: 50%; width: 104px; height: 104px; margin: -52px 0 0 -52px; border-radius: 50%; background: rgba(245,245,247,.94);
+    box-shadow: 0 8px 30px rgba(0,0,0,.5); }
+  .play:after { content: ''; position: absolute; left: 41px; top: 31px; border-left: 34px solid #0E0E10; border-top: 21px solid transparent; border-bottom: 21px solid transparent; }
+  .dur { position: absolute; right: 16px; bottom: 20px; background: rgba(0,0,0,.75); font-size: 20px; font-weight: 700; padding: 5px 10px; border-radius: 6px; }
+  .prog { position: absolute; left: 0; bottom: 0; height: 6px; width: 100%; background: rgba(255,255,255,.18); }
+  .prog i { display: block; height: 100%; width: 36%; background: #D97757; }
+  .vbody { padding: 22px 26px 24px; }
+  .vtitle { font-size: 30px; font-weight: 700; }
+  .vrow { display: flex; align-items: baseline; gap: 12px; margin-top: 10px; }
+  .vcount { font-size: 52px; font-weight: 800; letter-spacing: -.01em; font-variant-numeric: tabular-nums; }
+  .vviews { font-size: 28px; font-weight: 600; color: #A1A1AA; }
+  .graph { display: block; margin-top: 8px; }
+
+  /* people */
+  .badge { width: 104px; height: 104px; border-radius: 50%; background: #16161A; border: 2px solid #2A2A30; box-shadow: 0 12px 34px rgba(0,0,0,.55);
+    display: flex; align-items: center; justify-content: center; box-sizing: border-box; }
+  .plabel { position: absolute; top: 116px; left: 50%; transform: translateX(-50%); font-size: 24px; font-weight: 600; color: #A1A1AA; white-space: nowrap; }
+  .house { font-family: 'Inter', sans-serif; font-weight: 800; font-size: 88px; letter-spacing: -.01em; color: #fff; white-space: nowrap;
+    text-shadow: 0 4px 24px rgba(0,0,0,.45), 0 1px 2px rgba(0,0,0,.6); }
+  .house .acc { color: #D97757; }
+</style>
+</head>
+<body>
+<div id="stage"><div id="vig"></div><div id="content"></div></div>
+<script>
+const P = new URLSearchParams(location.search);
+const PART = P.get('part') || 'a';
+const FMT = P.get('fmt') || 'h';
+const V = FMT === 'v';
+const W = V ? 1080 : 1920, H = V ? 1350 : 1080;
+const stage = document.getElementById('stage');
+stage.style.width = W + 'px'; stage.style.height = H + 'px';
+const content = document.getElementById('content');
+
+// ---------- easing ----------
+function bez(p1x, p1y, p2x, p2y) {
+  const cx = 3*p1x, bx = 3*(p2x-p1x)-cx, ax = 1-cx-bx, cy = 3*p1y, by = 3*(p2y-p1y)-cy, ay = 1-cy-by;
+  const sx = t => ((ax*t+bx)*t+cx)*t, sy = t => ((ay*t+by)*t+cy)*t, dx = t => (3*ax*t+2*bx)*t+cx;
+  return x => { if (x <= 0) return 0; if (x >= 1) return 1; let t = x;
+    for (let i = 0; i < 10; i++) { const e = sx(t)-x, d = dx(t); if (Math.abs(e) < 1e-7 || Math.abs(d) < 1e-7) break; t -= e/d; }
+    let lo = 0, hi = 1; if (Math.abs(sx(t)-x) > 1e-5) { t = x; for (let i = 0; i < 30; i++) { if (sx(t) < x) lo = t; else hi = t; t = (lo+hi)/2; } }
+    return sy(Math.min(1, Math.max(0, t))); };
+}
+const EO = bez(.2, .8, .2, 1);      // house entrance
+const EIO = bez(.65, 0, .35, 1);    // moves
+const EIN = bez(.55, 0, .9, .4);    // exits
+const ROCKET = bez(.7, 0, .25, 1);  // counter
+const F = 1001/30000;               // one frame
+const clamp = (x, a=0, b=1) => Math.min(b, Math.max(a, x));
+const k = (t, a, d, e=EO) => e(clamp((t-a)/d));
+const lerp = (a, b, u) => a + (b-a)*u;
+const IN = 10*F, OUT = 7*F, MOVE = 18*F;
+
+function place(el, x, y, s=1, o=1, extra='') {
+  el.style.transform = `translate(${x.toFixed(2)}px,${y.toFixed(2)}px) translate(-50%,-50%) scale(${s.toFixed(4)})${extra}`;
+  el.style.opacity = o.toFixed(4);
+  el.style.visibility = o <= 0.001 ? 'hidden' : 'visible';
+}
+function mk(html) { const d = document.createElement('div'); d.innerHTML = html.trim(); const el = d.firstChild; el.classList.add('abs'); content.appendChild(el); return el; }
+
+// ---------- graphics ----------
+let armN = 0;
+function armSVG(w, h) {
+  const id = 'a' + (armN++);
+  return `<svg class="arm" viewBox="0 0 600 330" width="${w}" height="${h}" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="${id}g" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#1E1E25"/><stop offset="1" stop-color="#111114"/></linearGradient>
+    <radialGradient id="${id}r" cx=".5" cy=".55" r=".55"><stop offset="0" stop-color="#D97757" stop-opacity=".22"/><stop offset="1" stop-color="#D97757" stop-opacity="0"/></radialGradient>
+  </defs>
+  <rect width="600" height="330" fill="url(#${id}g)"/>
+  <rect width="600" height="330" fill="url(#${id}r)"/>
+  <g stroke="#3DDC97" stroke-opacity=".26" stroke-width="3" fill="none" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M0 60 H110 L140 90 H200"/><path d="M0 110 H80 L110 140 V200"/><path d="M600 70 H500 L470 100 H420"/>
+    <path d="M600 140 H520 L490 170 V230"/><path d="M150 330 V300 L180 270 H210"/><path d="M460 330 V290 L430 260"/>
+    <path d="M40 330 V250 H150"/><path d="M560 330 V260 L520 230"/>
+  </g>
+  <g fill="#3DDC97" fill-opacity=".45">
+    <circle cx="200" cy="90" r="6"/><circle cx="110" cy="200" r="6"/><circle cx="420" cy="100" r="6"/><circle cx="490" cy="230" r="6"/>
+    <circle cx="210" cy="270" r="6"/><circle cx="430" cy="260" r="6"/><circle cx="520" cy="230" r="6"/>
+  </g>
+  <g transform="translate(46 222)">
+    <rect width="104" height="60" rx="6" fill="#222228" stroke="#3A3A42" stroke-width="2"/>
+    <g fill="#5A5A64">${[0,1,2,3,4,5].map(i=>`<rect x="${10+i*15}" y="-8" width="6" height="8"/><rect x="${10+i*15}" y="60" width="6" height="8"/>`).join('')}</g>
+    <circle cx="16" cy="16" r="4" fill="#3A3A42"/>
+  </g>
+  <rect x="404" y="270" width="40" height="40" rx="6" fill="#4DA3FF"/>
+  <rect x="404" y="270" width="40" height="12" rx="6" fill="#7DBBFF" opacity=".55"/>
+  <ellipse cx="300" cy="312" rx="96" ry="10" fill="#000" opacity=".45"/>
+  <rect x="228" y="282" width="144" height="30" rx="9" fill="#2A2A30" stroke="#3E3E46" stroke-width="2"/>
+  <rect x="262" y="266" width="76" height="22" rx="8" fill="#34343C"/>
+  <g class="j1" transform="translate(300 270) rotate(-15)">
+    <rect x="-17" y="-124" width="34" height="138" rx="17" fill="#E9E9EE"/>
+    <rect x="-17" y="-124" width="12" height="138" rx="6" fill="#FFFFFF" opacity=".6"/>
+    <g class="j2" transform="translate(0 -112) rotate(55)">
+      <rect x="-13" y="-104" width="26" height="114" rx="13" fill="#D4D4DB"/>
+      <g class="j3" transform="translate(0 -96) rotate(-30)">
+        <rect x="-26" y="-18" width="52" height="18" rx="5" fill="#F5F5F7"/>
+        <rect class="fl" x="-26" y="-46" width="11" height="30" rx="4" fill="#F5F5F7"/>
+        <rect class="fr" x="15" y="-46" width="11" height="30" rx="4" fill="#F5F5F7"/>
+        <circle r="11" fill="#D97757"/>
+      </g>
+      <circle r="15" fill="#D97757"/><circle r="5" fill="#0E0E10" opacity=".5"/>
+    </g>
+    <circle r="20" fill="#D97757"/><circle r="7" fill="#0E0E10" opacity=".5"/>
+  </g>
+</svg>`;
+}
+function setArm(root, t, ph=0) {
+  root.querySelectorAll('svg.arm').forEach((svg) => {
+    const a1 = -14 + 16*Math.sin(t*1.1 + ph), a2 = 52 + 18*Math.sin(t*1.4 + 1 + ph), a3 = -34 + 16*Math.sin(t*1.9 + 2 + ph);
+    const g = 6 + 6*Math.sin(t*2.6 + ph);
+    svg.querySelector('.j1').setAttribute('transform', `translate(300 270) rotate(${a1.toFixed(2)})`);
+    svg.querySelector('.j2').setAttribute('transform', `translate(0 -112) rotate(${a2.toFixed(2)})`);
+    svg.querySelector('.j3').setAttribute('transform', `translate(0 -96) rotate(${a3.toFixed(2)})`);
+    svg.querySelector('.fl').setAttribute('x', (-26 - g + 6).toFixed(2));
+    svg.querySelector('.fr').setAttribute('x', (15 + g - 6).toFixed(2));
+  });
+}
+const folderIco = `<svg viewBox="0 0 64 64" width="30" height="30"><path d="M6 16a4 4 0 0 1 4-4h14l6 6h24a4 4 0 0 1 4 4v28a4 4 0 0 1-4 4H10a4 4 0 0 1-4-4z" fill="#D97757"/></svg>`;
+const projHTML = () => `<div class="card proj">${armSVG(600,330).replace('<svg ', '<svg class="arm thumb" ').replace('class="arm" ', '')}
+  <div class="foot">${folderIco}<span class="name">my_project/</span><span class="meta">robot arm</span></div></div>`;
+
+const personSVG = (c='#F5F5F7') => `<svg viewBox="0 0 48 48" width="50" height="50" fill="none" stroke="${c}" stroke-width="3.2" stroke-linecap="round"><circle cx="24" cy="17" r="8"/><path d="M9 41c1.5-8 7.5-12 15-12s13.5 4 15 12"/></svg>`;
+const buildingSVG = (c='#F5F5F7') => `<svg viewBox="0 0 48 48" width="50" height="50" fill="none" stroke="${c}" stroke-width="3.2" stroke-linejoin="round" stroke-linecap="round"><path d="M8 42V12l16-6v36"/><path d="M24 18l16 5v19"/><path d="M5 42h38"/><path d="M14 16v0M14 23v0M14 30v0M18 16v0M18 23v0M18 30v0" stroke-width="4"/><path d="M31 28v0M31 34v0M35 28v0M35 34v0" stroke-width="4"/></svg>`;
+
+// =====================================================================
+// PART A
+// =====================================================================
+function buildA() {
+  const L = V ? {
+    card: [540, 620], g0: [540, 620], g1: [540, 420], gs1: .8, cv: [540, 1000], cvW: 680, cvH: 480, search: [540, 150], searchW: 940, eye: [540, 655]
+  } : {
+    card: [960, 530], g0: [960, 560], g1: [560, 545], gs1: 1, cv: [1330, 560], cvW: 600, cvH: 600, search: [960, 142], searchW: 860, eye: [560, 830]
+  };
+  const card = mk(projHTML());
+  card.style.zIndex = 2;
+  const grp = mk(`<div class="dgroup">
+    <svg style="top:0" viewBox="0 0 180 140" width="190" height="148">
+      <defs><linearGradient id="fg" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#5A5A66"/><stop offset="1" stop-color="#43434D"/></linearGradient></defs>
+      <path d="M8 22a10 10 0 0 1 10-10h44l14 14h86a10 10 0 0 1 10 10v8H8z" fill="#33333B"/>
+      <rect x="8" y="36" width="164" height="98" rx="10" fill="url(#fg)"/>
+      <rect x="8" y="36" width="164" height="4" fill="#fff" opacity=".12"/>
+      <text x="90" y="96" text-anchor="middle" font-family="JetBrains Mono" font-weight="700" font-size="19" fill="#E2E2E8">my_project/</text>
+    </svg>
+    <svg style="top:166px" viewBox="0 0 320 132" width="320" height="132">
+      <defs><linearGradient id="dg" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#2A2A31"/><stop offset="1" stop-color="#1A1A1F"/></linearGradient></defs>
+      <rect x="2" y="2" width="316" height="128" rx="18" fill="url(#dg)" stroke="#3A3A42" stroke-width="2"/>
+      <rect x="2" y="2" width="316" height="40" rx="18" fill="#fff" opacity=".04"/>
+      <g stroke="#3A3A42" stroke-width="4" stroke-linecap="round"><path d="M34 92h110"/><path d="M34 74h70"/></g>
+      <circle cx="270" cy="84" r="9" fill="#3DDC97" class="led"/>
+      <circle cx="270" cy="84" r="18" fill="#3DDC97" opacity=".18" class="led"/>
+      <circle cx="30" cy="22" r="3.5" fill="#4A4A52"/><circle cx="290" cy="22" r="3.5" fill="#4A4A52"/>
+    </svg>
+    <div class="dlabel">Local disk</div>
+  </div>`);
+  const folderSvg = grp.children[0];
+  const cv = mk(`<div class="cv" style="width:${L.cvW}px;height:${L.cvH}px">
+    <div class="hdr"><div class="av"></div><div style="flex:1"><div class="bar" style="width:62%;height:22px;background:#9C9CA5;border-radius:11px"></div><div class="bar" style="width:40%;background:#C4C4CB"></div></div></div>
+    <div class="lab">EXPERIENCE</div>
+    <div class="bar" style="width:88%"></div><div class="bar" style="width:72%"></div>${V ? '' : '<div class="bar" style="width:80%"></div><div class="bar" style="width:56%"></div>'}
+    <div class="lab">PROJECTS</div>
+    <div class="bul"><div class="hl"></div><span class="tx">• Built a robot arm in Python</span></div>
+    <div class="lab">SKILLS</div>
+    <div class="bar" style="width:66%"></div>
+  </div>`);
+  const bul = cv.querySelector('.bul'), bulHl = cv.querySelector('.bul .hl');
+  const QUERY = 'robot arm python';
+  const search = mk(`<div class="card search" style="width:${L.searchW}px">
+    <svg viewBox="0 0 48 48" width="40" height="40" fill="none" stroke="#A1A1AA" stroke-width="4" stroke-linecap="round"><circle cx="21" cy="21" r="13"/><path d="M31 31l10 10"/></svg>
+    <div class="q"><span class="qt"></span><span class="caret"></span></div>
+    <div class="nores">0 results</div></div>`);
+  const qt = search.querySelector('.qt'), caret = search.querySelector('.caret'), nores = search.querySelector('.nores');
+  const eye = mk(`<div class="card pill">
+    <svg viewBox="0 0 48 48" width="44" height="44" fill="none" stroke="#A1A1AA" stroke-width="3.4" stroke-linecap="round" stroke-linejoin="round"><path d="M3 24s8-13 21-13 21 13 21 13-8 13-21 13S3 24 3 24z"/><circle cx="24" cy="24" r="6"/></svg>
+    <span class="t">0 views</span></div>`);
+
+  return function render(t) {
+    setArm(card, t);
+    // 1) project card 0 -> 0.33 in ; 5.8 shrink into folder
+    const cin = k(t, 0.1, IN);
+    const shr = k(t, 5.8, 0.6, EIO);
+    const gPos0 = L.g0;
+    const target = [gPos0[0], gPos0[1] - 106];
+    const cs = lerp(lerp(.92, 1, cin), .16, shr) * (1 + 0.012*Math.sin(t*1.3)*(1-shr));
+    const co = cin * (1 - k(t, 6.3, 0.2));
+    place(card, lerp(L.card[0], target[0], shr), lerp(L.card[1], target[1], shr) + 4*Math.sin(t*1.1)*(1-shr), cs, co);
+
+    // 2) drive group appears 5.55, receives card ~6.3 bump, moves aside 7.6
+    const gin = k(t, 5.55, IN);
+    const bump = Math.exp(-Math.pow((t-6.35)/0.12, 2)) * 0.06;
+    const mv = k(t, 7.55, MOVE, EIO);
+    const gs = lerp(.92, 1, gin) * lerp(1, L.gs1, mv);
+    folderSvg.style.transform = `translateX(-50%) scale(${1 + bump})`;
+    place(grp, lerp(gPos0[0], L.g1[0], mv), lerp(gPos0[1], L.g1[1], mv), gs, gin);
+
+    // 3) CV 8.3 ; bullet 8.75 ; marker 9.4
+    const cvin = k(t, 8.3, IN);
+    place(cv, L.cv[0] + (1-cvin)*40, L.cv[1], lerp(.92, 1, cvin), cvin);
+    bul.style.opacity = k(t, 8.75, IN).toFixed(3);
+    bulHl.style.width = `calc(${(k(t, 9.4, 12*F)*100).toFixed(2)}% + 16px)`;
+    bulHl.style.opacity = t < 9.4 ? 0 : 1;
+
+    // 4) search 11.3, typing 11.55, "0 results" 12.2 ; eye 12.6
+    const sin = k(t, 11.3, IN);
+    place(search, L.search[0], L.search[1] - (1-sin)*20, lerp(.92, 1, sin), sin);
+    const n = clamp(Math.floor((t - 11.55) * 32), 0, QUERY.length);
+    qt.textContent = QUERY.slice(0, n);
+    caret.style.opacity = (Math.floor(t / 0.5) % 2 === 0 || (t > 11.5 && t < 12.1)) ? 1 : 0;
+    const nr = k(t, 12.2, IN);
+    nores.style.opacity = nr; nores.style.transform = `scale(${lerp(.92, 1, nr)})`;
+    const ein = k(t, 12.55, IN);
+    place(eye, L.eye[0], L.eye[1], lerp(.92, 1, ein), ein);
+
+    // 5) grey out 12.95 -> 13.85
+    const g = k(t, 12.95, 0.9, EIO);
+    content.style.filter = g > 0 ? `grayscale(${g.toFixed(3)}) brightness(${(1 - .45*g).toFixed(3)})` : 'none';
+  };
+}
+
+// =====================================================================
+// PART B
+// =====================================================================
+function buildB() {
+  const BW = V ? 940 : 1060;
+  const heroW = V ? 400 : 460, heroH = Math.round(heroW * 330/600);
+  const L = V ? {
+    card: [540, 620], br0: [540, 620], br1: [540, 390], brs1: .84, vid: [540, 1000], vids: .86,
+    brC: [470, 610], brsC: .6, vidC: [700, 810], vidsC: .54, hub: [560, 700], label: [540, 1215],
+    people: [[150,210,'p','Recruiter'],[540,150,'b','Big tech'],[930,210,'p','Founder'],[120,640,'b','Startup'],[960,560,'p','Engineer'],[170,1030,'p','Hiring manager'],[920,1060,'b','Research lab']]
+  } : {
+    card: [960, 530], br0: [960, 540], br1: [610, 520], brs1: .74, vid: [1430, 530], vids: 1,
+    brC: [840, 500], brsC: .56, vidC: [1170, 600], vidsC: .52, hub: [1000, 540], label: [960, 955],
+    people: [[170,250,'p','Recruiter'],[150,560,'b','Startup'],[230,850,'p','Hiring manager'],[640,130,'b','Big tech'],[1280,130,'p','Founder'],[1760,250,'b','Research lab'],[1770,560,'p','Engineer'],[1690,850,'p','Recruiter']]
+  };
+  // streams layer (behind cards)
+  const NS = 'http://www.w3.org/2000/svg';
+  const svgL = document.createElementNS(NS, 'svg');
+  svgL.setAttribute('width', W); svgL.setAttribute('height', H);
+  svgL.style.cssText = 'position:absolute;left:0;top:0';
+  content.appendChild(svgL);
+  const card = mk(projHTML());
+  const br = mk(`<div class="card browser" style="width:${BW}px;padding-bottom:44px">
+    <div class="chrome"><div class="dot3"></div><div class="dot3"></div><div class="dot3"></div>
+      <div class="url"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="#A1A1AA" stroke-width="2.4" stroke-linecap="round"><rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></svg>
+        <span class="dom"><span class="hl"></span><span class="tx">robo-arm.dev</span></span></div></div>
+    <div class="page"><div class="left">
+      <div class="tag">PROJECT · 2026</div>
+      <div class="h1">Robo Arm</div>
+      <div class="lede">A 6-axis robot arm I designed, built and coded from scratch.</div>
+      <div class="btns"><div class="btn p">Watch the build</div>${V ? '' : '<div class="btn o">Source code</div>'}</div>
+    </div><div class="hero">${armSVG(heroW, heroH)}</div></div>
+    <div class="chips">${['6 axes','3D-printed','Python + C++','Build log'].slice(0, V ? 3 : 4).map(c=>`<div class="chip">${c}</div>`).join('')}</div></div>`);
+  const url = br.querySelector('.url'), domHl = br.querySelector('.dom .hl');
+  const vid = mk(`<div class="card video">
+    <div class="vthumb">${armSVG(720, 396).replace('<svg ', '<svg class="arm bg" ').replace('class="arm" ', '')}<div class="scrim"></div><div class="play"></div><div class="dur">14:32</div><div class="prog"><i></i></div></div>
+    <div class="vbody"><div class="vtitle">I built a robot arm from scratch</div>
+      <div class="vrow"><span class="vcount">0</span><span class="vviews">views</span></div>
+      <svg class="graph" width="628" height="110" viewBox="0 0 628 110">
+        <defs><linearGradient id="ga" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#D97757" stop-opacity=".45"/><stop offset="1" stop-color="#D97757" stop-opacity="0"/></linearGradient></defs>
+        <path d="M0 108H628" stroke="#2A2A30" stroke-width="2"/>
+        <path class="area" fill="url(#ga)"/><path class="line" fill="none" stroke="#D97757" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>
+        <circle class="tip" r="7" fill="#D97757"/><circle class="tip2" r="16" fill="#D97757" opacity=".25"/>
+      </svg></div></div>`);
+  const vcount = vid.querySelector('.vcount'), gArea = vid.querySelector('.area'), gLine = vid.querySelector('.line'), gTip = vid.querySelector('.tip'), gTip2 = vid.querySelector('.tip2');
+  const label = mk(`<div class="house">People find <span class="acc">you</span></div>`);
+
+  // people + streams
+  const people = L.people.map(([x, y, kind, name], i) => {
+    const el = mk(`<div style="width:104px;height:104px"><div class="badge" style="border-color:${['#4DA3FF','#3DDC97','#D97757'][i%3]}55">${kind === 'p' ? personSVG() : buildingSVG()}</div><div class="plabel">${name}</div></div>`);
+    const line = document.createElementNS(NS, 'path');
+    line.setAttribute('fill', 'none'); line.setAttribute('stroke', '#3A3A44'); line.setAttribute('stroke-width', '2.5'); line.setAttribute('stroke-dasharray', '2 10'); line.setAttribute('stroke-linecap', 'round');
+    svgL.appendChild(line);
+    const dots = [0, 1, 2].map(() => { const c = document.createElementNS(NS, 'circle'); c.setAttribute('r', '7'); c.setAttribute('fill', '#D97757'); svgL.appendChild(c); return c; });
+    return { el, x, y, line, dots, start: 13.3 + i*0.07 };
+  });
+  const ripples = [0, 1, 2].map(() => { const c = document.createElementNS(NS, 'circle'); c.setAttribute('fill', 'none'); c.setAttribute('stroke', '#D97757'); c.setAttribute('stroke-width', '3'); svgL.appendChild(c); return c; });
+
+  const fmtN = n => n < 1000 ? String(Math.round(n)) : n < 10000 ? (Math.floor(n/100)/10).toFixed(1) + 'K' : Math.floor(n/1000) + 'K';
+
+  return function render(t) {
+    setArm(card, t); setArm(br, t, .4); setArm(vid, t, .9);
+    // project card 0.5 in ; 3.3 out (morphs into browser)
+    const cin = k(t, 0.5, IN), cout = k(t, 3.3, 12*F);
+    place(card, L.card[0], L.card[1] + 4*Math.sin(t*1.1), lerp(.92, 1, cin) * lerp(1, 1.12, cout), cin * (1 - cout));
+    // browser 3.3 in ; 7.6 move aside ; 12.6 cluster
+    const bin = k(t, 3.38, 12*F);
+    const bm = k(t, 7.55, MOVE, EIO);
+    const bc = k(t, 12.55, 22*F, EIO);
+    let bx = lerp(lerp(L.br0[0], L.br1[0], bm), L.brC[0], bc), by = lerp(lerp(L.br0[1], L.br1[1], bm), L.brC[1], bc);
+    let bs = lerp(.9, 1, bin) * lerp(1, L.brs1, bm); bs = lerp(bs, L.brsC, bc);
+    place(br, bx, by, bs, bin);
+    // domain highlight 6.0
+    const dh = k(t, 6.0, 12*F);
+    domHl.style.width = `calc(${(dh*100).toFixed(2)}% + 12px)`; domHl.style.opacity = dh > 0 ? 1 : 0;
+    const pulse = Math.exp(-Math.pow((t-6.25)/0.18, 2));
+    url.style.borderColor = dh > 0 ? `rgba(217,119,87,${(.35 + .65*dh).toFixed(3)})` : '#2A2A30';
+    url.style.boxShadow = dh > 0 ? `0 0 0 ${(4*dh).toFixed(2)}px rgba(217,119,87,.22), 0 0 ${(30*dh).toFixed(1)}px rgba(217,119,87,.35)` : 'none';
+    url.style.transform = `scale(${(1 + .07*pulse).toFixed(4)})`;
+    // video 7.6 in
+    const vin = k(t, 7.75, IN);
+    let vx = lerp(L.vid[0] + (V ? 0 : 50)*(1-vin), L.vidC[0], bc), vy = lerp(L.vid[1] + (V ? 40 : 0)*(1-vin), L.vidC[1], bc);
+    let vs = lerp(lerp(.92, 1, vin) * L.vids, L.vidsC, bc);
+    place(vid, vx, vy, vs, vin);
+    // counter 8.7 -> 10.9
+    const u = clamp((t - 8.7) / 2.2);
+    const val = 248000 * ROCKET(u);
+    vcount.textContent = fmtN(val);
+    vcount.style.color = (u > 0 && u < 1) ? '#D97757' : (u >= 1 ? '#F5F5F7' : '#F5F5F7');
+    const N = 60, pts = [];
+    for (let i = 0; i <= N; i++) { const xx = i/N; if (xx > u) break; pts.push([xx*620 + 4, 104 - ROCKET(xx)*94]); }
+    if (u > 0) pts.push([u*620 + 4, 104 - ROCKET(u)*94]);
+    if (pts.length > 1) {
+      const d = pts.map((p, i) => (i ? 'L' : 'M') + p[0].toFixed(1) + ' ' + p[1].toFixed(1)).join('');
+      gLine.setAttribute('d', d); gArea.setAttribute('d', d + `L${pts[pts.length-1][0].toFixed(1)} 108L4 108Z`);
+      const tp = pts[pts.length-1]; gTip.setAttribute('cx', tp[0]); gTip.setAttribute('cy', tp[1]); gTip2.setAttribute('cx', tp[0]); gTip2.setAttribute('cy', tp[1]);
+      gTip.style.opacity = 1; gTip2.style.opacity = .25 + .15*Math.sin(t*8);
+    } else { gLine.setAttribute('d', ''); gArea.setAttribute('d', ''); gTip.style.opacity = 0; gTip2.style.opacity = 0; }
+
+    // people stream in 13.3+
+    const hub = L.hub;
+    people.forEach((p, i) => {
+      const a = k(t, p.start, IN);
+      place(p.el, p.x + (p.x - hub[0])*.08*(1-a), p.y + (p.y - hub[1])*.08*(1-a), lerp(.92, 1, a), a);
+      // line from badge edge toward hub edge
+      const dx = hub[0] - p.x, dy = hub[1] - p.y, len = Math.hypot(dx, dy), ux = dx/len, uy = dy/len;
+      const off = Math.abs(uy) > .5 && uy > 0 ? 150 : 72; const sx = p.x + ux*off, sy = p.y + uy*off, ex = hub[0] - ux*(V ? 150 : 190), ey = hub[1] - uy*(V ? 150 : 160);
+      p.line.setAttribute('d', `M${sx.toFixed(1)} ${sy.toFixed(1)}L${ex.toFixed(1)} ${ey.toFixed(1)}`);
+      p.line.style.opacity = (a * .9).toFixed(3);
+      p.dots.forEach((c, j) => {
+        const run = t - p.start - 0.15 - j*0.38;
+        if (run < 0) { c.style.opacity = 0; return; }
+        const ph = (run * 0.85) % 1;
+        const e = EIO(ph);
+        c.setAttribute('cx', lerp(sx, ex, e).toFixed(1)); c.setAttribute('cy', lerp(sy, ey, e).toFixed(1));
+        c.style.opacity = (Math.min(1, ph*6, (1-ph)*6) * a).toFixed(3);
+      });
+    });
+    ripples.forEach((c, j) => {
+      const run = t - 13.9 - j*0.45;
+      if (run < 0) { c.style.opacity = 0; return; }
+      const ph = (run / 1.35) % 1;
+      c.setAttribute('cx', L.brC[0] + (V ? 40 : 90)); c.setAttribute('cy', L.brC[1] + (V ? 60 : 40));
+      c.setAttribute('r', (V ? 300 : 340) + ph*120);
+      c.style.opacity = ((1 - ph) * .22).toFixed(3);
+    });
+    const lin = k(t, 13.55, IN);
+    place(label, L.label[0], L.label[1] + (1-lin)*16, lerp(.92, 1, lin), lin);
+  };
+}
+
+const render = PART === 'a' ? buildA() : buildB();
+window.renderAt = (t) => { render(t); return true; };
+window.fontsOK = async () => { await document.fonts.ready;
+  await Promise.all(['800 40px Inter', '600 40px Inter', '700 20px "JetBrains Mono"'].map(f => document.fonts.load(f)));
+  return document.fonts.check('800 40px Inter') && document.fonts.check('700 20px "JetBrains Mono"'); };
+render(0);
+</script>
+</body>
+</html>

@@ -1,0 +1,429 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>p1 datasheet mock</title>
+<link rel="stylesheet" href="fonts.css">
+<style>
+  html, body { margin: 0; padding: 0; background: #0E0E10; }
+  #stage { position: relative; width: 1920px; height: 1080px; overflow: hidden; background: #0E0E10; }
+  #grid { position: absolute; inset: 0;
+    background-image: radial-gradient(circle at 12px 12px, #23232A 1.2px, transparent 1.6px);
+    background-size: 24px 24px; }
+  #vignette { position: absolute; inset: 0; pointer-events: none;
+    background: radial-gradient(ellipse 75% 70% at 50% 50%, rgba(0,0,0,0) 55%, rgba(0,0,0,.55) 100%); }
+  .pgwrap { position: absolute; left: 0; top: 0; width: 900px; height: 1273px; transform-origin: 0 0; }
+  .pgwrap .shade { position: absolute; inset: 0; background: #08080A; opacity: 0; pointer-events: none; }
+  .pgwrap.fly { box-shadow: 0 30px 80px rgba(0,0,0,.6), 0 6px 18px rgba(0,0,0,.45); }
+  #hero { box-shadow: 0 30px 90px rgba(0,0,0,.7); }
+
+  /* ---------- the PDF page ---------- */
+  .pg { position: absolute; inset: 0; background: #fff; box-sizing: border-box; padding: 44px 62px 56px;
+    font-family: Arial, Helvetica, sans-serif; color: #1c1c1c; font-size: 10.4px; line-height: 1.37; overflow: hidden; }
+  .pg-h { display: flex; justify-content: space-between; align-items: baseline; font-size: 9px; color: #333;
+    border-bottom: 1.4px solid #0b3a64; padding-bottom: 5px; margin-bottom: 16px; }
+  .pg-h .t { font-weight: bold; color: #0b3a64; letter-spacing: .1px; }
+  .pg-f { position: absolute; left: 62px; right: 62px; bottom: 24px; display: flex; justify-content: space-between;
+    font-size: 8.6px; color: #555; border-top: .8px solid #9aa0a8; padding-top: 5px; }
+  .h1 { font-size: 17px; font-weight: bold; color: #0b3a64; margin: 4px 0 10px; }
+  .h2 { font-size: 13.2px; font-weight: bold; color: #0b3a64; margin: 13px 0 6px; }
+  .h3 { font-size: 11.4px; font-weight: bold; color: #1c1c1c; margin: 11px 0 4px; }
+  .h1 .n, .h2 .n, .h3 .n { display: inline-block; min-width: 46px; }
+  .pg p { margin: 0 0 6px; text-align: justify; }
+  .pg .meta { font-size: 9.6px; margin: 0 0 2px; }
+  .cap { font-size: 9.4px; font-weight: bold; text-align: center; margin: 5px 0 9px; }
+  .tcap { font-size: 9.4px; font-weight: bold; text-align: center; margin: 9px 0 4px; }
+  .fig svg { display: block; margin: 4px auto 0; }
+  .pg table { border-collapse: collapse; width: 100%; font-size: 8.4px; line-height: 1.22; margin-bottom: 4px; }
+  .pg th { background: #dde4ec; font-weight: bold; border: .7px solid #7f8790; padding: 2.5px 3px; }
+  .pg td { border: .7px solid #7f8790; padding: 2px 3px; text-align: center; vertical-align: middle; }
+  .pg td.l { text-align: left; }
+  .pg td.res { background: #e9e9e9; color: #777; }
+  .pg td.v { writing-mode: vertical-rl; transform: rotate(180deg); font-size: 7.2px; padding: 3px 0; height: 52px; white-space: nowrap; }
+  .pg td.bn { font-size: 7px; color: #444; padding: 1px 0; }
+  .pg .notes { font-size: 8.8px; margin: 2px 0 6px; padding-left: 16px; color: #2a2a2a; }
+  .pg .notes li { margin-bottom: 1px; }
+  .pg .bits { margin: 4px 0 8px; }
+  .pg .bits td { height: 15px; font-size: 7.6px; padding: 1px 0; }
+  .pg .bits td.acc { font-size: 7.2px; color: #333; height: 11px; }
+  .pg .bitdesc { font-size: 9.6px; margin: 0 0 5px; }
+  .pg .bitdesc b { display: block; }
+  .pg .bitdesc div { padding-left: 22px; }
+  .pg .cols2 { column-count: 2; column-gap: 26px; }
+
+  /* ---------- label chip (AI layer) ---------- */
+  #chip { position: absolute; left: 960px; top: 58px; z-index: 100; display: flex; align-items: center; gap: 14px; white-space: nowrap;
+    background: #16161A; border: 1px solid #2A2A30; border-radius: 16px; padding: 16px 24px 16px 18px;
+    box-shadow: 0 20px 60px rgba(0,0,0,.55); font-family: 'JetBrains Mono'; font-size: 25px; font-weight: 500; color: #F5F5F7;
+    transform-origin: 50% 50%; }
+  #chip .ico { width: 34px; height: 40px; }
+  #chip .sub { color: #A1A1AA; font-weight: 400; }
+  #chip .sub b { color: #D97757; font-weight: 600; }
+</style>
+</head>
+<body>
+<div id="stage">
+  <div id="grid"></div>
+  <div id="pages"></div>
+  <div id="vignette"></div>
+  <div id="chip">
+    <svg class="ico" viewBox="0 0 34 40"><path d="M3 3h19l9 9v25H3z" fill="#F5F5F7"/><path d="M22 3v9h9" fill="#C9C9CF"/><rect x="0" y="22" width="25" height="12" rx="2.5" fill="#FF5A4E"/><text x="12.5" y="31.2" text-anchor="middle" font-family="Inter" font-weight="800" font-size="8.6" fill="#fff">PDF</text></svg>
+    <span>MCU-32_Reference_Manual_Rev7.pdf <span class="sub">· <b>1,386</b> pages</span></span>
+  </div>
+</div>
+<script src="common.js"></script>
+<script>
+window.SCENE = { dur: 6.0 };            // 5.0 s of motion + 1.0 s clean hold
+const QA_TIMES = [0.30, 1.40, 2.60, 3.50, 4.40, 5.80];
+
+/* ======================= content generators ======================= */
+const R = rng(32);
+const pick = a => a[Math.floor(R() * a.length)];
+const S = {
+  vdd: 'The device operates from a single 1.71 V to 3.6 V supply (V<sub>DD</sub>) for the I/O ring, the reset block and the internal regulator.',
+  ldo: 'An embedded low-dropout regulator generates the 1.2 V core supply (V<sub>CORE</sub>) for the CPU, the memories and the digital peripherals.',
+  vbat: 'When the main supply is switched off, the backup domain is automatically powered from the VBAT pin through an internal power switch.',
+  vdda: 'V<sub>DDA</sub> must be connected to V<sub>DD</sub> when neither the analog-to-digital converter nor the comparators are used.',
+  dec: 'Each pair of VDD/VSS pins must be decoupled with a 100 nF ceramic capacitor placed as close as possible to the package.',
+  bor: 'A brown-out detector keeps the device in reset until V<sub>DD</sub> rises above the selected threshold (BOR level 0 to 4).',
+  por: 'The power-on reset (POR) and power-down reset (PDR) are always active and cannot be disabled by software.',
+  stop: 'Refer to Section 6.3.4 for the sequence required when entering Deep-sleep 1 or Deep-sleep 2 mode with the debug interface enabled.',
+  meas: 'The current consumption is measured with all peripherals disabled, the flash prefetch enabled and the code executed from flash.',
+  char: 'Values given at 85 °C and 105 °C are based on characterisation and are not tested in production.',
+  prot: 'After reset, writes to PMU_CR2 are ignored until the PMU clock is enabled with the PMUEN bit in the clock controller.',
+  dbg: 'If a debug probe is connected during low-power modes, the DBGLP bit keeps the core clock and the regulator running, which increases the measured current.',
+  pull: 'In Standby mode each I/O can keep an internal pull-up or pull-down resistor, selected in the PMU_PULLx registers.',
+  swd: 'The SWDIO and SWCLK pins are configured as alternate function AF0 after reset, with an internal pull-up and pull-down respectively.',
+  nrst: 'The NRST pin has an internal pull-up resistor (R<sub>PU</sub>) and must not be driven by a push-pull output when a debug probe is connected.',
+  swclk: 'The interface supports a maximum SWCLK frequency of 24 MHz when V<sub>DD</sub> is above 2.7 V.',
+  load: 'All timing values are given for a load capacitance of 30 pF and with the I/O compensation cell enabled.',
+  vsel: 'Writing a reserved value to VSEL[1:0] has no effect; the previous range is kept and the VSELF flag is set.',
+  wake: 'The wake-up time from Deep-sleep 2 mode depends on the clock selected for system restart and on the regulator range.',
+  af: 'For the list of alternate functions available on each pin, refer to Table 17 and to the device datasheet.',
+  idd: 'The supply current depends on the operating voltage, the ambient temperature, the I/O pin loading, the executed code and the clock frequency.',
+  ext: 'An external power-supply supervisor is not required; the internal POR/PDR circuitry is functional from 1.62 V.',
+};
+const para = (...k) => `<p>${k.map(x => S[x]).join(' ')}</p>`;
+const pageShell = (num, section, body) => `<div class="pg"><div class="pg-h"><span class="t">MCU-32 Series Reference Manual</span><span>${section}</span></div>${body}<div class="pg-f"><span>RM-M32 Rev 7</span><span>${num}/1386</span></div></div>`;
+const h1 = (n, t) => `<div class="h1"><span class="n">${n}</span>${t}</div>`;
+const h2 = (n, t) => `<div class="h2"><span class="n">${n}</span>${t}</div>`;
+const h3 = (n, t) => `<div class="h3"><span class="n">${n}</span>${t}</div>`;
+const fig = (svg, cap) => `<div class="fig">${svg}<div class="cap">${cap}</div></div>`;
+const notes = l => `<ol class="notes">${l.map(x => `<li>${x}</li>`).join('')}</ol>`;
+function table(cap, head, rows, colw) {
+  const cg = colw ? `<colgroup>${colw.map(w => `<col style="width:${w}%">`).join('')}</colgroup>` : '';
+  const th = head.map(h => Array.isArray(h) ? h.map(c => `<th${c.span ? ` colspan="${c.span}"` : ''}${c.rs ? ` rowspan="${c.rs}"` : ''}>${c.t}</th>`).join('') : `<th>${h}</th>`);
+  const thead = Array.isArray(head[0]) ? head.map(r => `<tr>${r.map(c => `<th${c.span ? ` colspan="${c.span}"` : ''}${c.rs ? ` rowspan="${c.rs}"` : ''}>${c.t}</th>`).join('')}</tr>`).join('') : `<tr>${th.join('')}</tr>`;
+  const tb = rows.map(r => `<tr>${r.map(c => typeof c === 'object' && c !== null ? `<td${c.rs ? ` rowspan="${c.rs}"` : ''}${c.cs ? ` colspan="${c.cs}"` : ''} class="${c.c || ''}">${c.t}</td>` : `<td>${c}</td>`).join('')}</tr>`).join('');
+  return `${cap ? `<div class="tcap">${cap}</div>` : ''}<table>${cg}<thead>${thead}</thead><tbody>${tb}</tbody></table>`;
+}
+
+/* ---------- SVG figures (all fictional, drawn from scratch) ---------- */
+const SV = (w, h, inner) => `<svg width="${w}" height="${h}" viewBox="0 0 ${w} ${h}" font-family="Arial, Helvetica, sans-serif" font-size="8.6" fill="none" stroke="#222" stroke-width=".8">${inner}</svg>`;
+const T = (x, y, s, o = {}) => `<text x="${x}" y="${y}" fill="${o.fill || '#1c1c1c'}" stroke="none" font-size="${o.fs || 8.6}"${o.a ? ` text-anchor="${o.a}"` : ''}${o.b ? ' font-weight="bold"' : ''}${o.rot ? ` transform="rotate(${o.rot} ${x} ${y})"` : ''}>${s}</text>`;
+const Rc = (x, y, w, h, o = {}) => `<rect x="${x}" y="${y}" width="${w}" height="${h}"${o.rx ? ` rx="${o.rx}"` : ''} fill="${o.fill || 'none'}" stroke="${o.stroke || '#222'}" stroke-width="${o.sw || .8}"${o.dash ? ` stroke-dasharray="${o.dash}"` : ''}/>`;
+const L = (x1, y1, x2, y2, o = {}) => `<line x1="${x1}" y1="${y1}" x2="${x2}" y2="${y2}" stroke="${o.stroke || '#222'}" stroke-width="${o.sw || .8}"${o.dash ? ` stroke-dasharray="${o.dash}"` : ''}/>`;
+const P = (d, o = {}) => `<path d="${d}" fill="${o.fill || 'none'}" stroke="${o.stroke || '#222'}" stroke-width="${o.sw || .8}"${o.dash ? ` stroke-dasharray="${o.dash}"` : ''}/>`;
+const box = (x, y, w, h, label, o = {}) => Rc(x, y, w, h, { fill: o.fill || '#fff', rx: o.rx }) + label.split('|').map((s, i, a) => T(x + w / 2, y + h / 2 + 3 + (i - (a.length - 1) / 2) * 10, s, { a: 'middle', fs: o.fs || 8.2, b: o.b })).join('');
+const arrowR = (x, y) => P(`M${x - 5} ${y - 3}L${x} ${y}L${x - 5} ${y + 3}`, { fill: '#222' });
+const cap = (x, y, lbl) => L(x, y, x, y + 9) + L(x - 7, y + 9, x + 7, y + 9, { sw: 1.3 }) + L(x - 7, y + 13, x + 7, y + 13, { sw: 1.3 }) + L(x, y + 13, x, y + 22) + gnd(x, y + 22) + T(x + 10, y + 14, lbl, { fs: 7.6 });
+const gnd = (x, y) => L(x - 6, y, x + 6, y) + L(x - 4, y + 2.5, x + 4, y + 2.5) + L(x - 2, y + 5, x + 2, y + 5);
+
+function figPower() {
+  let s = '';
+  // chip outline
+  s += Rc(168, 8, 584, 344, { sw: 1.2 }) + T(176, 22, 'MCU-32', { b: 1, fs: 8.4 });
+  // pins + rails
+  const pins = [['VBAT', 46], ['VDD', 128], ['VSS', 176], ['VDDA', 232], ['VSSA', 262], ['VREF+', 300], ['VREF−', 330]];
+  for (const [n, y] of pins) { s += Rc(162, y - 4, 10, 8, { fill: '#fff' }) + T(156, y - 4, n, { a: 'end', fs: 8.2 }); }
+  // external decoupling (labels sit below the rails, pin names above)
+  s += L(70, 46, 162, 46) + cap(70, 46, '100 nF');
+  s += L(30, 128, 162, 128) + cap(30, 128, '4.7 µF') + cap(92, 128, '4 × 100 nF');
+  s += L(40, 232, 162, 232) + cap(40, 232, '10 nF + 1 µF');
+  s += L(40, 300, 162, 300) + cap(40, 300, '100 nF + 1 µF');
+  s += L(126, 262, 162, 262) + gnd(126, 262) + L(126, 176, 162, 176) + gnd(126, 176) + L(138, 330, 162, 330) + gnd(138, 330);
+  // backup domain
+  s += Rc(232, 18, 250, 72, { dash: '3 2' }) + T(240, 30, 'Backup domain', { b: 1, fs: 8.2 });
+  s += box(240, 38, 66, 40, '32 kHz|oscillator') + box(314, 38, 66, 40, 'RTC|+ tamper') + box(388, 38, 86, 40, 'Backup|registers (32×32)');
+  // power switch
+  s += L(172, 46, 196, 46) + P('M196 46L214 38', { sw: 1 }) + L(214, 46, 232, 46) + T(194, 64, 'Power', { fs: 7.4 }) + T(194, 73, 'switch', { fs: 7.4 }) + L(205, 128, 205, 80, { dash: '2 2' });
+  // VDD domain
+  s += Rc(232, 102, 330, 110, { dash: '3 2' }) + T(240, 114, 'V', { b: 1, fs: 8.2 }) + T(246, 117, 'DD', { b: 1, fs: 6 }) + T(258, 114, 'domain', { b: 1, fs: 8.2 });
+  s += box(240, 122, 70, 80, 'I/O ring|(GPIO A–H)') + box(318, 122, 72, 36, 'Reset block|POR / BOR') + box(318, 166, 72, 36, 'Wake-up|logic') + box(398, 122, 70, 80, 'Standby|circuitry|watchdog, RC32K');
+  s += box(476, 122, 68, 80, 'Voltage|regulator|(LDO)');
+  s += L(172, 128, 232, 128, { sw: 1 }) + L(172, 176, 232, 176);
+  // level shifters
+  s += box(570, 102, 22, 110, '', { fill: '#eef2f6' }) + T(584, 157, 'Level shifters', { a: 'middle', fs: 7.4, rot: -90 });
+  // core domain
+  s += Rc(600, 102, 144, 110, { dash: '3 2' }) + T(608, 114, 'V', { b: 1, fs: 8.2 }) + T(614, 117, 'CORE', { b: 1, fs: 6 }) + T(637, 114, 'domain (1.2 V)', { b: 1, fs: 8.2 });
+  s += box(608, 122, 62, 36, 'CPU core|+ FPU') + box(676, 122, 62, 36, 'Flash|1 MB') + box(608, 166, 62, 36, 'SRAM|320 KB') + box(676, 166, 62, 36, 'Digital|peripherals');
+  s += L(544, 172, 570, 172, { sw: 1.1 }) + arrowR(570, 172) + T(548, 166, 'V', { fs: 6.6 }) + T(552.5, 168, 'CORE', { fs: 4.6 });
+  // analog domain
+  s += Rc(232, 222, 330, 122, { dash: '3 2' }) + T(240, 234, 'V', { b: 1, fs: 8.2 }) + T(246, 237, 'DDA', { b: 1, fs: 6 }) + T(262, 234, 'domain', { b: 1, fs: 8.2 });
+  s += box(240, 242, 92, 40, 'ADC1 / ADC2|12-bit, 5 Msps') + box(340, 242, 64, 40, 'DAC|2 channels') + box(412, 242, 70, 40, 'Comparators|CMP1 / CMP2') + box(490, 242, 64, 40, 'Op-amps|OA1 / OA2');
+  s += box(240, 292, 92, 44, 'Voltage reference|2.048 / 2.5 V') + box(340, 292, 92, 44, 'Temperature|sensor') + box(440, 292, 114, 44, 'Analog switch|booster (V<tspan font-size="6" dy="2">DDA</tspan><tspan dy="-2">)</tspan>');
+  s += L(172, 232, 232, 232, { sw: 1 }) + L(172, 262, 232, 262) + L(172, 300, 240, 300) + L(172, 330, 240, 330);
+  // low-power domain
+  s += Rc(600, 222, 144, 122, { dash: '3 2' }) + T(608, 234, 'Low-power domain', { b: 1, fs: 8.2 });
+  s += box(608, 242, 130, 30, 'LP timers (LPT1 / LPT2)') + box(608, 278, 62, 30, 'LP UART') + box(676, 278, 62, 30, 'I2C3') + box(608, 314, 130, 24, 'Wake-up pins WKP1–5', { fs: 7.6 });
+  return SV(760, 356, s);
+}
+function figPinout() {
+  const W = 600, c = 300, half = 160, n = 16, pitch = 19;
+  const left = ['VBAT', 'PC13', 'PC14', 'PC15', 'PH0', 'PH1', 'NRST', 'PC0', 'PC1', 'PC2', 'PC3', 'VSSA', 'VDDA', 'PA0', 'PA1', 'PA2'];
+  const bottom = ['PA3', 'VSS', 'VDD', 'PA4', 'PA5', 'PA6', 'PA7', 'PC4', 'PC5', 'PB0', 'PB1', 'PB2', 'PB10', 'PB11', 'VSS', 'VDD'];
+  const right = ['PB12', 'PB13', 'PB14', 'PB15', 'PC6', 'PC7', 'PC8', 'PC9', 'PA8', 'PA9', 'PA10', 'PA11', 'PA12', 'PA13', 'VSS', 'VDD'];
+  const top = ['PA14', 'PA15', 'PC10', 'PC11', 'PC12', 'PD2', 'PB3', 'PB4', 'PB5', 'PB6', 'PB7', 'BOOT0', 'PB8', 'PB9', 'VSS', 'VDD'];
+  let s = Rc(c - half, c - half, 2 * half, 2 * half, { sw: 1.3 }) + `<circle cx="${c - half + 16}" cy="${c - half + 16}" r="5" stroke="#222"/>` + T(c, c - 4, 'LQFP64', { a: 'middle', fs: 15, b: 1 }) + T(c, c + 14, '10 × 10 mm', { a: 'middle', fs: 10 });
+  const off = (i) => -((n - 1) / 2) * pitch + i * pitch;
+  for (let i = 0; i < n; i++) {
+    const y = c + off(i), x = c + off(i);
+    s += Rc(c - half - 14, y - 3.5, 14, 7, { fill: '#e8e8e8' }) + T(c - half - 18, y + 3, left[i], { a: 'end', fs: 8 }) + T(c - half + 6, y + 3, i + 1, { fs: 6.6 });
+    s += Rc(x - 3.5, c + half, 7, 14, { fill: '#e8e8e8' }) + T(x + 3, c + half + 18, bottom[i], { a: 'end', fs: 8, rot: -90 }) + T(x + 2.5, c + half - 5, 17 + i, { fs: 6.4, a: 'end', rot: -90 });
+    const yr = c - off(i); s += Rc(c + half, yr - 3.5, 14, 7, { fill: '#e8e8e8' }) + T(c + half + 18, yr + 3, right[i], { fs: 8 }) + T(c + half - 6, yr + 3, 33 + i, { fs: 6.4, a: 'end' });
+    const xt = c - off(i); s += Rc(xt - 3.5, c - half - 14, 7, 14, { fill: '#e8e8e8' }) + T(xt + 3, c - half - 18, top[i], { fs: 8, rot: -90 }) + T(xt + 2.5, c - half + 5, 49 + i, { fs: 6.4, rot: -90, a: 'end' });
+  }
+  return SV(W, 600, s);
+}
+function figBlock() {
+  let s = '';
+  s += Rc(10, 10, 750, 880, { sw: 1.2 }) + T(20, 26, 'MCU-32 (top-level architecture)', { b: 1, fs: 9 });
+  s += box(30, 44, 150, 70, 'CPU core|32-bit RISC, 80 MHz|FPU · MPU · NVIC', { fill: '#e9eff6' }) + box(30, 124, 150, 36, 'Debug: SWD / JTAG|ETM trace') ;
+  s += box(220, 44, 120, 50, 'Flash|1 MB, dual bank', { fill: '#e9eff6' }) + box(220, 104, 120, 40, 'SRAM1 256 KB') + box(220, 150, 120, 40, 'SRAM2 64 KB|(parity)');
+  s += box(380, 44, 120, 40, 'DMA1 (7 ch)') + box(380, 92, 120, 40, 'DMA2 (7 ch)') + box(380, 140, 120, 40, 'DMA request router');
+  s += box(540, 44, 200, 40, 'Quad-SPI memory interface') + box(540, 92, 200, 40, 'External memory controller') + box(540, 140, 200, 40, 'CRC · RNG · AES-256');
+  s += Rc(30, 206, 710, 26, { fill: '#dde4ec' }) + T(385, 223, 'AHB bus matrix (multi-layer, 32-bit)', { a: 'middle', b: 1 });
+  for (const x of [105, 280, 440, 640]) s += L(x, 180, x, 206, { sw: 1.4 });
+  s += Rc(30, 252, 340, 22, { fill: '#e9eff6' }) + T(200, 267, 'AHB/APB2 bridge  ·  PCLK2 ≤ 80 MHz', { a: 'middle' });
+  s += Rc(400, 252, 340, 22, { fill: '#e9eff6' }) + T(570, 267, 'AHB/APB1 bridge  ·  PCLK1 ≤ 80 MHz', { a: 'middle' });
+  s += L(200, 232, 200, 252, { sw: 1.4 }) + L(570, 232, 570, 252, { sw: 1.4 });
+  const apb2 = ['TMR1 (advanced)', 'TMR8 (advanced)', 'TMR15', 'TMR16', 'TMR17', 'USART1', 'SPI1', 'I2S1', 'I2S2', 'SDIO', 'External interrupts', 'System config / CMP', 'Σ-Δ filter (8 ch)', 'Secure key store'];
+  const apb1 = ['TMR2 (32-bit)', 'TMR3', 'TMR4', 'TMR5 (32-bit)', 'TMR6 / TMR7', 'USART2', 'USART3', 'UART4 / UART5', 'SPI2', 'SPI3', 'I2C1', 'I2C2', 'I2C3', 'CAN1', 'USB FS device', 'LP UART', 'LPT1 / LPT2', 'Op-amps · DAC', 'Window watchdog', 'PMU (power)'];
+  apb2.forEach((n, i) => { s += box(50 + (i % 2) * 160, 290 + Math.floor(i / 2) * 40, 150, 32, n, { fs: 8 }); });
+  apb1.forEach((n, i) => { s += box(420 + (i % 2) * 160, 290 + Math.floor(i / 2) * 40, 150, 32, n, { fs: 8 }); });
+  s += L(40, 274, 40, 570, { sw: 1.4 }) + L(410, 274, 410, 690, { sw: 1.4 });
+  s += Rc(30, 712, 340, 160, { dash: '3 2' }) + T(40, 728, 'GPIO ports', { b: 1 });
+  'ABCDEFGH'.split('').forEach((p, i) => { s += box(44 + (i % 4) * 80, 740 + Math.floor(i / 4) * 52, 72, 42, `GPIO${p}|16 pins`, { fs: 8 }); });
+  s += Rc(400, 712, 340, 160, { dash: '3 2' }) + T(410, 728, 'Analog', { b: 1 });
+  s += box(414, 740, 100, 42, 'ADC1|12-bit') + box(524, 740, 100, 42, 'ADC2|12-bit') + box(634, 740, 96, 42, 'ADC3|12-bit') + box(414, 792, 100, 42, 'CMP1 / CMP2') + box(524, 792, 100, 42, 'Voltage ref.') + box(634, 792, 96, 42, 'Temp sensor');
+  return SV(770, 900, s);
+}
+function figTiming() {
+  let s = '';
+  const y0 = 40, h = 22;
+  s += T(10, y0 + 15, 'SWCLK', { b: 1 }) + T(10, y0 + 75, 'SWDIO', { b: 1 }) + T(10, y0 + 91, '(host → target)', { fs: 7 }) + T(10, y0 + 135, 'SWDIO', { b: 1 }) + T(10, y0 + 151, '(target → host)', { fs: 7 });
+  let d = `M90 ${y0 + h}`; for (let i = 0; i < 9; i++) { const x = 90 + i * 66; d += `L${x + 8} ${y0 + h}L${x + 12} ${y0}L${x + 41} ${y0}L${x + 45} ${y0 + h}L${x + 66} ${y0 + h}`; }
+  s += P(d, { sw: 1.1 });
+  const lane = (yy, xs, labels) => { let p = ''; for (let i = 0; i < xs.length - 1; i++) { const a = xs[i], b = xs[i + 1]; p += P(`M${a} ${yy + 11}L${a + 6} ${yy}L${b - 6} ${yy}L${b} ${yy + 11}L${b - 6} ${yy + 22}L${a + 6} ${yy + 22}Z`, { sw: 1 }) + T((a + b) / 2, yy + 14.5, labels[i] || '', { a: 'middle', fs: 8 }); } return p; };
+  s += lane(y0 + 60, [96, 162, 228, 294, 360, 400], ['Start', 'APnDP', 'RnW', 'A[2:3]', 'Parity']);
+  s += P(`M400 ${y0 + 71}L470 ${y0 + 71}`, { dash: '3 2' }) + T(435, y0 + 66, 'Trn', { a: 'middle', fs: 8 });
+  s += lane(y0 + 120, [470, 536, 602, 668], ['ACK[0]', 'ACK[1]', 'ACK[2]']);
+  for (const x of [162, 228, 536]) s += L(x, y0 - 6, x, y0 + 160, { dash: '2 2', stroke: '#666' });
+  s += P(`M150 ${y0 + 46}L162 ${y0 + 46}`) + P(`M162 ${y0 + 46}L174 ${y0 + 46}`) + T(156, y0 + 42, 't', { fs: 8 }) + T(160, y0 + 44, 'SU', { fs: 5.6 }) + T(178, y0 + 42, 't', { fs: 8 }) + T(182, y0 + 44, 'H', { fs: 5.6 });
+  s += P(`M536 ${y0 + 106}L560 ${y0 + 106}`) + T(562, y0 + 108, 't', { fs: 8 }) + T(566, y0 + 110, 'OD', { fs: 5.6 });
+  s += T(10, y0 + 186, 'All edges referenced to 50% of V', { fs: 7.4 }) + T(127, y0 + 188, 'DD', { fs: 5.6 }) + T(136, y0 + 186, '. Hatched area: data not valid.', { fs: 7.4 });
+  return SV(700, 236, s);
+}
+function figNrst() {
+  let s = '';
+  s += Rc(330, 20, 220, 130, { sw: 1.2 }) + T(440, 36, 'MCU-32', { a: 'middle', b: 1 }) + T(400, 92, 'Filter', { a: 'middle' }) + Rc(370, 74, 60, 28) + T(480, 66, 'R', { fs: 8 }) + T(486, 68, 'PU', { fs: 5.6 }) + Rc(474, 40, 10, 22) + L(479, 20, 479, 40) + L(479, 62, 479, 88) + L(430, 88, 479, 88) + L(330, 88, 370, 88) + L(479, 88, 520, 88) + T(522, 91, 'System reset', { fs: 7.6 });
+  s += Rc(322, 84, 8, 8, { fill: '#fff' }) + T(318, 80, 'NRST', { a: 'end', b: 1 }) + L(120, 88, 322, 88) + L(200, 88, 200, 104) + L(190, 104, 210, 104, { sw: 1.3 }) + L(190, 108, 210, 108, { sw: 1.3 }) + L(200, 108, 200, 124) + gnd(200, 124) + T(214, 112, '0.1 µF', { fs: 7.6 });
+  s += L(120, 88, 120, 104) + P('M120 104L132 118') + L(120, 122, 120, 132) + gnd(120, 132) + T(70, 116, 'External', { fs: 7.6 }) + T(70, 126, 'reset (opt.)', { fs: 7.6 });
+  return SV(620, 160, s);
+}
+function figClock() {
+  let s = Rc(10, 10, 760, 760, { sw: 1.2 });
+  const mux = (x, y, h, lbl) => P(`M${x} ${y}L${x + 18} ${y + 10}L${x + 18} ${y + h - 10}L${x} ${y + h}Z`, { fill: '#f1f4f8' }) + (lbl ? T(x + 9, y - 4, lbl, { a: 'middle', fs: 7.2 }) : '');
+  const srcs = [['XTAL 4–48 MHz', 60], ['RC16 (16 MHz)', 130], ['RCW 0.1–48 MHz', 200], ['RC48 (48 MHz)', 270], ['RC32K (32 kHz)', 560], ['XTAL32K 32.768 kHz', 620]];
+  for (const [n, y] of srcs) s += box(30, y - 18, 130, 36, n, { fill: '#e9eff6' });
+  s += mux(220, 40, 200, 'PLL source') + box(270, 60, 60, 34, '/ M', { b: 1 }) + box(350, 60, 70, 34, 'PLL0|VCO ×N') + box(440, 40, 44, 26, '/ P') + box(440, 74, 44, 26, '/ Q') + box(440, 108, 44, 26, '/ R');
+  s += box(350, 160, 70, 34, 'PLL1|VCO ×N') + box(440, 150, 44, 22, '/ P') + box(440, 176, 44, 22, '/ Q');
+  s += mux(540, 60, 120, '') + T(552, 50, 'SYSCLK mux', { fs: 7.6 }) + box(590, 100, 70, 30, 'AHB PRESC|/1,2,..512', { fs: 7.4 }) + T(670, 112, 'HCLK → core,', { fs: 7.4 }) + T(670, 122, 'memories, DMA', { fs: 7.4 });
+  s += box(590, 160, 70, 30, 'APB1 PRESC|/1,2,4,8,16', { fs: 7.4 }) + T(670, 172, 'PCLK1 → APB1', { fs: 7.4 }) + box(590, 210, 70, 30, 'APB2 PRESC|/1,2,4,8,16', { fs: 7.4 }) + T(670, 222, 'PCLK2 → APB2', { fs: 7.4 });
+  const outs = ['USART1', 'USART2', 'USART3', 'UART4', 'UART5', 'LP UART', 'I2C1', 'I2C2', 'I2C3', 'LPT1', 'LPT2', 'I2S1', 'I2S2', 'USB FS', 'SDIO', 'ADC', 'RNG', 'Σ-Δ filter'];
+  outs.forEach((n, i) => { const y = 280 + i * 25; s += mux(560, y, 22) + L(500, y + 11, 560, y + 11, { stroke: '#555' }) + L(578, y + 11, 620, y + 11) + T(626, y + 14, `to ${n}`, { fs: 7.6 }); });
+  s += L(160, 60, 220, 60) + L(160, 130, 220, 100) + L(160, 200, 220, 150) + L(330, 77, 350, 77) + L(420, 77, 440, 53) + L(420, 77, 440, 87) + L(420, 77, 440, 121) + L(484, 121, 540, 100) + L(160, 270, 500, 270) + L(500, 270, 500, 730, { stroke: '#555' });
+  s += L(160, 560, 520, 560) + L(160, 620, 520, 620) + mux(520, 540, 100, 'RTC mux') + T(546, 594, '→ RTC', { fs: 7.6 });
+  s += box(220, 690, 120, 30, 'Clock monitor', { fs: 7.6 }) + box(360, 690, 120, 30, 'Clock output (CKOUT)', { fs: 7.6 });
+  return SV(780, 780, s);
+}
+function figMech() {
+  let s = Rc(90, 40, 240, 240, { sw: 1.2 }) + Rc(110, 60, 200, 200, { dash: '3 2' });
+  for (let i = 0; i < 16; i++) { const o = 72 + i * 11.6; s += L(o, 40, o, 26) + L(o, 280, o, 294) + L(90, o, 76, o) + L(330, o, 344, o); }
+  const dim = (x1, y1, x2, y2, lbl, lx, ly) => L(x1, y1, x2, y2, { sw: .6 }) + P(`M${x1} ${y1}l5 -2.5v5z`, { fill: '#222', sw: .4 }) + P(`M${x2} ${y2}l-5 -2.5v5z`, { fill: '#222', sw: .4 }) + T(lx, ly, lbl, { a: 'middle', fs: 9, b: 1 });
+  s += dim(76, 320, 344, 320, 'D', 210, 314) + dim(90, 340, 330, 340, 'D1', 210, 352) + dim(110, 360, 310, 360, 'D3', 210, 374);
+  s += L(380, 26, 380, 294, { sw: .6 }) + T(392, 160, 'E', { b: 1, fs: 9 }) + L(400, 40, 400, 280, { sw: .6 }) + T(412, 164, 'E1', { b: 1, fs: 9 });
+  s += Rc(470, 140, 220, 22, { fill: '#eee' }) + P('M470 162L452 172L430 172') + P('M690 162L708 172L730 172') + T(580, 128, 'SEATING PLANE', { a: 'middle', fs: 7.6 }) + L(430, 178, 730, 178, { dash: '4 2' });
+  s += dim(470, 200, 690, 200, 'A2', 580, 214) + T(450, 190, 'A1', { fs: 8, b: 1 }) + T(710, 190, 'L', { fs: 8, b: 1 }) + T(730, 160, 'θ', { fs: 9 });
+  s += T(210, 165, 'Pin 1', { a: 'middle', fs: 8 }) + `<circle cx="104" cy="54" r="3.5" stroke="#222"/>` + T(210, 180, 'identification', { a: 'middle', fs: 8 });
+  return SV(760, 390, s);
+}
+/* ---------- tables ---------- */
+function tRun() {
+  const f = [80, 72, 64, 48, 32, 24, 16, 8, 4, 2, 1];
+  const typ = [10.2, 9.18, 8.17, 6.12, 4.11, 3.09, 2.07, 1.12, 0.61, 0.35, 0.21];
+  const rows = f.map((v, i) => {
+    const r = [];
+    if (i === 0) r.push({ t: 'I<sub>DD(Run)</sub>', rs: 11 }, { t: 'Supply current in Run mode', rs: 11 }, { t: 'f<sub>HCLK</sub> = f<sub>XTAL</sub> up to 48 MHz included, PLL ON above 48 MHz, all peripherals disabled', rs: 11, c: 'l' });
+    r.push(`${v} MHz`, typ[i].toFixed(2), (typ[i] * 1.18).toFixed(2), (typ[i] * 1.18 + .42).toFixed(2), (typ[i] * 1.18 + .96).toFixed(2));
+    if (i === 0) r.push({ t: 'mA', rs: 11 });
+    return r;
+  });
+  return table('Table 22. Run-mode supply current, typical code loop executing from flash', [[{ t: 'Symbol', rs: 2 }, { t: 'Parameter', rs: 2 }, { t: 'Conditions', rs: 2 }, { t: 'f<sub>HCLK</sub>', rs: 2 }, { t: 'Typ', rs: 1 }, { t: 'Max<sup>(1)</sup>', span: 3 }, { t: 'Unit', rs: 2 }], [{ t: '25 °C' }, { t: '25 °C' }, { t: '85 °C' }, { t: '105 °C' }]], rows, [9, 15, 26, 10, 10, 10, 10, 10]);
+}
+function tLowPower() {
+  const rows = [
+    ['I<sub>DD(Sleep)</sub>', 'Sleep, 80 MHz', 'All peripherals disabled', '2.52', '2.56', '2.61', '3.40', 'mA'],
+    ['I<sub>DD(LPRun)</sub>', 'Low-power run', 'f<sub>HCLK</sub> = 2 MHz', '198', '203', '211', '420', 'µA'],
+    ['I<sub>DD(DS0)</sub>', 'Deep-sleep 0', 'RTC disabled', '108', '110', '113', '310', 'µA'],
+    ['I<sub>DD(DS1)</sub>', 'Deep-sleep 1', 'RTC disabled', '6.62', '6.71', '6.85', '41.0', 'µA'],
+    ['I<sub>DD(DS2)</sub>', 'Deep-sleep 2', 'RTC clocked by XTAL32K', '1.28', '1.34', '1.42', '9.80', 'µA'],
+    ['I<sub>DD(Standby)</sub>', 'Standby', 'RTC disabled, no pull', '112', '125', '146', '880', 'nA'],
+    ['I<sub>DD(Off)</sub>', 'Off', 'RTC disabled', '28', '39', '61', '420', 'nA'],
+    ['I<sub>DD(VBAT)</sub>', 'Backup domain', 'V<sub>DD</sub> = 0 V, RTC on', '245', '296', '362', '1050', 'nA'],
+  ];
+  return table('Table 23. Current consumption in low-power modes (T<sub>A</sub> = 25 °C unless otherwise specified)', [[{ t: 'Symbol', rs: 2 }, { t: 'Mode', rs: 2 }, { t: 'Conditions', rs: 2 }, { t: 'Typ', span: 3 }, { t: 'Max', rs: 1 }, { t: 'Unit', rs: 2 }], [{ t: '1.8 V' }, { t: '3.0 V' }, { t: '3.6 V' }, { t: '3.6 V' }]], rows, [14, 14, 26, 10, 10, 10, 9, 7]);
+}
+function tPins() {
+  const names = ['VBAT', 'PC13', 'PC14', 'PC15', 'PH0', 'PH1', 'NRST', 'PC0', 'PC1', 'PC2', 'PC3', 'VSSA', 'VDDA', 'PA0', 'PA1', 'PA2', 'PA3', 'VSS', 'VDD', 'PA4', 'PA5', 'PA6'];
+  const pool = ['TMR2_CH1', 'TMR3_CH2', 'TMR4_CH3', 'TMR1_CH1N', 'TMR8_BKIN', 'TMR15_CH1', 'USART2_TX', 'USART2_RX', 'USART3_CK', 'UART4_TX', 'UART5_RX', 'LPUART_TX', 'LPUART_RX', 'SPI1_SCK', 'SPI1_MISO', 'SPI2_MOSI', 'SPI3_NSS', 'I2C1_SCL', 'I2C2_SDA', 'I2C3_SMBA', 'QSPI_IO2', 'CAN1_TX', 'I2S2_WS', 'LPT1_IN1', 'LPT2_OUT', 'SDIO_D1'];
+  const add = ['ADC1_IN1', 'ADC1_IN2', 'ADC12_IN3', 'ADC12_IN4', 'ADC12_IN7', 'ADC2_IN9', 'CMP1_INP', 'CMP2_INM', 'OA1_INP', 'OA1_OUT', 'DAC_OUT1', 'DAC_OUT2', 'WKP1', 'WKP2', 'WKP4', 'TAMP1'];
+  const r3 = rng(11);
+  const af = n => { if (/^V|NRST/.test(n)) return '-'; const k = 2 + Math.floor(r3() * 5), out = []; for (let i = 0; i < k; i++) { const f = pool[Math.floor(r3() * pool.length)]; if (!out.includes(f)) out.push(f); } return out.join(', ') + ', EVENTOUT'; };
+  const ad = n => { if (/^V|NRST/.test(n)) return '-'; if (n === 'PC14') return 'XTAL32K_IN'; if (n === 'PC15') return 'XTAL32K_OUT'; if (n === 'PH0') return 'XTAL_IN'; if (n === 'PH1') return 'XTAL_OUT'; const k = 1 + Math.floor(r3() * 3), out = []; for (let i = 0; i < k; i++) { const f = add[Math.floor(r3() * add.length)]; if (!out.includes(f)) out.push(f); } return out.join(', '); };
+  const io = n => /^V/.test(n) ? '-' : n === 'NRST' ? 'RST' : /PC1[345]|PH/.test(n) ? 'T5' : 'T5A';
+  const rows = names.map((n, i) => [i + 1, n === 'PC14' ? 'PC14-XTAL32K_IN' : n === 'PC15' ? 'PC15-XTAL32K_OUT' : n, /^V/.test(n) ? 'S' : 'I/O', io(n), /PC1[345]/.test(n) ? '(1)' : '-', { t: af(n), c: 'l' }, { t: ad(n), c: 'l' }]);
+  return table('Table 17. MCU-32 pin definitions (LQFP64)', ['Pin', 'Pin name (function after reset)', 'Type', 'I/O struct.', 'Notes', 'Alternate functions', 'Additional functions'], rows, [5, 15, 5, 7, 6, 38, 24]);
+}
+function tAF() {
+  const cols = ['Port', 'AF0<br>System', 'AF1<br>Timers A', 'AF2<br>Timers B', 'AF3<br>Timers C', 'AF4<br>I2C', 'AF5<br>SPI A', 'AF6<br>SPI B', 'AF7<br>USART'];
+  const fns = ['TMR2_CH1', 'TMR5_CH1', 'TMR8_ETR', 'I2C1_SMBA', 'SPI1_NSS', 'SPI3_NSS', 'USART2_CTS', 'TMR2_CH2', 'TMR5_CH2', 'USART2_RTS_DE', 'TMR15_CH1N', 'TMR2_CH3', 'USART2_TX', 'TMR1_BKIN', 'TMR3_CH1', 'TMR8_BKIN', 'SPI1_MISO', 'USART3_CTS', 'TMR1_CH1N', 'TMR3_CH2', 'TMR8_CH1N', 'SPI1_MOSI', 'I2C3_SCL', 'CKOUT', 'TMR1_CH1', 'USART1_CK', 'I2C3_SMBA', 'TMR1_CH2', 'USART1_TX', 'TMR1_CH3', 'USART1_RX', 'TMR1_CH4', 'USART1_CTS', 'TMR1_ETR', 'USART1_RTS', 'SWDIO', 'IR_OUT', 'SWCLK', 'TDI', 'SPI3_SCK', 'SDF_IN0'];
+  const r2 = rng(7); const rows = [];
+  for (let i = 0; i < 16; i++) { const row = [{ t: `PA${i}`, c: 'l' }]; for (let j = 1; j < cols.length; j++) row.push(r2() < .38 ? '-' : fns[Math.floor(r2() * fns.length)]); if (i === 13) row[1] = 'SWDIO'; if (i === 14) row[1] = 'SWCLK'; rows.push(row); }
+  for (let i = 0; i < 12; i++) { const row = [{ t: `PB${i}`, c: 'l' }]; for (let j = 1; j < cols.length; j++) row.push(r2() < .42 ? '-' : fns[Math.floor(r2() * fns.length)]); rows.push(row); }
+  return table('Table 18. Alternate function AF0 to AF7 (for AF8 to AF15 see Table 19)', cols, rows);
+}
+function tRegMap() {
+  const regs = [['0x00', 'PMU_CR1', { 14: 'LPRM', 10: 'VSEL1', 9: 'VSEL0', 8: 'BKPWE', 2: 'LPMODE2', 1: 'LPMODE1', 0: 'LPMODE0' }, '0000 0200'],
+    ['0x04', 'PMU_CR2', { 11: 'USBSV', 10: 'AUXSV', 7: 'MONEN3', 6: 'MONEN2', 5: 'MONEN1', 4: 'MONEN0', 3: 'LVDTH2', 2: 'LVDTH1', 1: 'LVDTH0', 0: 'LVDEN' }, '0000 0000'],
+    ['0x08', 'PMU_CR3', { 15: 'IWKEN', 10: 'PUPDEN', 8: 'SRAMRET', 4: 'WKPEN5', 3: 'WKPEN4', 2: 'WKPEN3', 1: 'WKPEN2', 0: 'WKPEN1' }, '0000 8000'],
+    ['0x0C', 'PMU_CR4', { 9: 'BATRS', 8: 'BATCHG', 4: 'WKPOL5', 3: 'WKPOL4', 2: 'WKPOL3', 1: 'WKPOL2', 0: 'WKPOL1' }, '0000 0000'],
+    ['0x10', 'PMU_SR1', { 15: 'IWKF', 8: 'STBYF', 4: 'WKPF5', 3: 'WKPF4', 2: 'WKPF3', 1: 'WKPF2', 0: 'WKPF1' }, '0000 0000'],
+    ['0x14', 'PMU_SR2', { 15: 'MONOK3', 14: 'MONOK2', 13: 'MONOK1', 12: 'MONOK0', 11: 'LVDO', 10: 'VSELF', 9: 'LPRF', 8: 'LPRS' }, '0000 0000'],
+    ['0x18', 'PMU_CLR', { 8: 'CSTBYF', 4: 'CWKPF5', 3: 'CWKPF4', 2: 'CWKPF3', 1: 'CWKPF2', 0: 'CWKPF1' }, '0000 0000']];
+  const head = ['Offset', 'Register'].concat(Array.from({ length: 32 }, (_, i) => `<span style="font-size:6.6px">${31 - i}</span>`));
+  const rows = [];
+  for (const [off, name, bits, rv] of regs) {
+    const r = [{ t: off, rs: 2 }, { t: name, c: 'l' }];
+    for (let b = 31; b >= 0; b--) r.push(bits[b] ? { t: bits[b], c: 'v' } : { t: 'Res.', c: 'v res' });
+    rows.push(r);
+    const rvb = parseInt(rv.replace(' ', ''), 16).toString(2).padStart(32, '0');
+    const r2 = [{ t: 'Reset value', c: 'l' }]; for (let b = 31; b >= 0; b--) r2.push(bits[b] ? { t: rvb[31 - b], c: 'bn' } : { t: '', c: 'res' });
+    rows.push(r2);
+  }
+  return table('Table 61. PMU register map and reset values', head, rows, [5.5, 9.5].concat(Array(32).fill(2.656)));
+}
+function bitfield(hi, fields) {
+  // fields: array of [msb, lsb, name, acc]
+  let top = '<tr>', mid = '<tr>', acc = '<tr>';
+  for (let b = hi; b > hi - 16; b--) top += `<td class="bn">${b}</td>`;
+  let b = hi;
+  while (b > hi - 16) {
+    const f = fields.find(f => f[0] >= b && f[1] <= b);
+    if (f) { const lo = Math.max(f[1], hi - 15), span = b - lo + 1; mid += `<td colspan="${span}">${f[2]}</td>`; acc += `<td colspan="${span}" class="acc">${f[3]}</td>`; b -= span; }
+    else { mid += '<td class="res">Res.</td>'; acc += '<td class="res acc"></td>'; b--; }
+  }
+  return `<table class="bits">${top}</tr>${mid}</tr>${acc}</tr></table>`;
+}
+const bd = (b, n, d) => `<div class="bitdesc"><b>${b} ${n}</b><div>${d}</div></div>`;
+function tElec() {
+  const rows = [['f<sub>HCLK</sub>', 'Internal AHB clock frequency', '-', '0', '-', '80', 'MHz'], ['f<sub>PCLK1</sub>', 'Internal APB1 clock frequency', '-', '0', '-', '80', 'MHz'], ['f<sub>PCLK2</sub>', 'Internal APB2 clock frequency', '-', '0', '-', '80', 'MHz'],
+    ['V<sub>DD</sub>', 'Standard operating voltage', '-', '1.71', '-', '3.6', 'V'], ['V<sub>DDAUX</sub>', 'Auxiliary I/O bank supply', 'Port G used', '1.08', '-', '3.6', 'V'], ['V<sub>DDA</sub>', 'Analog supply voltage', 'ADC or CMP used', '1.62', '-', '3.6', 'V'], ['', '', 'DAC or op-amp used', '1.80', '-', '3.6', 'V'], ['', '', 'Voltage reference used', '2.40', '-', '3.6', 'V'],
+    ['V<sub>BAT</sub>', 'Backup operating voltage', '-', '1.55', '-', '3.6', 'V'], ['V<sub>IN</sub>', 'I/O input voltage', '5 V-tolerant I/O', '−0.3', '-', '5.5', 'V'], ['', '', 'Other I/O', '−0.3', '-', 'V<sub>DD</sub> + 0.3', 'V'],
+    ['P<sub>D</sub>', 'Power dissipation at T<sub>A</sub> = 85 °C', 'LQFP64', '-', '-', '459', 'mW'], ['T<sub>A</sub>', 'Ambient temperature', 'Maximum power dissipation', '−40', '-', '85', '°C'], ['', '', 'Low-power dissipation', '−40', '-', '105', '°C'], ['T<sub>J</sub>', 'Junction temperature range', 'Industrial grade', '−40', '-', '105', '°C']];
+  return table('Table 45. General operating conditions', ['Symbol', 'Parameter', 'Conditions', 'Min', 'Typ', 'Max', 'Unit'], rows, [12, 27, 27, 9, 6, 12, 7]);
+}
+function tSwd() {
+  const rows = [['f<sub>pp</sub>', 'SWCLK clock frequency', '2.7 V ≤ V<sub>DD</sub> ≤ 3.6 V', '-', '-', '24', 'MHz'], ['', '', '1.71 V ≤ V<sub>DD</sub> ≤ 3.6 V', '-', '-', '16', 'MHz'], ['t<sub>isu(SWDIO)</sub>', 'SWDIO input setup time', '-', '1.5', '-', '-', 'ns'], ['t<sub>ih(SWDIO)</sub>', 'SWDIO input hold time', '-', '1.0', '-', '-', 'ns'], ['t<sub>ov(SWDIO)</sub>', 'SWDIO output valid time', '2.7 V ≤ V<sub>DD</sub> ≤ 3.6 V', '-', '18.5', '24', 'ns'], ['', '', '1.71 V ≤ V<sub>DD</sub> ≤ 3.6 V', '-', '20.0', '32', 'ns'], ['t<sub>oh(SWDIO)</sub>', 'SWDIO output hold time', '-', '17.5', '-', '-', 'ns'], ['R<sub>PU</sub>', 'NRST weak pull-up', 'V<sub>IN</sub> = V<sub>SS</sub>', '30', '45', '60', 'kΩ'], ['t<sub>F(NRST)</sub>', 'NRST pulse ignored (filtered)', '-', '-', '-', '50', 'ns'], ['t<sub>NF(NRST)</sub>', 'NRST pulse always detected', '1.71 V ≤ V<sub>DD</sub> ≤ 3.6 V', '300', '-', '-', 'ns']];
+  return table('Table 98. SWD characteristics', ['Symbol', 'Parameter', 'Conditions', 'Min', 'Typ', 'Max', 'Unit'], rows, [13, 30, 27, 8, 8, 8, 6]);
+}
+function tMech() {
+  const d = [['A', '-', '-', '1.600', '-', '-', '0.0630'], ['A1', '0.050', '-', '0.150', '0.0020', '-', '0.0059'], ['A2', '1.350', '1.400', '1.450', '0.0531', '0.0551', '0.0571'], ['b', '0.170', '0.220', '0.270', '0.0067', '0.0087', '0.0106'], ['c', '0.090', '-', '0.200', '0.0035', '-', '0.0079'], ['D', '-', '12.000', '-', '-', '0.4724', '-'], ['D1', '-', '10.000', '-', '-', '0.3937', '-'], ['D3', '-', '7.500', '-', '-', '0.2953', '-'], ['E', '-', '12.000', '-', '-', '0.4724', '-'], ['E1', '-', '10.000', '-', '-', '0.3937', '-'], ['E3', '-', '7.500', '-', '-', '0.2953', '-'], ['e', '-', '0.500', '-', '-', '0.0197', '-'], ['K', '0°', '3.5°', '7°', '0°', '3.5°', '7°'], ['L', '0.450', '0.600', '0.750', '0.0177', '0.0236', '0.0295'], ['L1', '-', '1.000', '-', '-', '0.0394', '-'], ['ccc', '-', '-', '0.080', '-', '-', '0.0031']];
+  return table('Table 112. LQFP64 – 10 × 10 mm, 64-pin low-profile quad flat package mechanical data', [[{ t: 'Symbol', rs: 2 }, { t: 'millimetres', span: 3 }, { t: 'inches<sup>(1)</sup>', span: 3 }], [{ t: 'Min' }, { t: 'Typ' }, { t: 'Max' }, { t: 'Min' }, { t: 'Typ' }, { t: 'Max' }]], d.map(r => [{ t: r[0], c: 'l' }, ...r.slice(1)]));
+}
+
+/* ---------- the pages ---------- */
+const PAGES = {
+  hero: pageShell(214, 'Power control (PMU)', h1('6.1', 'Power supplies') + h2('6.1.2', 'Power supply schemes') + para('vdd', 'ldo', 'vbat', 'vdda') + para('dec', 'bor', 'ext') + fig(figPower(), 'Figure 14. Power supply overview') + notes(['The V<sub>DDA</sub> and V<sub>SSA</sub> pins must be connected to V<sub>DD</sub> and V<sub>SS</sub> respectively when the analog peripherals are not used.', 'Decoupling capacitors must be placed as close as possible to, or below, the appropriate pins on the underside of the PCB.']) + h2('6.1.3', 'Current consumption') + para('idd', 'meas', 'dbg') + tRun() + notes(['Based on characterisation, not tested in production.']) + tLowPower() + para('char', 'wake')),
+  pinout: pageShell(87, 'Pinouts and pin description', h1('4', 'Pinouts and pin description') + fig(figPinout(), 'Figure 9. MCU-32 LQFP64 pinout<sup>(1)</sup>') + notes(['The above figure shows the package top view.', 'Pins supplied from the backup domain (PC13 to PC15) have limited drive strength; see Section 6.2.6.']) + tPins()),
+  block: pageShell(19, 'Description', h1('2.1', 'Block diagram') + fig(figBlock(), 'Figure 1. MCU-32 block diagram') + para('af', 'swd')),
+  regdesc: pageShell(229, 'Power control (PMU)', h2('6.4.2', 'PMU control register 2 (PMU_CR2)') + '<p class="meta">Address offset: 0x04</p><p class="meta">Reset value: 0x0000 0000</p><p class="meta">Access: word, half-word and byte access</p>' + bitfield(31, []) + bitfield(15, [[11, 11, 'USBSV', 'rw'], [10, 10, 'AUXSV', 'rw'], [7, 4, 'MONEN[3:0]', 'rw'], [3, 1, 'LVDTH[2:0]', 'rw'], [0, 0, 'LVDEN', 'rw']]) + bd('Bits 31:12', '', 'Reserved; read as 0, write 0.') + bd('Bit 11', 'USBSV: USB supply valid', 'Write 1 once the USB transceiver supply is stable. While this bit is 0, the USB pins stay isolated from the core logic.<br>0: USB supply not confirmed (pins isolated)<br>1: USB supply confirmed') + bd('Bit 10', 'AUXSV: Auxiliary I/O bank supply valid', 'Same function as USBSV, for the auxiliary I/O bank (port G).<br>0: bank isolated<br>1: bank supply confirmed') + bd('Bits 9:8', '', 'Reserved; read as 0, write 0.') + bd('Bits 7:4', 'MONEN[3:0]: Supply monitor enables', 'One bit per monitored rail (bit 4: V<sub>DDA</sub> ≥ 1.62 V, bit 5: V<sub>DDA</sub> ≥ 2.2 V, bit 6: auxiliary bank, bit 7: USB).<br>0: monitor off<br>1: monitor on') + bd('Bits 3:1', 'LVDTH[2:0]: Low-voltage detector threshold', '000: 2.00 V&nbsp;&nbsp; 001: 2.15 V&nbsp;&nbsp; 010: 2.30 V&nbsp;&nbsp; 011: 2.45 V<br>100: 2.60 V&nbsp;&nbsp; 101: 2.75 V&nbsp;&nbsp; 110: 2.90 V&nbsp;&nbsp; 111: external input on pin LVD_IN') + bd('Bit 0', 'LVDEN: Low-voltage detector enable', '0: detector off<br>1: detector on') + para('prot', 'vsel') + h2('6.4.3', 'PMU control register 3 (PMU_CR3)') + '<p class="meta">Address offset: 0x08</p><p class="meta">Reset value: 0x0000 8000</p>' + bitfield(31, []) + bitfield(15, [[15, 15, 'IWKEN', 'rw'], [10, 10, 'PUPDEN', 'rw'], [8, 8, 'SRAMRET', 'rw'], [4, 0, 'WKPEN[5:1]', 'rw']]) + bd('Bit 15', 'IWKEN: Internal wake-up enable', '0: internal wake-up sources ignored<br>1: internal wake-up sources can exit Standby') + bd('Bit 10', 'PUPDEN: Keep pull configuration in Standby', para('pull'))),
+  regmap: pageShell(241, 'Power control (PMU)', h2('6.4.15', 'PMU register map') + '<p>The following table gives the PMU register map and the reset values.</p>' + tRegMap() + notes(['Refer to Section 2.2 for the register boundary addresses.']) + h1('7', 'Reset and clock control (RCC)') + para('wake', 'af', 'load')),
+  timing: pageShell(1121, 'Electrical characteristics', h2('5.3.18', 'Debug interface characteristics') + para('swclk', 'load', 'swd') + tSwd() + fig(figTiming(), 'Figure 37. SWD timing diagram') + h2('5.3.19', 'NRST pin characteristics') + para('nrst', 'por') + fig(figNrst(), 'Figure 38. Recommended NRST pin protection') + notes(['The external capacitor protects the device against parasitic resets.', 'The user must ensure that the level on the NRST pin can go below V<sub>IL(NRST)</sub> max, otherwise the reset is not taken into account.'])),
+  clock: pageShell(268, 'Reset and clock control (RCC)', h2('7.2', 'Clocks') + para('wake') + fig(figClock(), 'Figure 15. Clock tree') + notes(['Oscillator accuracy and start-up times are given in Section 5.3.7.', 'RC48 is present on devices with USB only.'])),
+  elec: pageShell(1063, 'Electrical characteristics', h2('5.3', 'Operating conditions') + h3('5.3.1', 'General operating conditions') + tElec() + notes(['Operation below 1.71 V is possible down to the BOR level 0 threshold, with reduced flash performance.', 'See Section 5.2 for absolute maximum ratings.']) + h3('5.3.2', 'Operating conditions at power-up / power-down') + para('por', 'bor', 'ext') + tLowPower()),
+  af: pageShell(102, 'Pinouts and pin description', tAF() + notes(['Refer to Table 19 for AF8 to AF15.']) + para('af')),
+  mech: pageShell(1344, 'Package information', h2('8.2', 'LQFP64 package information') + fig(figMech(), 'Figure 101. LQFP64 – 10 × 10 mm, 64-pin low-profile quad flat package outline') + tMech() + notes(['Values in inches are converted from mm and rounded to 4 decimal digits.'])),
+  run2: pageShell(1077, 'Electrical characteristics', h3('5.3.5', 'Supply current characteristics') + para('idd', 'meas', 'dbg') + tRun() + tLowPower() + para('char')),
+};
+
+/* ======================= scene ======================= */
+const pagesEl = document.getElementById('pages');
+function makePage(key, cls) { const w = document.createElement('div'); w.className = 'pgwrap ' + (cls || ''); w.innerHTML = PAGES[key] + '<div class="shade"></div>'; pagesEl.appendChild(w); return w; }
+const hero = makePage('hero'); hero.id = 'hero';
+// flying pages: final centre (x, y) in screen px, rotation (deg), scale, arrival time (s), entry direction (deg)
+const FLY = [
+  ['pinout', 1520, 470, 7, .66, 2.15, 10],
+  ['regdesc', 390, 560, -8, .68, 2.42, 190],
+  ['timing', 1180, 330, -4, .62, 2.66, -70],
+  ['block', 690, 700, 5, .64, 2.88, 230],
+  ['regmap', 1610, 760, -10, .66, 3.08, -20],
+  ['clock', 260, 300, 11, .60, 3.27, 160],
+  ['elec', 1000, 820, -3, .67, 3.45, 95],
+  ['af', 1460, 250, 13, .63, 3.62, -45],
+  ['mech', 540, 330, -13, .64, 3.79, 220],
+  ['run2', 1270, 620, 4, .70, 3.95, 30],
+  ['regdesc', 180, 840, 8, .69, 4.10, 150],
+  ['pinout', 880, 470, -7, .74, 4.25, -100],
+];
+const fly = FLY.map(([k, x, y, rot, s, t0, dir], i) => ({ el: makePage(k, 'fly'), x, y, rot, s, t0, dir: dir * Math.PI / 180, i }));
+const chip = document.getElementById('chip');
+pagesEl.appendChild(document.getElementById('vignette'));
+document.getElementById('stage').appendChild(chip);
+
+const PW = 900, PH = 1273, ENTER = 0.40;
+const camEase = bezier(.4, 0, .2, 1);
+function renderAt(t) {
+  // hero page: slow push-in from full page to the power figure / current table
+  const k = camEase(prog(t, 0, 5.0));
+  const s = lerp(0.707, 1.95, k);            // page starts 900 px tall, under the file chip
+  const fx = lerp(450, 470, k), fy = lerp(551.6, 548, k);
+  hero.style.transform = `translate(${960 - fx * s}px, ${540 - fy * s}px) scale(${s})`;
+  let landed = 0;
+  for (const f of fly) {
+    const p = prog(t, f.t0, f.t0 + ENTER);
+    if (t < f.t0) { f.el.style.display = 'none'; continue; }
+    f.el.style.display = 'block';
+    const e = easeOut(p);
+    const dist = 1500 * (1 - e);
+    const cx = f.x + Math.cos(f.dir) * dist, cy = f.y + Math.sin(f.dir) * dist;
+    const rot = f.rot + (1 - e) * (f.i % 2 ? 16 : -16);
+    const sc = f.s * (1 + .06 * (1 - e));
+    f.el.style.transform = `translate(${cx}px, ${cy}px) rotate(${rot}deg) scale(${sc}) translate(${-PW / 2}px, ${-PH / 2}px)`;
+    f.el.style.zIndex = 10 + f.i;
+  }
+  // depth shading: every page gets darker as more pages land on top of it
+  const landedAfter = tt => fly.reduce((a, f) => a + smooth(prog(t, f.t0 + .12, f.t0 + ENTER)) * (f.t0 > tt ? 1 : 0), 0);
+  hero.querySelector('.shade').style.opacity = Math.min(.62, .055 * landedAfter(-1));
+  for (const f of fly) f.el.querySelector('.shade').style.opacity = Math.min(.5, .075 * landedAfter(f.t0));
+  // chip: present from frame 0, tiny settle so the first frame is usable
+  const cp = easeOut(prog(t, 0, .33));
+  chip.style.opacity = lerp(.0, 1, cp) ;
+  chip.style.transform = `translateX(-50%) scale(${lerp(.92, 1, cp)})`;
+}
+window.renderAt = renderAt;
+renderAt(0);
+if (!location.search.includes('capture')) { let t0 = performance.now(); const loop = () => { renderAt(((performance.now() - t0) / 1000) % SCENE.dur); requestAnimationFrame(loop); }; loop(); }
+</script>
+</body>
+</html>

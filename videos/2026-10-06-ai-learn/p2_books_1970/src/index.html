@@ -1,0 +1,281 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>p2 books 1970</title>
+<link rel="stylesheet" href="fonts.css">
+<style>
+  html, body { margin: 0; padding: 0; background: #0E0E10; }
+  #stage { position: relative; width: 1920px; height: 1080px; overflow: hidden; background: #0E0E10; font-family: 'Inter', sans-serif; }
+  #grid { position: absolute; inset: 0; background-image: radial-gradient(circle at 12px 12px, #23232A 1.2px, transparent 1.6px); background-size: 24px 24px; }
+  #vig { position: absolute; inset: 0; background: radial-gradient(ellipse 80% 75% at 50% 48%, rgba(0,0,0,0) 60%, rgba(0,0,0,.42) 100%); pointer-events: none; z-index: 40; }
+  .abs { position: absolute; left: 0; top: 0; }
+
+  /* ---------- book spines (books lying flat, spine towards camera) ---------- */
+  .book { position: absolute; left: 0; top: 0; transform-origin: 50% 50%; }
+  .spine { position: relative; border-radius: 7px 7px 6px 6px; overflow: hidden;
+    box-shadow: 0 14px 30px rgba(0,0,0,.55), inset 0 -10px 18px rgba(0,0,0,.28), inset 0 8px 10px rgba(255,255,255,.07); }
+  .spine::before { content: ''; position: absolute; left: 0; right: 0; top: 0; height: 12px; background: linear-gradient(rgba(255,255,255,.16), rgba(255,255,255,0)); }
+  .spine .cloth { position: absolute; inset: 0; opacity: .5; mix-blend-mode: overlay;
+    background-image: repeating-linear-gradient(90deg, rgba(255,255,255,.05) 0 1px, rgba(0,0,0,.05) 1px 3px), repeating-linear-gradient(0deg, rgba(255,255,255,.04) 0 1px, rgba(0,0,0,.04) 1px 3px); }
+  .spine .band { position: absolute; top: 0; bottom: 0; width: 14px; }
+  .spine .ttl { position: absolute; top: 50%; transform: translateY(-50%); white-space: nowrap; }
+  .spine .ed { position: absolute; top: 50%; transform: translateY(-50%); white-space: nowrap; font: 600 20px Georgia, serif; letter-spacing: 1px; opacity: .8; }
+  .spine .age { position: absolute; inset: 0; opacity: 0; pointer-events: none;
+    background: radial-gradient(ellipse at 30% 40%, rgba(214,190,150,.35), rgba(120,96,64,.2) 60%, rgba(90,70,45,.35)); }
+  .spine .dust { position: absolute; inset: 0; opacity: 0; pointer-events: none; }
+  .tag { position: absolute; left: 0; top: 0; display: flex; align-items: center; gap: 12px; white-space: nowrap;
+    background: #16161A; border: 1px solid #2A2A30; border-radius: 999px; padding: 10px 22px 10px 14px;
+    box-shadow: 0 16px 40px rgba(0,0,0,.5); font-weight: 650; font-size: 27px; color: #F5F5F7; transform-origin: 0% 50%; }
+  .tag b { color: #D97757; font-weight: 800; }
+  .tag svg { width: 30px; height: 30px; }
+  #heading { position: absolute; left: 790px; top: 132px; transform-origin: 50% 50%; font-weight: 650; font-size: 40px; color: #A1A1AA; letter-spacing: -.3px; white-space: nowrap; display: flex; align-items: center; gap: 14px; }
+  #heading svg { width: 40px; height: 40px; }
+  #dont { position: absolute; left: 790px; top: 150px; transform-origin: 50% 50%; font-weight: 800; font-size: 86px; letter-spacing: -2px; color: #fff; white-space: nowrap;
+    text-shadow: 0 4px 24px rgba(0,0,0,.45), 0 1px 2px rgba(0,0,0,.6); }
+  #dont span { color: #FF5A4E; }
+  #xmark, #links { position: absolute; left: 0; top: 0; width: 1920px; height: 1080px; overflow: visible; pointer-events: none; }
+
+  /* ---------- open book ---------- */
+  #bookOpen { position: absolute; left: 0; top: 0; width: 1920px; height: 1080px; perspective: 2600px; perspective-origin: 780px 540px; }
+  .pageR, .pageL, .cover { position: absolute; width: 600px; height: 800px; box-sizing: border-box; }
+  .pageR { left: 780px; top: 140px; background: #F3EAD6; border-radius: 2px 6px 6px 2px; overflow: hidden;
+    box-shadow: inset 26px 0 30px -18px rgba(70,50,20,.38); }
+  .pageR::after, .pageL::after { content: ''; position: absolute; inset: 0; pointer-events: none;
+    background: radial-gradient(circle at 78% 86%, rgba(160,120,60,.10), rgba(0,0,0,0) 26%), radial-gradient(circle at 12% 18%, rgba(160,120,60,.08), rgba(0,0,0,0) 20%), radial-gradient(ellipse at 50% 50%, rgba(0,0,0,0) 60%, rgba(120,90,40,.16)); }
+  .block { position: absolute; left: 786px; top: 148px; width: 600px; height: 800px; border-radius: 2px 7px 7px 2px; background: #E2D6BC;
+    box-shadow: 0 30px 70px rgba(0,0,0,.6); }
+  .block i { position: absolute; left: 0; right: 0; height: 1px; background: rgba(110,90,60,.35); }
+  .cover { left: 780px; top: 140px; transform-origin: 0 50%; transform-style: preserve-3d; }
+  .cover .face { position: absolute; inset: 0; backface-visibility: hidden; border-radius: 3px 8px 8px 3px; overflow: hidden; }
+  .cover .front { background: #6A3A2C; box-shadow: inset 18px 0 22px -12px rgba(0,0,0,.5), inset 0 0 60px rgba(0,0,0,.35); }
+  .cover .back { transform: rotateY(180deg); background: #EADFC6; box-shadow: inset -26px 0 30px -18px rgba(70,50,20,.38); }
+  .toc { padding: 64px 58px 0 64px; font-family: Georgia, 'Times New Roman', serif; color: #2B241C; }
+  .toc h2 { margin: 0 0 6px; text-align: center; font-weight: 400; font-size: 31px; letter-spacing: 9px; }
+  .toc .rule { height: 1px; background: #8B7A5E; margin: 0 auto 26px; width: 80px; }
+  .toc .row { position: relative; display: flex; align-items: baseline; font-size: 25px; height: 39.5px; }
+  .toc .row .n { width: 44px; }
+  .toc .row .t { white-space: nowrap; }
+  .toc .row .dots { flex: 1; margin: 0 10px; border-bottom: 2px dotted rgba(60,50,35,.45); transform: translateY(-6px); }
+  .toc .row .p { min-width: 46px; text-align: right; font-variant-numeric: tabular-nums; }
+  .toc .row.app .n { width: 44px; }
+  .hl { position: absolute; left: -12px; top: 2px; height: 36px; background: rgba(245,184,0,.38); border-radius: 6px 10px 8px 5px; transform-origin: 0 50%; mix-blend-mode: multiply; }
+  #label { position: absolute; left: 1436px; top: 0; transform-origin: 0 50%; opacity: 0; }
+  #label .pill { display: inline-flex; align-items: center; gap: 12px; background: #16161A; border: 1.5px solid rgba(245,184,0,.75); border-radius: 18px; padding: 16px 24px;
+    box-shadow: 0 0 40px rgba(245,184,0,.18), 0 20px 60px rgba(0,0,0,.55); font-weight: 800; font-size: 40px; letter-spacing: -.8px; color: #F5B800; white-space: nowrap; }
+  #label .sub { margin: 14px 0 0 6px; font-weight: 600; font-size: 25px; color: #A1A1AA; white-space: nowrap; }
+  #label .sub b { color: #F5F5F7; font-weight: 700; }
+</style>
+</head>
+<body>
+<div id="stage">
+  <div id="grid"></div>
+  <div id="heading"><svg viewBox="0 0 40 40"><rect x="5" y="7" width="7" height="27" rx="1.5" fill="none" stroke="#A1A1AA" stroke-width="2.6"/><rect x="15" y="7" width="7" height="27" rx="1.5" fill="none" stroke="#A1A1AA" stroke-width="2.6"/><path d="M25.5 9.5l6.6-1.8 6 23.3-6.6 1.8z" fill="none" stroke="#A1A1AA" stroke-width="2.6" stroke-linejoin="round"/></svg>Recommended reading</div>
+  <div id="stack" class="abs"></div>
+  <svg id="xmark" viewBox="0 0 1920 1080"></svg>
+  <div id="dont">Don’t read <span>all 5</span></div>
+  <div id="bookOpen">
+    <div class="block" id="block"></div>
+    <div class="pageR" id="pageR"><div class="toc" id="toc"></div></div>
+    <div class="cover" id="cover"><div class="face front" id="coverFront"></div><div class="face back" id="coverBack"></div></div>
+  </div>
+  <svg id="links" viewBox="0 0 1920 1080"></svg>
+  <div id="label"><div class="pill">Your syllabus</div><div class="sub"><b>200</b> of 1000 pages</div></div>
+  <div id="vig"></div>
+</div>
+<script src="common.js"></script>
+<script>
+window.SCENE = { dur: 9.0 };            // 8.0 s of motion + 1.0 s clean hold
+const QA_TIMES = [1.30, 2.70, 4.20, 5.30, 6.60, 8.60];
+
+/* ---------------- the five (generic) textbooks ---------------- */
+// bottom -> top; w = spine length, h = thickness
+const BOOKS = [
+  { title: 'Signals & Systems', ed: '3rd ed.', w: 900, h: 146, bg: '#1E3A61', fg: '#E8C77A', band: '#C9A25A', font: "700 50px Georgia, serif", ls: '0.5px', dx: -18, rot: -.6 },
+  { title: 'Electromagnetic Fields', ed: '', w: 900, h: 138, bg: '#6A2C2C', fg: '#E3C08A', band: '#B98E55', font: "700 43px Georgia, serif", ls: '0.3px', dx: 22, rot: .9, old: true },
+  { title: 'CONTROL ENGINEERING', ed: 'Vol. II', w: 935, h: 152, bg: '#22483A', fg: '#EDE6D3', band: '#EDE6D3', font: "800 42px Inter, sans-serif", ls: '3px', dx: -6, rot: -.4 },
+  { title: 'Microwave Communication Systems', ed: '4th ed.', w: 905, h: 140, bg: '#2C3340', fg: '#F2F2F2', band: '#D97757', font: "700 35px Inter, sans-serif", ls: '-0.2px', dx: 14, rot: .5 },
+  { title: 'Stochastic Control', ed: '1st ed.', w: 860, h: 132, bg: '#B8862B', fg: '#1E1A14', band: '#1E1A14', font: "700 48px Georgia, serif", ls: '0.2px', dx: -10, rot: -.8 },
+];
+const STACK_CX = 790, STACK_BOTTOM = 1002;
+const T_BOOK = [0.00, 0.40, 0.80, 1.20, 1.60], DROP = 0.36;
+const stackEl = document.getElementById('stack');
+const PAGES_ICON = '<svg viewBox="0 0 30 30"><path d="M7 4h12l5 5v17H7z" fill="none" stroke="#A1A1AA" stroke-width="2.2" stroke-linejoin="round"/><path d="M4 8v20h15" fill="none" stroke="#A1A1AA" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg>';
+let y = STACK_BOTTOM;
+BOOKS.forEach((b, i) => {
+  y -= b.h - 2; b.y = y; b.x = STACK_CX - b.w / 2 + b.dx;
+  const el = document.createElement('div'); el.className = 'book';
+  el.style.width = b.w + 'px'; el.style.height = b.h + 'px';
+  const dust = b.old ? dustSVG(b.w, b.h) : '';
+  el.innerHTML = `<div class="spine" style="width:${b.w}px;height:${b.h}px;background:${b.bg}">
+      <div class="cloth"></div><div class="band" style="left:34px;background:${b.band};opacity:.85"></div><div class="band" style="left:56px;width:4px;background:${b.band};opacity:.85"></div>
+      <div class="band" style="right:34px;background:${b.band};opacity:.85"></div><div class="band" style="right:56px;width:4px;background:${b.band};opacity:.85"></div>
+      <div class="ttl" style="left:96px;font:${b.font};letter-spacing:${b.ls};color:${b.fg}">${b.title}</div>
+      <div class="ed" style="right:96px;color:${b.fg}">${b.ed}</div>
+      <div class="age"></div><div class="dust">${dust}</div></div>`;
+  stackEl.appendChild(el); b.el = el; b.spine = el.querySelector('.spine');
+  const tg = document.createElement('div'); tg.className = 'tag';
+  tg.innerHTML = `${PAGES_ICON}<span><b>1000</b> pages</span>`;
+  stackEl.appendChild(tg); b.tag = tg;
+});
+function dustSVG(w, h) {
+  const r = rng(1970); let s = `<svg width="${w}" height="${h}" viewBox="0 0 ${w} ${h}">`;
+  for (let i = 0; i < 260; i++) s += `<circle cx="${(r() * w).toFixed(1)}" cy="${(r() * h).toFixed(1)}" r="${(0.6 + r() * 1.6).toFixed(2)}" fill="rgba(240,226,200,${(0.12 + r() * .35).toFixed(2)})"/>`;
+  for (let i = 0; i < 14; i++) { const x = r() * w, yy = r() * h; s += `<path d="M${x.toFixed(1)} ${yy.toFixed(1)} l${(r() * 30 - 15).toFixed(1)} ${(r() * 6 - 3).toFixed(1)}" stroke="rgba(235,220,190,.22)" stroke-width="1"/>`; }
+  return s + '</svg>';
+}
+/* ---------------- 1970 stamp (worn rubber-stamp ink via SVG noise mask) ---------------- */
+const OLD = BOOKS[1];
+const stamp = document.createElement('div'); stamp.className = 'abs'; stamp.style.transformOrigin = '50% 50%';
+stamp.innerHTML = `<svg width="300" height="150" viewBox="0 0 300 150" style="overflow:visible">
+  <defs><filter id="worn" x="-10%" y="-10%" width="120%" height="120%"><feTurbulence type="fractalNoise" baseFrequency=".9" numOctaves="2" seed="7" result="n"/>
+    <feColorMatrix in="n" type="matrix" values="0 0 0 0 0  0 0 0 0 0  0 0 0 0 0  0 0 0 -2.6 1.75" result="m"/><feComposite in="SourceGraphic" in2="m" operator="in" result="c"/>
+    <feTurbulence type="fractalNoise" baseFrequency=".035" numOctaves="2" seed="3" result="n2"/><feDisplacementMap in="c" in2="n2" scale="5"/></filter></defs>
+  <g filter="url(#worn)" fill="none" stroke="#E9CC98">
+    <rect x="8" y="8" width="284" height="134" rx="14" stroke-width="7"/><rect x="21" y="21" width="258" height="108" rx="8" stroke-width="2.6"/>
+    <text x="150" y="111" text-anchor="middle" font-family="'Arial Black', Arial, sans-serif" font-weight="900" font-size="86" letter-spacing="4" fill="#E9CC98" stroke="none">1970</text></g></svg>`;
+stackEl.appendChild(stamp);
+const puff = document.createElement('div'); puff.className = 'abs';
+let ps = ''; { const r = rng(5); for (let i = 0; i < 26; i++) ps += `<circle data-a="${(r() * Math.PI * 2).toFixed(3)}" data-v="${(60 + r() * 120).toFixed(1)}" data-s="${(2 + r() * 4).toFixed(2)}" r="3" fill="#D8C7A6"/>`; }
+puff.innerHTML = `<svg width="600" height="400" viewBox="-300 -200 600 400" style="overflow:visible">${ps}</svg>`;
+stackEl.appendChild(puff);
+const puffDots = [...puff.querySelectorAll('circle')];
+
+/* ---------------- red cross ---------------- */
+const xm = document.getElementById('xmark');
+const XB = { l: 300, r: 1290, t: 300, b: 1000 };
+xm.innerHTML = `<defs><filter id="rg" x="-20%" y="-20%" width="140%" height="140%"><feGaussianBlur stdDeviation="10" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter></defs>
+  <g filter="url(#rg)" stroke="#FF5A4E" stroke-width="30" stroke-linecap="round" fill="none">
+  <path id="x1" d="M${XB.l} ${XB.t} L${XB.r} ${XB.b}" pathLength="1" stroke-dasharray="0 1"/>
+  <path id="x2" d="M${XB.r} ${XB.t} L${XB.l} ${XB.b}" pathLength="1" stroke-dasharray="0 1"/></g>`;
+const x1 = xm.querySelector('#x1'), x2 = xm.querySelector('#x2');
+
+/* ---------------- open book: cover, contents page, endpaper ---------------- */
+const TOC = [['1', 'Vector Analysis', 1], ['2', 'Electrostatic Fields', 39], ['3', 'Dielectrics and Capacitance', 88], ['4', 'Boundary-Value Problems', 141],
+  ['5', 'Steady Currents', 196], ['6', 'Magnetostatics', 238], ['7', 'Magnetic Materials', 297], ['8', 'Time-Varying Fields', 351],
+  ['9', 'Maxwell’s Equations', 418, 'hl'], ['10', 'Plane Waves', 512], ['11', 'Transmission Lines', 571, 'hl'], ['12', 'Waveguides and Resonators', 677],
+  ['13', 'Radiation and Antennas', 748], ['14', 'Numerical Methods', 836], ['', 'Appendices', 912], ['', 'Index', 978]];
+document.getElementById('toc').innerHTML = '<h2>CONTENTS</h2><div class="rule"></div>' + TOC.map(r => `<div class="row${r[0] ? '' : ' app'}">${r[3] ? '<div class="hl"></div>' : ''}<span class="n">${r[0]}</span><span class="t">${r[1]}</span><span class="dots"></span><span class="p">${r[2]}</span></div>`).join('');
+const hls = [...document.querySelectorAll('.hl')];
+const blockEl = document.getElementById('block'); let bl = ''; for (let i = 0; i < 9; i++) bl += `<i style="top:${(10 + i * 88)}px"></i>`; blockEl.innerHTML = bl;
+document.getElementById('coverFront').innerHTML = `<div style="position:absolute;inset:0;background-image:repeating-linear-gradient(90deg, rgba(255,255,255,.035) 0 1px, rgba(0,0,0,.04) 1px 3px)"></div>
+  <div style="position:absolute;left:46px;right:40px;top:46px;bottom:46px;border:3px solid rgba(214,180,120,.55);border-radius:4px"></div>
+  <div style="position:absolute;left:58px;right:52px;top:58px;bottom:58px;border:1px solid rgba(214,180,120,.45);border-radius:2px"></div>
+  <div style="position:absolute;left:0;right:0;top:250px;text-align:center;font:700 54px/1.15 Georgia,serif;color:#D9B98A;letter-spacing:1px">Electromagnetic<br>Fields</div>
+  <div style="position:absolute;left:0;right:0;top:410px;text-align:center;font:400 26px Georgia,serif;color:#C9A878;letter-spacing:6px">SECOND EDITION</div>
+  <div class="age" style="position:absolute;inset:0;background:radial-gradient(ellipse at 30% 35%, rgba(214,190,150,.30), rgba(120,96,64,.18) 60%, rgba(90,70,45,.30));"></div>
+  <div style="position:absolute;inset:0">${dustSVG(600, 800)}</div>
+  <div style="position:absolute;left:330px;top:600px;transform:rotate(-9deg) scale(.82);transform-origin:0 0">${stamp.innerHTML}</div>`;
+document.getElementById('coverBack').innerHTML = `<div style="position:absolute;inset:0;background:radial-gradient(ellipse at 50% 50%, rgba(0,0,0,0) 55%, rgba(120,90,40,.20))"></div>
+  <div style="position:absolute;left:150px;top:300px;width:300px;height:330px;background:#E6D4AE;border:1.5px solid rgba(110,85,50,.5);border-radius:2px;box-shadow:0 2px 0 rgba(110,85,50,.15)">
+    <div style="padding:22px 24px 0;font:700 21px Georgia,serif;letter-spacing:4px;color:#5B4630;text-align:center">DATE DUE</div>
+    <div style="margin:10px 24px 0;border-top:1.5px solid rgba(110,85,50,.55)"></div>
+    ${['12 OCT 1971', '03 MAR 1978', '21 NOV 1986', '14 JAN 1994', '09 MAY 2003'].map((d, i) => `<div style="margin:0 24px;height:44px;border-bottom:1px solid rgba(110,85,50,.35);position:relative"><span style="position:absolute;left:${18 + (i * 37) % 60}px;top:11px;font:700 20px 'Courier New',monospace;color:rgba(70,60,120,.75);transform:rotate(${(i % 2 ? 1.5 : -2)}deg);display:inline-block">${d}</span></div>`).join('')}
+  </div>`;
+const cover = document.getElementById('cover'), pageR = document.getElementById('pageR'), bookOpen = document.getElementById('bookOpen');
+/* connectors + label */
+const label = document.getElementById('label'), labelSub = label.querySelector('.sub');
+const links = document.getElementById('links');
+let rowY = []; // filled after layout
+function layoutLinks() {
+  const d0 = bookOpen.style.display, t0 = bookOpen.style.transform;
+  bookOpen.style.display = 'block'; bookOpen.style.transform = 'none';
+  const rows = [...document.querySelectorAll('.toc .row')];
+  const hlRows = rows.filter(r => r.querySelector('.hl'));
+  const pr = pageR.getBoundingClientRect();
+  rowY = hlRows.map(r => { const b = r.getBoundingClientRect(); return b.top + b.height / 2; });
+  const ly = (rowY[0] + rowY[1]) / 2;
+  label.style.top = (ly - 46) + 'px';
+  const lx = 1430, ax = pr.right - 34;
+  links.innerHTML = `<defs><marker id="ah" viewBox="0 0 10 10" refX="7" refY="5" markerWidth="5" markerHeight="5" orient="auto-start-reverse"><path d="M0 0L10 5L0 10z" fill="#F5B800"/></marker></defs>` +
+    rowY.map((yy, i) => `<path class="lk" d="M${ax} ${yy} C${ax + 50} ${yy}, ${lx - 70} ${ly}, ${lx - 12} ${ly}" fill="none" stroke="#F5B800" stroke-width="3.2" stroke-linecap="round" pathLength="1" stroke-dasharray="0 1" ${i === 1 ? 'marker-end="url(#ah)"' : ''}/>`).join('') +
+    rowY.map(yy => `<circle class="dot" cx="${ax}" cy="${yy}" r="6" fill="#F5B800" fill-opacity="0"/>`).join('');
+  bookOpen.style.display = d0; bookOpen.style.transform = t0;
+}
+window.sceneReady = () => { layoutLinks(); renderAt(0); };
+
+/* ---------------- timeline ---------------- */
+const heading = document.getElementById('heading'), dont = document.getElementById('dont');
+const T_AGE = 2.12, T_STAMP = 2.30, T_HEAD_OUT = 2.95, T_X1 = 3.05, T_X2 = 3.32, T_DONT = 3.62;
+const T_EXIT = 4.42, T_PULL = 4.60, T_FLIP = 4.92, T_OPEN = 5.30, T_HL = [6.02, 6.36], T_LINK = 6.74, T_LABEL = 6.98, T_SUB = 7.30;
+const exitE = t => smooth(prog(t, T_EXIT, T_EXIT + .26));
+function renderAt(t) {
+  if (!rowY.length) layoutLinks();
+  const BXC = 1080;   // centre x of the closed book
+  /* heading */
+  const hi = easeOut(prog(t, 0.05, 0.40)), ho = smooth(prog(t, T_HEAD_OUT, T_HEAD_OUT + .22));
+  heading.style.opacity = hi * (1 - ho);
+  heading.style.transform = `translate(-50%, ${-ho * 14}px) scale(${lerp(.92, 1, hi)})`;
+  /* books + tags */
+  const ex = exitE(t);
+  BOOKS.forEach((b, i) => {
+    const u = prog(t, T_BOOK[i], T_BOOK[i] + DROP), e = easeOut(u);
+    let bx = b.x, by = b.y - (1 - e) * 150, rot = b.rot + (1 - e) * (i % 2 ? 3 : -3), op = smooth(prog(u, 0, .35)), sc = 1;
+    if (b.old) {
+      // pulled out of the stack and handed to the open-book view
+      const m = easeInOut(prog(t, T_PULL, T_FLIP + .02));
+      bx = lerp(b.x, BXC - b.w / 2, m); by = lerp(b.y, 540 - b.h / 2, m); rot = lerp(rot, 0, m);
+      const f = prog(t, T_FLIP, T_FLIP + .17);
+      b.el.style.transform = `translate(${bx}px, ${by}px) rotate(${rot}deg) perspective(1400px) rotateX(${(easeIn(f) * 90).toFixed(2)}deg)`;
+      b.el.style.opacity = t < T_FLIP + .17 ? op : 0;
+    } else {
+      b.el.style.transform = `translate(${bx}px, ${by + ex * 26}px) rotate(${rot}deg)`;
+      b.el.style.opacity = op * (1 - ex);
+    }
+    b.el.style.display = t < T_BOOK[i] ? 'none' : 'block';
+    const tu = easeOut(prog(t, T_BOOK[i] + .24, T_BOOK[i] + .58));
+    b.tag.style.display = t < T_BOOK[i] + .24 ? 'none' : 'flex';
+    const tx = b.x + b.w + 30, ty = b.y + b.h / 2 - 27;
+    b.tag.style.opacity = tu * (1 - ex);
+    b.tag.style.transform = `translate(${tx}px, ${ty + ex * 26}px) scale(${lerp(.92, 1, tu)})`;
+  });
+  /* ageing + stamp on the 1970 book */
+  const ag = smooth(prog(t, T_AGE, T_AGE + .42));
+  OLD.spine.querySelector('.age').style.opacity = ag;
+  OLD.spine.querySelector('.dust').style.opacity = ag;
+  OLD.spine.style.filter = `sepia(${(.55 * ag).toFixed(3)}) saturate(${(1 - .35 * ag).toFixed(3)}) brightness(${(1 - .06 * ag).toFixed(3)})`;
+  OLD.spine.querySelectorAll('.ttl,.ed').forEach(el => el.style.opacity = 1 - .28 * ag);
+  const su = prog(t, T_STAMP, T_STAMP + .2), se = easeOut(su);
+  const sx = OLD.x + OLD.w - 140 - 150, sy = OLD.y + OLD.h / 2 - 75;   // stamp centred 140 px from the spine end, clear of the title
+  stamp.style.display = t < T_STAMP ? 'none' : 'block';
+  const sm = easeInOut(prog(t, T_PULL, T_FLIP + .02)), fl = prog(t, T_FLIP, T_FLIP + .17);
+  stamp.style.opacity = smooth(prog(su, 0, .4)) * .92 * (t < T_FLIP + .17 ? 1 : 0);
+  const stx = lerp(sx, sx + (BXC - OLD.w / 2) - OLD.x, sm), sty = lerp(sy, sy + (540 - OLD.h / 2) - OLD.y, sm);
+  stamp.style.transform = `translate(${stx}px, ${sty}px) rotate(-8deg) scale(${lerp(1.35, 1, se) * .74}) perspective(1400px) rotateX(${(easeIn(fl) * 90).toFixed(2)}deg)`;
+  const pu = prog(t, T_STAMP + .04, T_STAMP + .9);
+  puff.style.display = pu > 0 && pu < 1 ? 'block' : 'none';
+  puff.style.transform = `translate(${sx + 150 - 300}px, ${sy + 75 - 200}px)`;
+  puffDots.forEach(d => { const a = +d.dataset.a, v = +d.dataset.v, e = easeOut(pu); d.setAttribute('cx', (Math.cos(a) * v * e).toFixed(1)); d.setAttribute('cy', (Math.sin(a) * v * .55 * e - 30 * pu).toFixed(1)); d.setAttribute('r', (+d.dataset.s * (1 + pu)).toFixed(2)); d.setAttribute('fill-opacity', (.55 * (1 - pu)).toFixed(3)); });
+  /* red cross + "Don't read all 5" */
+  const xa = easeOut(prog(t, T_X1, T_X1 + .28)), xb = easeOut(prog(t, T_X2, T_X2 + .28));
+  x1.setAttribute('stroke-dasharray', `${xa.toFixed(4)} 1`); x1.style.visibility = xa > 0 ? 'visible' : 'hidden';
+  x2.setAttribute('stroke-dasharray', `${xb.toFixed(4)} 1`); x2.style.visibility = xb > 0 ? 'visible' : 'hidden';
+  xm.style.opacity = 1 - ex;
+  const du = easeOut(prog(t, T_DONT, T_DONT + .34));
+  dont.style.opacity = du * (1 - ex);
+  dont.style.transform = `translate(-50%, ${ex * -14}px) scale(${lerp(.92, 1, du)})`;
+  /* closed cover flips in, then opens to the contents page */
+  const fi = prog(t, T_FLIP + .15, T_FLIP + .34);
+  const show = t >= T_FLIP + .15;
+  bookOpen.style.display = show ? 'block' : 'none';
+  const op = easeInOut(prog(t, T_OPEN, T_OPEN + .62));
+  const tilt = (1 - easeOut(fi)) * -90;
+  bookOpen.style.transformOrigin = BXC + 'px 540px';
+  bookOpen.style.transform = `perspective(1400px) rotateX(${tilt.toFixed(2)}deg)`;
+  cover.style.transform = `rotateY(${(-180 * op).toFixed(2)}deg)`;
+  /* highlights, connectors, label */
+  hls.forEach((h, i) => { const u = easeOut(prog(t, T_HL[i], T_HL[i] + .34)); h.style.width = (u * 500).toFixed(1) + 'px'; h.style.opacity = u > 0 ? 1 : 0; });
+  const lu = easeOut(prog(t, T_LINK, T_LINK + .32));
+  links.querySelectorAll('.lk').forEach(p => { p.setAttribute('stroke-dasharray', `${lu.toFixed(4)} 1`); p.style.visibility = lu > 0 ? 'visible' : 'hidden'; });
+  links.querySelectorAll('.dot').forEach(c => c.setAttribute('fill-opacity', smooth(prog(t, T_LINK, T_LINK + .1))));
+  const la = easeOut(prog(t, T_LABEL, T_LABEL + .34));
+  label.style.opacity = la; label.style.transform = `scale(${lerp(.92, 1, la)})`;
+  const sb = easeOut(prog(t, T_SUB, T_SUB + .3));
+  labelSub.style.opacity = sb; labelSub.style.transform = `translateY(${(1 - sb) * 8}px)`;
+}
+window.renderAt = renderAt;
+renderAt(0);
+if (!location.search.includes('capture')) { const t0 = performance.now(); const loop = () => { renderAt(((performance.now() - t0) / 1000) % SCENE.dur); requestAnimationFrame(loop); }; loop(); }
+</script>
+</body>
+</html>

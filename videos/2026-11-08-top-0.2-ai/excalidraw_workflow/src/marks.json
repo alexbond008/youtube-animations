@@ -1,0 +1,81 @@
+{
+ "frames": 754,
+ "marks": [
+  [
+   "0.40",
+   "title: text tool"
+  ],
+  [
+   "2.80",
+   "box 1 drag start"
+  ],
+  [
+   "3.37",
+   "box 1 drawn"
+  ],
+  [
+   "3.94",
+   "box 1 done"
+  ],
+  [
+   "5.61",
+   "box 2 done"
+  ],
+  [
+   "7.71",
+   "box 3 done"
+  ],
+  [
+   "9.31",
+   "box 4 done"
+  ],
+  [
+   "9.41",
+   "arrows start"
+  ],
+  [
+   "10.48",
+   "arrow 1->2 done"
+  ],
+  [
+   "11.54",
+   "arrow 2->3 done"
+  ],
+  [
+   "12.61",
+   "arrow 3->4 done"
+  ],
+  [
+   "12.81",
+   "annotations start"
+  ],
+  [
+   "14.58",
+   "in/out 1 done"
+  ],
+  [
+   "16.15",
+   "in/out 2 done"
+  ],
+  [
+   "17.65",
+   "in/out 3 done"
+  ],
+  [
+   "18.82",
+   "in/out 4 done"
+  ],
+  [
+   "18.82",
+   "agent labels start"
+  ],
+  [
+   "22.76",
+   "agent labels done"
+  ],
+  [
+   "23.26",
+   "drawing complete"
+  ]
+ ]
+}

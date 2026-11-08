@@ -1,0 +1,318 @@
+<!doctype html>
+<html><head><meta charset="utf-8">
+<style>
+@font-face{font-family:Inter;font-weight:400;src:url(fonts/inter-latin-400-normal.woff2)}
+@font-face{font-family:Inter;font-weight:600;src:url(fonts/inter-latin-600-normal.woff2)}
+@font-face{font-family:Inter;font-weight:700;src:url(fonts/inter-latin-700-normal.woff2)}
+@font-face{font-family:Inter;font-weight:800;src:url(fonts/inter-latin-800-normal.woff2)}
+@font-face{font-family:"JetBrains Mono";font-weight:500;src:url(fonts/jetbrains-mono-latin-500-normal.woff2)}
+@font-face{font-family:"JetBrains Mono";font-weight:700;src:url(fonts/jetbrains-mono-latin-700-normal.woff2)}
+html,body{margin:0;padding:0;background:#0E0E10;overflow:hidden}
+#stage{position:relative;overflow:hidden;background:#0E0E10;
+  background-image:radial-gradient(circle at 12px 12px,#23232A 1.2px,transparent 1.7px);background-size:24px 24px}
+#stage svg{position:absolute;left:0;top:0;display:block}
+</style></head>
+<body>
+<svg width="0" height="0" style="position:absolute"><defs>
+  <filter id="glow" x="-50%" y="-50%" width="200%" height="200%"><feGaussianBlur stdDeviation="7" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
+  <filter id="glowS" x="-50%" y="-50%" width="200%" height="200%"><feGaussianBlur stdDeviation="4" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
+</defs></svg>
+<div id="stage"></div>
+<script>
+const Q = new URLSearchParams(location.search);
+const VERT = Q.get('mode') === 'vert';
+const VW = VERT ? 1080 : 1920, H = VERT ? 1350 : 1080;
+const stage = document.getElementById('stage');
+stage.style.width = VW + 'px'; stage.style.height = H + 'px';
+
+const BG = '#0E0E10', CARD = '#16161A', BORDER = '#2A2A30', TXT = '#F5F5F7', SEC = '#A1A1AA', OR = '#D97757', BLUE = '#4DA3FF', GREEN = '#3DDC97', AMBER = '#F5B800', LINE = '#E4E4E8';
+const clamp = (x, a = 0, b = 1) => Math.min(b, Math.max(a, x));
+const eo = x => 1 - Math.pow(1 - clamp(x), 3);
+const eio = x => { x = clamp(x); return x < .5 ? 4 * x * x * x : 1 - Math.pow(-2 * x + 2, 3) / 2; };
+const lerp = (a, b, t) => a + (b - a) * t;
+const hash = n => { const x = Math.sin(n * 127.1 + 311.7) * 43758.5453; return x - Math.floor(x); };
+const f2 = x => (+x).toFixed(2);
+const esc = s => String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;');
+const rv = (t, s, d) => eo((t - s) / d);
+const dr = p => `pathLength="1" stroke-dasharray="1 2" stroke-dashoffset="${f2(1 - p)}"`;
+
+const GY = 860, BUS = 895;
+const SC0 = VERT ? 0.85 : 1;
+const zoomAt = t => VERT ? 1 : lerp(1, 1.4, eio((t - 7.0) / 2.2));
+const cywAt = t => VERT ? 640 : lerp(540, 700, eio((t - 7.0) / 2.2));
+const CAM = VERT
+  ? [[0, 640], [1.5, 640], [2.3, 1000], [2.6, 1000], [3.3, 2250], [4.4, 2650], [5.0, 4150], [6.3, 4150], [7.0, 5515], [12, 5515]]
+  : [[0, 960], [2.3, 960], [3.0, 2500], [4.3, 2500], [5.0, 4100], [6.3, 4100], [7.0, 5515], [12, 5515]];
+function camX(t) {
+  if (t <= CAM[0][0]) return CAM[0][1];
+  for (let i = 1; i < CAM.length; i++) if (t <= CAM[i][0]) {
+    const [t0, x0] = CAM[i - 1], [t1, x1] = CAM[i];
+    return lerp(x0, x1, eio((t - t0) / (t1 - t0)));
+  }
+  return CAM[CAM.length - 1][1];
+}
+
+// ---------- text / measure ----------
+const meas = document.createElement('canvas').getContext('2d');
+const mw = (s, font) => { meas.font = font; return meas.measureText(s).width; };
+function T(x, y, s, o = {}) {
+  const fam = o.mono ? "'JetBrains Mono'" : 'Inter';
+  return `<text x="${f2(x)}" y="${f2(y)}" font-family="${fam}" font-size="${o.size || 48}" font-weight="${o.w || (o.mono ? 700 : 700)}" fill="${o.fill || TXT}" text-anchor="${o.anchor || 'middle'}" opacity="${o.op == null ? 1 : f2(o.op)}">${esc(s)}</text>`;
+}
+// pill label: parts = [{t, mono, fill}]
+function pill(cx, base, parts, p) {
+  if (p <= 0.001) return '';
+  const size = 48;
+  const ws = parts.map(q => mw(q.t, q.mono ? `700 ${size}px "JetBrains Mono"` : `700 ${size}px Inter`));
+  const gap = 20, pad = 30;
+  const total = ws.reduce((a, b) => a + b, 0) + gap * (parts.length - 1) + pad * 2;
+  let x = cx - total / 2 + pad;
+  let o = `<rect x="${f2(cx - total / 2)}" y="${base - 54}" width="${f2(total)}" height="78" rx="39" fill="${CARD}" stroke="#34343C" stroke-width="2"/>`;
+  parts.forEach((q, i) => { o += T(x, base, q.t, { anchor: 'start', mono: q.mono, fill: q.fill || TXT, size }); x += ws[i] + gap; });
+  const ty = 18 * (1 - p);
+  return `<g opacity="${f2(p)}" transform="translate(0 ${f2(ty)})">${o}</g>`;
+}
+
+// ---------- the flow path ----------
+const PTS = [];
+const add = (x, y, tm) => PTS.push({ x, y, tm });
+add(240, BUS, 0.8); add(1900, BUS, 2.8); add(1900, 640, 3.1); add(2100, 330, 3.45);
+// conductors with sag between pylons
+const PY = [2100, 2500, 2900, 3300, 3700];
+for (let s = 0; s < PY.length - 1; s++) {
+  const a = PY[s], b = PY[s + 1], n = 10;
+  for (let k = 1; k <= n; k++) { const u = k / n; add(lerp(a, b, u), 330 + 72 * 4 * u * (1 - u), lerp(3.45 + s * 0.4, 3.45 + (s + 1) * 0.4, u)); }
+}
+add(4100, 590, 5.6); add(4100, BUS, 6.1); add(5386, BUS, 7.7); add(5386, 815, 8.0);
+let LEN = 0;
+PTS[0].d = 0;
+for (let i = 1; i < PTS.length; i++) { LEN += Math.hypot(PTS[i].x - PTS[i - 1].x, PTS[i].y - PTS[i - 1].y); PTS[i].d = LEN; }
+const PATH_D = 'M ' + PTS.map(p => f2(p.x) + ' ' + f2(p.y)).join(' L ');
+function pointAt(d) {
+  let lo = 0, hi = PTS.length - 1;
+  while (hi - lo > 1) { const m = (lo + hi) >> 1; if (PTS[m].d <= d) lo = m; else hi = m; }
+  const a = PTS[lo], b = PTS[hi], u = (d - a.d) / ((b.d - a.d) || 1);
+  return [lerp(a.x, b.x, u), lerp(a.y, b.y, u)];
+}
+function headAt(t) {
+  if (t <= PTS[0].tm) return 0;
+  for (let i = 1; i < PTS.length; i++) if (t <= PTS[i].tm) { const a = PTS[i - 1], b = PTS[i]; return lerp(a.d, b.d, (t - a.tm) / ((b.tm - a.tm) || 1)); }
+  return LEN;
+}
+
+// ---------- components ----------
+function sun(t) {
+  const p = rv(t, 0.1, 0.7);
+  let o = `<circle cx="250" cy="230" r="48" fill="none" stroke="${AMBER}" stroke-width="4.5" ${dr(p)}/>`;
+  const rot = t * 18;
+  for (let k = 0; k < 10; k++) {
+    const a = (k * 36 + rot) * Math.PI / 180, c = Math.cos(a), s = Math.sin(a);
+    o += `<line x1="${f2(250 + 70 * c)}" y1="${f2(230 + 70 * s)}" x2="${f2(250 + 100 * c)}" y2="${f2(230 + 100 * s)}" stroke="${AMBER}" stroke-width="4.5" stroke-linecap="round" opacity="${f2(p)}"/>`;
+  }
+  return o;
+}
+function panels(t) {
+  let o = '';
+  for (let i = 0; i < 3; i++) {
+    const x0 = 140 + 220 * i, p = rv(t, 0.35 + 0.3 * i, 0.7);
+    const P = [[x0 + 45, 630], [x0 + 205, 630], [x0 + 160, 760], [x0, 760]];
+    const poly = P.map(q => q.join(',')).join(' ');
+    o += `<g opacity="${f2(clamp(p * 3))}"><polygon points="${poly}" fill="rgba(77,163,255,.13)" stroke="none"/></g>`;
+    o += `<polygon points="${poly}" fill="none" stroke="${LINE}" stroke-width="4" stroke-linejoin="round" ${dr(p)}/>`;
+    const ln = (a, b) => `<line x1="${f2(a[0])}" y1="${f2(a[1])}" x2="${f2(b[0])}" y2="${f2(b[1])}" stroke="${LINE}" stroke-width="2.5" opacity="${f2(clamp(p * 2 - 1))}"/>`;
+    const L = (u) => [lerp(P[3][0], P[0][0], u), lerp(P[3][1], P[0][1], u)], Rr = (u) => [lerp(P[2][0], P[1][0], u), lerp(P[2][1], P[1][1], u)];
+    o += ln(L(.5), Rr(.5));
+    const top = (u) => [lerp(P[0][0], P[1][0], u), 630], bot = (u) => [lerp(P[3][0], P[2][0], u), 760];
+    o += ln(top(1 / 3), bot(1 / 3)) + ln(top(2 / 3), bot(2 / 3));
+    o += `<path d="M ${x0 + 102} 760 V ${GY}" stroke="${LINE}" stroke-width="4" fill="none" ${dr(p)}/><path d="M ${x0 + 62} ${GY} H ${x0 + 142}" stroke="${LINE}" stroke-width="4" fill="none" ${dr(p)}/>`;
+    o += `<path d="M ${x0 + 102} ${GY} V ${BUS}" stroke="#4A4A56" stroke-width="4" fill="none" ${dr(rv(t, 0.7 + 0.3 * i, 0.4))}/>`;
+  }
+  // sun beams
+  const bp = rv(t, 0.9, 0.5);
+  for (let i = 0; i < 3; i++) {
+    const tx = 140 + 220 * i + 125;
+    o += `<line x1="${f2(lerp(300, tx, .15))}" y1="${f2(lerp(280, 625, .15))}" x2="${tx}" y2="620" stroke="${AMBER}" stroke-width="3" stroke-dasharray="10 12" stroke-dashoffset="${f2(-t * 40)}" opacity="${f2(.6 * bp)}"/>`;
+  }
+  return o;
+}
+function station(t) {
+  const p = rv(t, 1.3, 0.8), p2 = rv(t, 1.7, 0.8);
+  let o = '';
+  o += `<g opacity="${f2(clamp(p * 2.5))}"><rect x="960" y="700" width="340" height="160" fill="${CARD}"/></g>`;
+  o += `<rect x="960" y="700" width="340" height="160" rx="6" fill="none" stroke="${LINE}" stroke-width="4" ${dr(p)}/>`;
+  o += `<rect x="1230" y="520" width="50" height="180" fill="none" stroke="${LINE}" stroke-width="4" ${dr(p)}/>`;
+  for (let i = 0; i < 3; i++) o += `<rect x="${990 + i * 80}" y="730" width="50" height="40" rx="4" fill="none" stroke="#8A8A94" stroke-width="3" opacity="${f2(p)}"/>`;
+  const bolt = `<polygon points="0,-48 -28,6 -5,6 -15,48 30,-10 5,-10" fill="${OR}"/>`;
+  const pulse = .75 + .25 * Math.sin(t * 5);
+  o += `<g transform="translate(1130 800) scale(.8)" opacity="${f2(p2 * pulse)}" filter="url(#glowS)">${bolt}</g>`;
+  const tw = 'M 1350 860 C 1400 760 1400 700 1390 620 L 1520 620 C 1510 700 1510 760 1560 860 Z';
+  o += `<g opacity="${f2(clamp(p2 * 2.5))}"><path d="${tw}" fill="${CARD}"/></g><path d="${tw}" fill="none" stroke="${LINE}" stroke-width="4" stroke-linejoin="round" ${dr(p2)}/>`;
+  for (let k = 0; k < 3; k++) {
+    const u = frac(t * 0.28 + k / 3), y = 610 - 170 * u, r = 28 + 34 * u;
+    o += `<ellipse cx="${f2(1455 + 14 * Math.sin(u * 5 + k))}" cy="${f2(y)}" rx="${f2(r * 1.2)}" ry="${f2(r)}" fill="none" stroke="#A1A1AA" stroke-width="3" opacity="${f2(.55 * Math.sin(Math.PI * u) * p2)}"/>`;
+  }
+  o += `<path d="M 1130 860 V ${BUS}" stroke="#4A4A56" stroke-width="4" fill="none" ${dr(rv(t, 1.8, 0.4))}/><path d="M 1455 860 V ${BUS}" stroke="#4A4A56" stroke-width="4" fill="none" ${dr(rv(t, 2.0, 0.4))}/>`;
+  return o;
+}
+const frac = x => x - Math.floor(x);
+function transformerUp(t) {
+  const p = rv(t, 2.9, 0.7);
+  let o = `<g opacity="${f2(clamp(p * 2.5))}"><rect x="1830" y="700" width="140" height="160" rx="10" fill="${CARD}"/></g>`;
+  o += `<rect x="1830" y="700" width="140" height="160" rx="10" fill="none" stroke="${LINE}" stroke-width="4" ${dr(p)}/>`;
+  o += `<circle cx="1875" cy="780" r="34" fill="none" stroke="${OR}" stroke-width="4" opacity="${f2(p)}"/><circle cx="1925" cy="780" r="34" fill="none" stroke="${OR}" stroke-width="4" opacity="${f2(p)}"/>`;
+  o += `<path d="M 1900 700 V 645" stroke="${LINE}" stroke-width="4" fill="none" ${dr(p)}/>`;
+  for (let k = 0; k < 3; k++) o += `<rect x="1884" y="${652 + k * 16}" width="32" height="8" rx="4" fill="${CARD}" stroke="${LINE}" stroke-width="3" opacity="${f2(p)}"/>`;
+  return o;
+}
+function pylon(x, p) {
+  const top = 300, L = (y, s) => x + s * lerp(10, 58, (y - 380) / (GY - 380));
+  let o = '';
+  const st = `stroke="${LINE}" stroke-width="3.5" fill="none" stroke-linejoin="round"`;
+  o += `<path d="M ${x - 58} ${GY} L ${x - 10} 380 L ${x} 330 L ${x + 10} 380 L ${x + 58} ${GY}" ${st} ${dr(p)}/>`;
+  o += `<path d="M ${x} 330 V ${top}" ${st} ${dr(p)}/>`;
+  o += `<path d="M ${x - 80} 330 H ${x + 80} M ${x - 56} 392 H ${x + 56}" ${st} ${dr(p)}/>`;
+  const ys = [380, 480, 580, 680, 780, GY];
+  let zig = '';
+  for (let i = 0; i < ys.length - 1; i++) {
+    const a = ys[i], b = ys[i + 1];
+    zig += `M ${L(a, -1)} ${a} L ${L(b, 1)} ${b} M ${L(a, 1)} ${a} L ${L(b, -1)} ${b} `;
+  }
+  o += `<path d="${zig}" ${st} stroke-width="2.5" ${dr(p)}/>`;
+  o += `<path d="M ${x - 80} 330 V 346 M ${x + 80} 330 V 346" ${st} opacity="${f2(p)}"/>`;
+  return o;
+}
+function pylons(t) {
+  let o = '';
+  PY.forEach((x, i) => { o += pylon(x, rv(t, 3.3 + 0.28 * i, 0.7)); });
+  return o;
+}
+function substation(t) {
+  const p = rv(t, 5.0, 0.8), pf = rv(t, 5.0, 0.6);
+  let o = `<rect x="3820" y="520" width="560" height="340" rx="10" fill="none" stroke="#5A5A66" stroke-width="3" stroke-dasharray="14 12" opacity="${f2(pf)}"/>`;
+  o += `<g opacity="${f2(clamp(p * 2.5))}"><rect x="4000" y="640" width="200" height="220" rx="10" fill="${CARD}"/><rect x="4030" y="590" width="140" height="50" rx="25" fill="${CARD}"/></g>`;
+  o += `<rect x="4000" y="640" width="200" height="220" rx="10" fill="none" stroke="${LINE}" stroke-width="4" ${dr(p)}/>`;
+  o += `<rect x="4030" y="590" width="140" height="50" rx="25" fill="none" stroke="${LINE}" stroke-width="4" ${dr(p)}/>`;
+  for (let k = 0; k < 6; k++) o += `<line x1="${4028 + k * 29}" y1="668" x2="${4028 + k * 29}" y2="832" stroke="#8A8A94" stroke-width="3" opacity="${f2(p)}"/>`;
+  [4045, 4155].forEach(x => { o += `<path d="M ${x} 590 V 560" stroke="${LINE}" stroke-width="4" fill="none" ${dr(p)}/>`; for (let k = 0; k < 2; k++) o += `<rect x="${x - 14}" y="${564 + k * 14}" width="28" height="8" rx="4" fill="${CARD}" stroke="${LINE}" stroke-width="3" opacity="${f2(p)}"/>`; });
+  return o;
+}
+function datacentre(t) {
+  const p = rv(t, 7.0, 0.9);
+  let o = `<g opacity="${f2(clamp(p * 2.5))}"><rect x="4960" y="500" width="840" height="360" rx="18" fill="${CARD}"/></g>`;
+  o += `<rect x="4960" y="500" width="840" height="360" rx="18" fill="none" stroke="${LINE}" stroke-width="4" ${dr(p)}/>`;
+  const powered = t > 8.0;
+  for (let i = 0; i < 5; i++) {
+    const x = 5030 + i * 148, rp = rv(t, 7.3 + 0.12 * i, 0.5);
+    let g = `<rect x="${x}" y="590" width="120" height="200" rx="8" fill="#1E1E24" stroke="#6A6A76" stroke-width="3"/>`;
+    for (let r = 0; r < 5; r++) {
+      const y = 604 + r * 34;
+      g += `<rect x="${x + 10}" y="${y}" width="100" height="24" rx="4" fill="#26262E" stroke="#3A3A44" stroke-width="2"/>`;
+      g += `<rect x="${x + 16}" y="${y + 5}" width="14" height="14" rx="3" fill="${powered ? OR : '#4A4A56'}" opacity="${powered ? f2(.65 + .35 * Math.sin(t * 6 + i + r * 1.7)) : 1}"/>`;
+      const h = hash(i * 91 + r * 13 + Math.floor(t * 4 + hash(i + r) * 3) * 7);
+      g += `<circle cx="${x + 96}" cy="${y + 12}" r="5" fill="${powered && h > .25 ? GREEN : '#33333C'}"/>`;
+    }
+    o += `<g opacity="${f2(rp)}">${g}</g>`;
+  }
+  return o;
+}
+function cooling(t) {
+  const p = rv(t, 7.7, 0.9);
+  const loopD = 'M 5935 545 H 4985 V 830 H 5935 Z';
+  const chp = rv(t, 7.5, 0.7);
+  let o = '';
+  // chiller
+  o += `<g opacity="${f2(clamp(chp * 2.5))}"><rect x="5865" y="600" width="140" height="260" rx="12" fill="${CARD}"/></g>`;
+  o += `<rect x="5865" y="600" width="140" height="260" rx="12" fill="none" stroke="${LINE}" stroke-width="4" ${dr(chp)}/>`;
+  // pipes (outer blue, inner bg)
+  o += `<path d="${loopD}" fill="none" stroke="${BLUE}" stroke-width="18" stroke-linejoin="round" ${dr(p)}/>`;
+  o += `<path d="${loopD}" fill="none" stroke="${BG}" stroke-width="10" stroke-linejoin="round" ${dr(p)}/>`;
+  // stubs
+  for (let i = 0; i < 5; i++) { const x = 5090 + i * 148; o += `<path d="M ${x} 545 V 590 M ${x} 790 V 830" stroke="${BLUE}" stroke-width="7" fill="none" ${dr(rv(t, 8.0 + 0.08 * i, 0.4))}/>`; }
+  // fan
+  const fp = rv(t, 7.8, 0.5);
+  o += `<g opacity="${f2(fp)}"><circle cx="5935" cy="700" r="54" fill="${CARD}" stroke="${LINE}" stroke-width="4"/>`;
+  const rot = t * 220;
+  for (let k = 0; k < 3; k++) { const a = (rot + k * 120) * Math.PI / 180; o += `<path d="M 5935 700 Q ${f2(5935 + 30 * Math.cos(a - .5))} ${f2(700 + 30 * Math.sin(a - .5))} ${f2(5935 + 44 * Math.cos(a))} ${f2(700 + 44 * Math.sin(a))}" stroke="${LINE}" stroke-width="7" stroke-linecap="round" fill="none"/>`; }
+  o += `<circle cx="5935" cy="700" r="8" fill="${LINE}"/></g>`;
+  // water dots
+  if (t > 8.3) {
+    const per = 2470, a = clamp((t - 8.3) / 0.4);
+    const LP = [[5935, 545], [4985, 545], [4985, 830], [5935, 830], [5935, 545]];
+    const segs = [950, 285, 950, 285];
+    let g = '';
+    for (let k = 0; k < 22; k++) {
+      let d = ((t * 230 + k * per / 22) % per), i = 0;
+      while (d > segs[i]) { d -= segs[i]; i++; }
+      const A = LP[i], B = LP[i + 1], u = d / segs[i];
+      g += `<circle cx="${f2(lerp(A[0], B[0], u))}" cy="${f2(lerp(A[1], B[1], u))}" r="5.5" fill="#BFE0FF"/>`;
+    }
+    o += `<g opacity="${f2(a)}" filter="url(#glowS)">${g}</g>`;
+  }
+  return o;
+}
+
+function world(t) {
+  let o = `<line x1="-200" y1="${GY}" x2="6500" y2="${GY}" stroke="#34343C" stroke-width="3"/>`;
+  // base cable (drawn up to head)
+  const head = headAt(t);
+  o += `<path d="${PATH_D}" fill="none" stroke="#5A5A66" stroke-width="5" stroke-linejoin="round" stroke-dasharray="${f2(head)} 100000"/>`;
+  o += sun(t) + panels(t) + station(t) + transformerUp(t) + pylons(t) + substation(t) + datacentre(t) + cooling(t);
+  // energy dots
+  let g = '';
+  const sp = 110, base = (t * 300) % sp;
+  for (let k = 0; k * sp + base < LEN; k++) {
+    const d = base + k * sp;
+    if (d > head) break;
+    const [x, y] = pointAt(d);
+    const fade = Math.min(1, (head - d) / 30, (LEN - d) / 40);
+    g += `<circle cx="${f2(x)}" cy="${f2(y)}" r="8" fill="${OR}" opacity="${f2(fade)}"/>`;
+  }
+  o += `<g filter="url(#glow)">${g}</g>`;
+  // labels
+  o += pill(460, 975, [{ t: 'Solar' }], rv(t, 1.4, 0.4));
+  o += pill(1260, 975, [{ t: 'Power station' }], rv(t, 2.2, 0.4));
+  o += pill(1900, 975, [{ t: 'step-up', fill: OR }, { t: '11 → 400 kV', mono: 1, fill: SEC }], rv(t, 3.2, 0.4));
+  o += pill(4100, 975, [{ t: 'step-down', fill: OR }, { t: '400 → 11 kV', mono: 1, fill: SEC }], rv(t, 5.3, 0.4));
+  o += pill(5386, 975, [{ t: 'GPU racks' }], rv(t, 8.2, 0.4));
+  o += pill(5935, 975, [{ t: 'cooling' }], rv(t, 8.5, 0.4));
+  return o;
+}
+
+function headline(t) {
+  const p = rv(t, 8.7, 0.4);
+  if (p <= 0) return '';
+  const size = VERT ? 104 : 100;
+  const font = `800 ${size}px Inter`;
+  let o = '';
+  const sh = 'style="paint-order:stroke;stroke:rgba(14,14,16,.9);stroke-width:14px;stroke-linejoin:round"';
+  const mk = (x, y, pre, word, wx0, wd) => `<text x="${f2(x)}" y="${y}" font-family="Inter" font-weight="800" font-size="${size}" fill="${TXT}" ${sh}>${pre}<tspan fill="${OR}">${word}</tspan></text>`;
+  let g = '';
+  const mp = eo((t - 9.1) / 0.5);
+  if (!VERT) {
+    const pre = 'Energy = the ', word = 'bottleneck';
+    const wPre = mw(pre, font), wWord = mw(word, font), x0 = (VW - wPre - wWord) / 2, y = 190;
+    g += `<rect x="${f2(x0 + wPre - 12)}" y="${y - 84}" width="${f2((wWord + 24) * mp)}" height="108" rx="10" fill="${AMBER}" opacity=".28"/>`;
+    g += mk(x0, y, pre, word);
+  } else {
+    const l1 = 'Energy =', pre = 'the ', word = 'bottleneck';
+    const x1 = (VW - mw(l1, font)) / 2, wPre = mw(pre, font), wWord = mw(word, font), x2 = (VW - wPre - wWord) / 2;
+    g += `<rect x="${f2(x2 + wPre - 12)}" y="${340 - 84}" width="${f2((wWord + 24) * mp)}" height="108" rx="10" fill="${AMBER}" opacity=".28"/>`;
+    g += `<text x="${f2(x1)}" y="215" font-family="Inter" font-weight="800" font-size="${size}" fill="${TXT}" ${sh}>${l1}</text>`;
+    g += mk(x2, 340, pre, word);
+  }
+  const s = .92 + .08 * p;
+  return `<g opacity="${f2(p)}" transform="translate(${VW / 2} 160) scale(${f2(s)}) translate(${-VW / 2} -160)">${g}</g>`;
+}
+
+window.renderAt = function (t) {
+  const cx = camX(t), SC = SC0 * zoomAt(t), CYW = cywAt(t);
+  stage.style.backgroundPosition = `${f2(-cx * SC)}px ${f2(-CYW * SC)}px`;
+  stage.innerHTML = `<svg width="${VW}" height="${H}" viewBox="0 0 ${VW} ${H}" xmlns="http://www.w3.org/2000/svg"><g transform="translate(${VW / 2} ${H / 2}) scale(${SC}) translate(${f2(-cx)} ${-CYW})">${world(t)}</g>${headline(t)}</svg>`;
+};
+window.ready = (async () => {
+  await Promise.all(['400 40px Inter', '600 40px Inter', '700 48px Inter', '800 100px Inter', '500 40px "JetBrains Mono"', '700 48px "JetBrains Mono"'].map(f => document.fonts.load(f)));
+  await document.fonts.ready;
+  window.renderAt(0);
+  return true;
+})();
+</script></body></html>
