@@ -1,0 +1,137 @@
+<!doctype html>
+<html><head><meta charset="utf-8">
+<link rel="stylesheet" href="common.css">
+<style>
+  :root { --amber: #F5B800; }
+  .slide { position: absolute; left: 0; top: 0; width: 1920px; height: 1080px; will-change: transform; }
+  .card { position: absolute; left: 100px; top: 64px; width: 1720px; height: 952px; padding: 46px 64px 0; overflow: hidden; }
+  .top { display: flex; align-items: center; justify-content: space-between; height: 40px; }
+  .crumb { font-family: "JetBrains Mono", monospace; font-weight: 500; font-size: 22px; color: var(--muted); display: flex; align-items: center; gap: 14px; }
+  .crumb .dot { width: 10px; height: 10px; border-radius: 50%; background: var(--accent); }
+  .count { font-family: "JetBrains Mono", monospace; font-weight: 500; font-size: 22px; color: var(--muted); }
+  .count b { color: var(--text); font-weight: 700; }
+  h1 { font-weight: 800; font-size: 68px; line-height: 1.07; letter-spacing: -0.022em; margin-top: 26px; max-width: 1560px; }
+  h1 i { font-style: italic; }
+  .path { font-family: "JetBrains Mono", monospace; font-weight: 500; font-size: 21px; color: var(--muted); margin-top: 20px;
+    word-break: break-all; line-height: 1.4; }
+  .path b { color: var(--text); font-weight: 500; }
+  .paper { position: absolute; background: #FFFFFF; border-radius: 12px; box-shadow: 0 18px 50px rgba(0,0,0,.5); }
+  .paper img { position: absolute; display: block; }
+  .hl { position: absolute; background: var(--amber); mix-blend-mode: multiply; border-radius: 6px; transform-origin: 0 50%; }
+  svg.arrow { position: absolute; left: 0; top: 0; width: 1720px; height: 952px; overflow: visible; pointer-events: none; }
+  .label { position: absolute; background: #16161A; border: 2px solid var(--accent); border-radius: 14px; padding: 12px 22px 13px;
+    box-shadow: 0 12px 34px rgba(0,0,0,.45); transform-origin: 50% 50%; white-space: nowrap; }
+  .label .q { font-weight: 800; font-size: 34px; color: var(--accent); letter-spacing: -0.01em; }
+  .label .s { font-weight: 500; font-size: 20px; color: var(--muted); margin-top: 3px; }
+</style></head>
+<body>
+<div id="deck"></div>
+<script>
+const SLIDES = [
+  { title: "A CH obstruction to a prescribed categoricity threshold",
+    dir: "A-CH-Obstruction-to-a-Prescribed-Categoricity-Threshold-September-24-2026", file: "paper.pdf",
+    img: "../snippets/ch.png", nat: [2000, 309], w: 1560,
+    box: [1246, 222, 1330, 294],             // ℶ_{ω2}, in snippet pixels (300 dpi)
+    label: { x: 1080, y: 740, sub: "an infinite size, far beyond countable infinity" }, from: "top" },
+  { title: 'The <i>p</i>-adic section conjecture',
+    dir: "The-p-adic-section-conjecture-October-6-2026", file: "main.pdf",
+    img: "../snippets/padic.png", nat: [1934, 334], w: 1560,
+    box: [1518, 198, 1702, 274],             // /π1(X_k̄): quotient by the geometric étale fundamental group
+    label: { x: 1060, y: 710, sub: "étale fundamental groups of curves over <i>p</i>-adic fields" }, from: "top" },
+  { title: "The Grothendieck homotopy hypothesis via elementary expansions",
+    dir: "The-Grothendieck-homotopy-hypothesis-via-elementary-expansions-September-24-2026", file: "paper.pdf",
+    img: "../snippets/homotopy.png", nat: [1942, 634], w: 1300,
+    box: [1430, 14, 1846, 78],               // "C-infinity-groupoid"
+    label: { x: 1060, y: 650, sub: "∞-groupoids: paths between paths between paths…" }, from: "top" },
+];
+const deck = document.getElementById("deck");
+const els = SLIDES.map((s, k) => {
+  const el = document.createElement("div"); el.className = "slide";
+  el.innerHTML = `<div class="card">
+    <div class="top"><div class="crumb"><span class="dot"></span>openai/math · preprints</div>
+      <div class="count"><b>${k + 1}</b> / ${SLIDES.length}</div></div>
+    <h1>${s.title}</h1>
+    <div class="path">openai/math/preprints/<b>${s.dir}</b>/${s.file}</div>
+    <div class="paper"><img src="${s.img}"><div class="hl"></div></div>
+    <svg class="arrow" viewBox="0 0 1720 952"><defs></defs>
+      <path class="shaft" fill="none" stroke="#D97757" stroke-width="7" stroke-linecap="round"/>
+      <path class="head" fill="none" stroke="#D97757" stroke-width="7" stroke-linecap="round" stroke-linejoin="round"/></svg>
+    <div class="label"><div class="q">useful for… ?</div><div class="s">${s.label.sub}</div></div>
+  </div>`;
+  deck.appendChild(el); return el;
+});
+
+// layout (card-local coordinates)
+const PAD = 34;
+let geo; const layout = () => { geo = SLIDES.map((s, k) => {
+  const el = els[k], card = el.querySelector(".card"), path = el.querySelector(".path");
+  const sc = s.w / s.nat[0], ih = s.nat[1] * sc;
+  const top = path.offsetTop + path.offsetHeight + 40;
+  const pw = s.w + 2 * PAD, ph = ih + 2 * PAD, left = (1720 - pw) / 2;
+  const paper = el.querySelector(".paper");
+  Object.assign(paper.style, { left: left + "px", top: top + "px", width: pw + "px", height: ph + "px" });
+  const img = paper.querySelector("img");
+  Object.assign(img.style, { left: PAD + "px", top: PAD + "px", width: s.w + "px", height: ih + "px" });
+  const [bx0, by0, bx1, by1] = s.box;
+  const hl = paper.querySelector(".hl");
+  Object.assign(hl.style, { left: PAD + bx0 * sc + "px", top: PAD + by0 * sc + "px", width: (bx1 - bx0) * sc + "px", height: (by1 - by0) * sc + "px" });
+  // target point: bottom-centre of the box, in card coords
+  const tx = left + PAD + (bx0 + bx1) / 2 * sc, ty = top + PAD + by1 * sc + 10;
+  const lab = el.querySelector(".label");
+  lab.style.left = s.label.x + "px"; lab.style.top = s.label.y + "px";
+  const lw = lab.offsetWidth;
+  // tail: top edge of label, towards the target
+  const sx = Math.min(Math.max(tx, s.label.x + 60), s.label.x + lw - 60), sy = s.label.y - 14;
+  return { tx, ty, sx, sy, lab, hl, el };
+}); };
+
+const easeOut = x => 1 - Math.pow(1 - Math.min(Math.max(x, 0), 1), 3);
+const easeIO = x => { x = Math.min(Math.max(x, 0), 1); return x < .5 ? 4 * x * x * x : 1 - Math.pow(-2 * x + 2, 3) / 2; };
+const F = 1001 / 30000;
+const SLOT = 2.0, TR = 10 * F;   // 2 s per slide, 10-frame push
+
+function drawArrow(g, p, bob) {
+  const el = g.el, shaft = el.querySelector(".shaft"), head = el.querySelector(".head");
+  const dx = g.tx - g.sx, dy = g.ty - g.sy, L = Math.hypot(dx, dy), ux = dx / L, uy = dy / L;
+  const ex = g.tx - ux * bob, ey = g.ty - uy * bob;            // tip with idle bob
+  // gentle curve: control point offset perpendicular
+  const cx = (g.sx + ex) / 2 - uy * 40, cy = (g.sy + ey) / 2 + ux * 40;
+  const d = `M${g.sx},${g.sy} Q${cx},${cy} ${ex},${ey}`;
+  shaft.setAttribute("d", d);
+  const len = shaft.getTotalLength();
+  shaft.style.strokeDasharray = len; shaft.style.strokeDashoffset = len * (1 - p);
+  // arrow head along the final tangent
+  const a = shaft.getPointAtLength(Math.max(len - 2, 0)), tx = ex - a.x, ty = ey - a.y, tl = Math.hypot(tx, ty) || 1;
+  const hx = tx / tl, hy = ty / tl, s = 24;
+  const l1 = [ex - hx * s - hy * s * .62, ey - hy * s + hx * s * .62], l2 = [ex - hx * s + hy * s * .62, ey - hy * s - hx * s * .62];
+  head.setAttribute("d", `M${l1[0]},${l1[1]} L${ex},${ey} L${l2[0]},${l2[1]}`);
+  head.style.opacity = p >= 0.98 ? 1 : 0;
+}
+
+window.renderAt = t => {
+  SLIDES.forEach((s, k) => {
+    const g = geo[k], start = k * SLOT;
+    // position: slide k pushes in at start (k>0) and out at start+SLOT (k<last)
+    let x;
+    if (k > 0 && t < start) x = 1920;
+    else if (k > 0 && t < start + TR) x = 1920 * (1 - easeIO((t - start) / TR));
+    else x = 0;
+    if (k < SLIDES.length - 1 && t >= start + SLOT) x = -1920 * easeIO((t - start - SLOT) / TR);
+    g.el.style.transform = `translateX(${x.toFixed(2)}px)`;
+    g.el.style.visibility = (x <= -1920 || x >= 1920) ? "hidden" : "visible";
+    // slide 1 entrance (8 frames)
+    if (k === 0) { const e = easeOut(t / (8 * F)); g.el.style.opacity = e; g.el.querySelector(".card").style.transform = `scale(${0.96 + 0.04 * e})`; }
+    const tau = t - start - (k === 0 ? 0.15 : TR - 0.02);           // local time after landing
+    const hp = easeOut(tau / (8 * F));                              // highlight sweep
+    g.hl.style.transform = `scaleX(${hp})`;
+    g.hl.style.opacity = (0.30 + 0.06 * Math.sin(Math.max(tau, 0) * 5.2)) * (hp > 0 ? 1 : 0);
+    const ap = easeOut((tau - 0.12) / (10 * F));                    // arrow draw
+    const bob = ap >= 1 ? 7 * (0.5 - 0.5 * Math.cos((tau - 0.12 - 10 * F) * 6.0)) : 0;
+    drawArrow(g, ap, bob);
+    const lp = easeOut((tau - 0.05) / (9 * F));                     // label pop
+    g.lab.style.opacity = lp; g.lab.style.transform = `scale(${0.92 + 0.08 * lp}) translateY(${(1 - lp) * 10}px)`;
+  });
+};
+window.ready = Promise.all([document.fonts.ready, ...[...document.images].map(i => i.decode())]).then(() => { layout(); window.renderAt(0); });
+</script>
+</body></html>

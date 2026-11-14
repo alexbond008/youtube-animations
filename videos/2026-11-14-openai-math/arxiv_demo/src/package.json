@@ -1,0 +1,8 @@
+{
+  "name": "arxiv-demo",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Capture of an arXiv abstract page for the arxiv_demo b-roll",
+  "scripts": { "capture": "node capture_abs.js" },
+  "dependencies": { "playwright-core": "^1.65.0" }
+}

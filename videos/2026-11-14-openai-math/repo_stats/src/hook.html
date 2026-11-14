@@ -1,0 +1,168 @@
+<!doctype html>
+<html><head><meta charset="utf-8">
+<link rel="stylesheet" href="common.css">
+<style>
+  .stage { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; }
+  #card { position: relative; padding: 0; overflow: visible; }
+  .head { display: flex; align-items: center; gap: 22px; padding: 0 44px; border-bottom: 1px solid var(--border); }
+  .head svg { flex: none; }
+  .repo { font-family: "JetBrains Mono", monospace; font-weight: 500; color: var(--muted); }
+  .repo b { color: var(--text); font-weight: 700; }
+  .pill { border: 1.5px solid var(--border); color: var(--muted); border-radius: 999px; font-weight: 600; }
+  .body { display: flex; }
+  .count { font-weight: 800; letter-spacing: -0.035em; line-height: 0.9; color: var(--text); }
+  .label { font-weight: 600; color: var(--muted); }
+  canvas { display: block; flex: none; }
+  #stampWrap { position: absolute; left: 0; top: 0; transform-origin: 50% 50%; pointer-events: none; }
+  #stampGlow { position: absolute; inset: -40px; border-radius: 40px;
+    background: radial-gradient(closest-side, rgba(255,90,78,.45), rgba(255,90,78,0)); }
+  #stampBack { position: absolute; inset: 0; border-radius: 18px; background: rgba(14,14,16,.82); }
+  #stamp { position: relative; color: var(--red); border: 10px solid var(--red); border-radius: 18px;
+    font-weight: 800; letter-spacing: 0.04em; white-space: nowrap; filter: url(#ink); line-height: 1; }
+
+  /* Horizontal 1920x1080 */
+  .h #card { width: 1500px; height: 700px; }
+  .h .head { height: 116px; }
+  .h .repo { font-size: 42px; }
+  .h .pill { font-size: 24px; padding: 6px 18px; margin-left: 6px; }
+  .h .body { height: 584px; align-items: center; padding: 0 70px 0 80px; gap: 90px; }
+  .h canvas { align-self: flex-start; margin-top: 64px; }
+  .h .left { width: 560px; }
+  .h .count { font-size: 236px; }
+  .h .label { font-size: 56px; margin-top: 22px; }
+  .h #stamp { font-size: 100px; padding: 18px 40px 20px; }
+
+  /* Vertical 1080x1350 */
+  .v #card { width: 960px; height: 1180px; }
+  .v .head { height: 120px; }
+  .v .repo { font-size: 44px; }
+  .v .pill { font-size: 24px; padding: 6px 18px; margin-left: 4px; }
+  .v .body { flex-direction: column; align-items: center; padding: 44px 0 0; gap: 40px; }
+  .v .left { text-align: center; }
+  .v .count { font-size: 250px; }
+  .v .label { font-size: 60px; margin-top: 14px; }
+  .v #stamp { font-size: 96px; padding: 18px 36px 20px; }
+</style></head>
+<body>
+<svg width="0" height="0" style="position:absolute">
+  <filter id="ink" x="-5%" y="-5%" width="110%" height="110%">
+    <feTurbulence type="fractalNoise" baseFrequency="0.8" numOctaves="2" seed="7" result="n"/>
+    <feColorMatrix in="n" type="matrix" values="0 0 0 0 0  0 0 0 0 0  0 0 0 0 0  0 0 0 -7 5.1" result="m"/>
+    <feComposite in="SourceGraphic" in2="m" operator="in"/>
+  </filter>
+</svg>
+<div class="stage">
+  <div id="card" class="card">
+    <div class="head">
+      <svg id="glyph" width="44" height="44" viewBox="0 0 24 24" fill="none" stroke="#A1A1AA" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M5 4.5A1.5 1.5 0 0 1 6.5 3H19v15H6.5A1.5 1.5 0 0 0 5 19.5z"/><path d="M5 19.5A1.5 1.5 0 0 0 6.5 21H19v-3"/><path d="M9 7h6"/>
+      </svg>
+      <div class="repo">openai / <b>math</b></div>
+      <div class="pill">Public</div>
+    </div>
+    <div class="body">
+      <div class="left">
+        <div id="count" class="count tab">0</div>
+        <div class="label">manuscripts</div>
+      </div>
+      <canvas id="grid"></canvas>
+    </div>
+    <div id="stampWrap"><div id="stampGlow"></div><div id="stampBack"></div><div id="stamp">3 WITHDRAWN</div></div>
+  </div>
+</div>
+<script>
+const V = new URLSearchParams(location.search).has("v");
+document.body.className = V ? "v" : "h";
+const TOTAL = 719;
+const COLS = V ? 30 : 36, ROWS = 24 - (V ? 0 : 4);         // 720 cells either way
+const CELL = V ? 20 : 14, GAP = V ? 6 : 5;
+const RED = V ? [77, 368, 604] : [65, 330, 545];                                // cells that turn red at the stamp
+const T_IN = 0.0, C0 = 0.25, C1 = 2.0, T_STAMP = 4.0;
+
+const cv = document.getElementById("grid");
+const gw = COLS * (CELL + GAP) - GAP, gh = ROWS * (CELL + GAP) - GAP;
+cv.width = gw * 2; cv.height = gh * 2; cv.style.width = gw + "px"; cv.style.height = gh + "px";
+const ctx = cv.getContext("2d", { willReadFrequently: true }); ctx.scale(2, 2);
+const hash = i => { let x = Math.sin(i * 127.1 + 311.7) * 43758.5453; return x - Math.floor(x); };
+
+const clamp = (x, a = 0, b = 1) => Math.min(b, Math.max(a, x));
+const eo = x => 1 - Math.pow(1 - clamp(x), 3);              // ease-out cubic
+const eo5 = x => 1 - Math.pow(1 - clamp(x), 5);
+const ei = x => Math.pow(clamp(x), 2);
+
+const el = id => document.getElementById(id);
+const card = el("card"), count = el("count"), wrap = el("stampWrap"), glow = el("stampGlow");
+
+function placeStamp() {
+  const cr = card.getBoundingClientRect(), sr = el("stamp").getBoundingClientRect();
+  let cx, cy;
+  const gr = cv.getBoundingClientRect();
+  cx = gr.left - cr.left + gr.width / 2 - (V ? 0 : 40);
+  cy = gr.top - cr.top + gr.height * (V ? 0.62 : 0.93);
+  wrap.style.width = sr.width + "px"; wrap.style.height = sr.height + "px";
+  wrap.dataset.x = cx - sr.width / 2; wrap.dataset.y = cy - sr.height / 2;
+}
+
+function drawGrid(t, lit) {
+  ctx.clearRect(0, 0, gw, gh);
+  const stampP = clamp((t - T_STAMP - 0.12) / 0.25);
+  for (let i = 0; i < COLS * ROWS; i++) {
+    const c = Math.floor(i / ROWS), r = i % ROWS;           // column-major: sweeps left to right
+    const x = c * (CELL + GAP), y = r * (CELL + GAP);
+    let fill;
+    if (i < lit) {
+      const litAt = C0 + (C1 - C0) * (1 - Math.cbrt(1 - (i + 1) / TOTAL)); // invert the ease-out
+      const age = t - litAt;
+      const base = 0.42 + 0.58 * hash(i);
+      const shimmer = 0.10 * Math.sin(t * 2.2 - (c * 0.28 + r * 0.18));
+      const flash = Math.max(0, 1 - age / 0.25);
+      const a = clamp(base + (t > C1 ? shimmer : 0));
+      const isRed = RED.includes(i) && stampP > 0;
+      if (isRed) {
+        const pulse = 0.75 + 0.25 * Math.sin((t - T_STAMP) * 4.0);
+        ctx.shadowColor = "rgba(255,90,78,.9)"; ctx.shadowBlur = 14 * stampP * pulse;
+        fill = `rgba(255,90,78,${0.4 + 0.6 * stampP})`;
+        ctx.save(); ctx.strokeStyle = `rgba(255,190,180,${0.9 * stampP})`; ctx.lineWidth = 2;
+        ctx.beginPath(); ctx.roundRect(x - 3, y - 3, CELL + 6, CELL + 6, 5); ctx.stroke(); ctx.restore();
+      } else {
+        ctx.shadowBlur = 0;
+        const mix = flash;                                   // freshly lit cells flash pale
+        const R = Math.round(217 + (255 - 217) * mix), G = Math.round(119 + (236 - 119) * mix), B = Math.round(87 + (220 - 87) * mix);
+        fill = `rgba(${R},${G},${B},${Math.max(a, mix) * (1 - 0.45 * stampP)})`;
+      }
+    } else { ctx.shadowBlur = 0; fill = "#222228"; }
+    ctx.fillStyle = fill;
+    const grow = (RED.includes(i) && stampP > 0) ? 2 * stampP : 0;
+    ctx.beginPath(); ctx.roundRect(x - grow, y - grow, CELL + 2 * grow, CELL + 2 * grow, V ? 4 : 3); ctx.fill();
+  }
+  ctx.shadowBlur = 0;
+}
+
+window.renderAt = t => {
+  // card entrance (10 frames)
+  const pin = eo((t - T_IN) / 0.34);
+  let jolt = 0;
+  if (t > T_STAMP + 0.2) { const k = t - T_STAMP - 0.2; jolt = 7 * Math.exp(-k * 18) * Math.cos(k * 70); }
+  card.style.opacity = pin;
+  card.style.transform = `translateY(${(1 - pin) * 30 + jolt}px) scale(${0.96 + 0.04 * pin})`;
+
+  // counter
+  const n = Math.round(TOTAL * eo((t - C0) / (C1 - C0)));
+  count.textContent = n.toString();
+  drawGrid(t, n);
+
+  // stamp slam: 6 frames in, accelerating into impact, then a small settle
+  const s = (t - T_STAMP) / 0.2;
+  if (s <= 0) { wrap.style.opacity = 0; }
+  else {
+    const rot = -7;
+    let sc = s < 1 ? 1.55 - 0.55 * ei(s) : 1 - 0.025 * Math.sin(clamp((s - 1) / 1.2) * Math.PI);
+    wrap.style.opacity = clamp(s * 2.5);
+    wrap.style.transform = `translate(${wrap.dataset.x}px, ${wrap.dataset.y}px) rotate(${rot}deg) scale(${sc})`;
+    const g = s < 1 ? 0 : Math.exp(-(t - T_STAMP - 0.2) * 3.5);
+    glow.style.opacity = g;
+  }
+};
+window.ready = document.fonts.ready.then(() => { placeStamp(); window.renderAt(0); });
+</script>
+</body></html>

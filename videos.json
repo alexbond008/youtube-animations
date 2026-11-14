@@ -551,5 +551,108 @@
     "render_bytes": 2012858
    }
   ]
+ },
+ {
+  "slug": "openai-math",
+  "folder": "2026-11-14-openai-math",
+  "title": "Has OpenAI Solved Maths?",
+  "date": "2026-11-14",
+  "yt": "",
+  "blurb": "OpenAI's maths repo in numbers, a real lattice-Boltzmann Navier–Stokes flow, Fourier/FFT, Lean as a compiler for maths, paper-vs-Lean mismatch, rendered LaTeX and far-fetched theory slides.",
+  "held": [],
+  "animations": [
+   {
+    "name": "arxiv_demo",
+    "title": "arXiv abstract → click \"View PDF\" → scroll to the m+4 vs m+5 (Lean) mismatch, OpenScreen-style",
+    "preview": "arxiv_demo.gif",
+    "renders": [
+     "arxiv_demo_1080p.mp4"
+    ],
+    "render_bytes": 15026238
+   },
+   {
+    "name": "farfetched_slides",
+    "title": "three ultra-abstract openai/math preprints as a snappy slide deck, each with an orange \"useful for… ?\" arrow on the real typeset maths",
+    "preview": "farfetched_slides.gif",
+    "renders": [
+     "farfetched_slides_1080p.mp4"
+    ],
+    "render_bytes": 1214092
+   },
+   {
+    "name": "fourier_fft",
+    "title": "a square wave builds from sine harmonics, then the FFT's O(n log n) meets the new O(n (log n)^(1−10⁻¹³)) bound",
+    "preview": "fourier_fft.gif",
+    "renders": [
+     "fourier_fft_1080p.mp4",
+     "fourier_fft_vertical_1080x1350.mp4",
+     "fourier_fft_wave_1080p.mp4"
+    ],
+    "render_bytes": 4427399
+   },
+   {
+    "name": "gh_demo",
+    "title": "OpenScreen-style GitHub screen demos of openai/math (cursor, click ripples, auto-zoom)",
+    "preview": "gh_demo.gif",
+    "renders": [
+     "gh_history_zoom_1080p.mp4",
+     "gh_hook_demo_1080p.mp4",
+     "gh_repo_anim_1080p.mp4"
+    ],
+    "render_bytes": 4455638
+   },
+   {
+    "name": "latex_showcase",
+    "title": "the real typeset \"Catalan's constant is irrational\" paper (openai/math) fans in, glides down a dense page and zooms onto eq. (14): \"good luck reading this\"",
+    "preview": "latex_showcase.gif",
+    "renders": [
+     "latex_showcase_1080p.mp4"
+    ],
+    "render_bytes": 8921865
+   },
+   {
+    "name": "lean_compiler",
+    "title": "\"Lean is a compiler for maths\": C++ compile, a real Lean 4 proof going green/red/green, and Mathlib's library fanning out",
+    "preview": "lean_compiler.gif",
+    "renders": [
+     "cpp_compile_1080p.mp4",
+     "lean_proof_1080p.mp4",
+     "mathlib_1080p.mp4"
+    ],
+    "render_bytes": 214534
+   },
+   {
+    "name": "navier_stokes",
+    "title": "real lattice-Boltzmann flow past a cylinder (von Kármán vortex street) with the Navier–Stokes equation",
+    "preview": "navier_stokes.gif",
+    "renders": [
+     "navier_stokes_1080p.mp4",
+     "navier_stokes_notext_1080p.mp4",
+     "navier_stokes_notext_vertical_1080x1350.mp4"
+    ],
+    "render_bytes": 46404936
+   },
+   {
+    "name": "paper_vs_lean",
+    "title": "a paper proof and a Lean proof that both \"check out\" but don't say the same thing (m + 4 vs m + 5)",
+    "preview": "paper_vs_lean.gif",
+    "renders": [
+     "paper_vs_lean_1080p.mp4",
+     "verify_validate_1080p.mp4"
+    ],
+    "render_bytes": 951145
+   },
+   {
+    "name": "repo_stats",
+    "title": "openai/math repository card: 719-manuscript count-up with a \"3 WITHDRAWN\" stamp, plus a stats board that builds row by row",
+    "preview": "repo_stats.gif",
+    "renders": [
+     "repo_stats_board_1080p.mp4",
+     "repo_stats_hook_1080p.mp4",
+     "repo_stats_hook_vertical.mp4"
+    ],
+    "render_bytes": 1099029
+   }
+  ]
  }
 ]

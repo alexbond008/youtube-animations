@@ -1,0 +1,137 @@
+<!doctype html>
+<html><head><meta charset="utf-8">
+<link rel="stylesheet" href="common.css">
+<style>
+  .stack { position: absolute; left: 300px; width: 1320px; top: 0; display: flex; flex-direction: column; }
+  .header { height: 72px; display: flex; align-items: center; gap: 22px; margin-bottom: 28px; }
+  .header .repo { font-family: "JetBrains Mono", monospace; font-size: 46px; font-weight: 500; color: var(--muted); }
+  .header .repo b { color: var(--text); font-weight: 700; }
+  .header .date { font-size: 44px; font-weight: 600; color: var(--muted); }
+  .header .dot { color: #55555F; font-size: 44px; }
+  .row { position: relative; display: flex; align-items: center; padding: 0 44px 0 52px; margin-bottom: 14px; overflow: hidden; }
+  .row .bar { position: absolute; left: 0; top: 0; bottom: 0; width: 6px; background: var(--accent); }
+  .num { width: 330px; flex: none; font-size: 84px; font-weight: 800; letter-spacing: -0.03em; line-height: 1; color: var(--text); }
+  .num .t { color: var(--muted); font-weight: 700; margin-right: 2px; }
+  .lab { font-size: 44px; font-weight: 600; color: var(--text); line-height: 1.15; }
+  .sub { font-size: 30px; font-weight: 400; color: var(--muted); margin-top: 6px; }
+  .r1, .r2, .r3 { height: 108px; }
+  .r4 { height: 132px; }
+  .r5 { height: 150px; }
+  .ring { position: absolute; right: 40px; top: 50%; width: 128px; height: 128px; margin-top: -64px; }
+  .red { height: 108px; margin-top: 10px; margin-bottom: 0; border-color: rgba(255,90,78,.55); background: linear-gradient(90deg, rgba(255,90,78,.14), rgba(255,90,78,.04) 70%), var(--card); }
+  .red .bar { background: var(--red); }
+  .red .when { font-family: "JetBrains Mono", monospace; font-weight: 700; font-size: 46px; color: var(--red); width: 220px; flex: none; }
+  .red .what { font-size: 50px; font-weight: 700; color: var(--text); }
+  .red .what em { font-style: normal; color: var(--red); font-weight: 800; }
+  .red .what .sep { color: #6B6B75; margin: 0 18px; }
+  .red .pulse { position: absolute; right: 44px; top: 50%; width: 18px; height: 18px; margin-top: -9px; border-radius: 50%; background: var(--red); }
+</style></head>
+<body>
+<div class="stack" id="stack">
+  <div class="header" id="h0">
+    <svg width="46" height="46" viewBox="0 0 24 24" fill="none" stroke="#A1A1AA" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M5 4.5A1.5 1.5 0 0 1 6.5 3H19v15H6.5A1.5 1.5 0 0 0 5 19.5z"/><path d="M5 19.5A1.5 1.5 0 0 0 6.5 21H19v-3"/><path d="M9 7h6"/>
+    </svg>
+    <div class="repo">openai/<b>math</b></div><div class="dot">·</div><div class="date">Oct 6, 2026</div>
+  </div>
+  <div class="row card r1" id="r1"><div class="bar"></div><div class="num tab" id="n1">0</div><div class="lab">manuscripts</div></div>
+  <div class="row card r2" id="r2"><div class="bar"></div><div class="num tab" id="n2">0</div><div class="lab">result families</div></div>
+  <div class="row card r3" id="r3"><div class="bar"></div><div class="num tab"><span class="t">~</span><span id="n3">0</span></div><div class="lab">problems posed</div></div>
+  <div class="row card r4" id="r4"><div class="bar"></div><div class="num tab"><span class="t">~</span><span id="n4">0</span></div>
+    <div><div class="lab">hours of compute per result</div><div class="sub">on average, unreleased model</div></div></div>
+  <div class="row card r5" id="r5"><div class="bar"></div><div class="num tab"><span class="t">~</span><span id="n5">0</span>%</div><div class="lab">formalised in Lean</div>
+    <svg class="ring" viewBox="0 0 120 120">
+      <defs><filter id="glow" x="-50%" y="-50%" width="200%" height="200%"><feGaussianBlur stdDeviation="5"/></filter></defs>
+      <circle cx="60" cy="60" r="46" fill="none" stroke="#26262D" stroke-width="16"/>
+      <circle id="arcGlow" cx="60" cy="60" r="46" fill="none" stroke="#D97757" stroke-width="16" stroke-linecap="round" filter="url(#glow)" transform="rotate(-90 60 60)"/>
+      <circle id="arc" cx="60" cy="60" r="46" fill="none" stroke="#D97757" stroke-width="16" stroke-linecap="round" transform="rotate(-90 60 60)"/>
+      <circle id="sheen" cx="60" cy="60" r="46" fill="none" stroke="#FFD9C9" stroke-width="16" stroke-linecap="round" transform="rotate(-90 60 60)"/>
+    </svg>
+  </div>
+  <div class="row card red" id="r6"><div class="bar"></div><div class="when">Oct 7:</div>
+    <div class="what"><em>3</em> withdrawn<span class="sep">·</span><em>14</em> revised</div><div class="pulse" id="pulse"></div></div>
+</div>
+<script>
+const clamp = (x, a = 0, b = 1) => Math.min(b, Math.max(a, x));
+const eo = x => 1 - Math.pow(1 - clamp(x), 3);
+const eo4 = x => 1 - Math.pow(1 - clamp(x), 4);
+const $ = id => document.getElementById(id);
+const BEATS = { h0: 0.0, r1: 1.0, r2: 3.5, r3: 6.0, r4: 9.0, r5: 12.5, r6: 16.0 };
+const ENTER = 0.36; // ~11 frames
+const C = 2 * Math.PI * 46;
+const counts = [
+  { id: "n1", to: 719, at: 1.0 }, { id: "n2", to: 372, at: 3.5 }, { id: "n3", to: 4000, at: 6.0, fmt: true },
+  { id: "n4", to: 3, at: 9.0 }, { id: "n5", to: 42, at: 12.5, dur: 1.4 },
+];
+const rowOrder = ["r1", "r2", "r3", "r4", "r5", "r6"];
+
+window.renderAt = t => {
+  // header
+  const ph = eo((t - BEATS.h0) / ENTER);
+  $("h0").style.opacity = ph; $("h0").style.transform = `translateY(${(1 - ph) * 18}px)`;
+
+  // which row is "current" (newest revealed)
+  let cur = null; for (const r of rowOrder) if (t >= BEATS[r]) cur = r;
+
+  for (const r of rowOrder) {
+    const el = $(r), p = eo((t - BEATS[r]) / ENTER);
+    if (r === "r6") {
+      el.style.opacity = clamp(p * 1.4);
+      el.style.transform = `translateX(${(1 - eo4((t - BEATS.r6) / 0.42)) * -90}px)`;
+    } else {
+      el.style.opacity = p;
+      el.style.transform = `translateY(${(1 - p) * 26}px) scale(${0.96 + 0.04 * p})`;
+    }
+    // accent bar only on the newest stats row; older rows dim a touch
+    const bar = el.querySelector(".bar");
+    if (r !== "r6") {
+      const since = cur ? t - BEATS[cur] : 0;
+      const isCur = r === cur;
+      const handOff = cur === "r6" ? 1 : 0; // once the red row lands, all orange bars fade
+      bar.style.opacity = isCur ? (1 - handOff * eo((t - BEATS.r6) / 0.3)) * eo(since / 0.3) : 0;
+      const dimmed = !isCur && t >= BEATS[r];
+      const dim = dimmed ? 1 - 0.22 * eo((t - (cur ? BEATS[cur] : 0)) / 0.4) : 1;
+      el.querySelectorAll(".num, .lab, .sub").forEach(n => n.style.opacity = dim);
+    }
+  }
+
+  // count-ups (0.9 s unless set)
+  for (const c of counts) {
+    const k = eo4((t - c.at - 0.05) / (c.dur || 0.9));
+    const v = Math.round(c.to * k);
+    $(c.id).textContent = c.fmt ? v.toLocaleString("en-GB") : String(v);
+  }
+
+  // ring: fills to 42 % over 1.4 s, then an idle glow breathe + a slow sheen that never freezes
+  const f = 0.42 * eo4((t - BEATS.r5 - 0.05) / 1.4);
+  const dash = `${(f * C).toFixed(2)} ${C.toFixed(2)}`;
+  $("arc").setAttribute("stroke-dasharray", dash);
+  $("arcGlow").setAttribute("stroke-dasharray", dash);
+  const idle = t - BEATS.r5 - 1.45;
+  $("arcGlow").style.opacity = idle > 0 ? 0.65 + 0.25 * Math.sin(idle * 2.6 - Math.PI / 2) : 0.5 * clamp((t - BEATS.r5) / 1.4);
+  // sheen: a short bright segment travelling along the filled arc
+  if (idle > 0 && f > 0.01) {
+    const seg = 0.05 * C, cyc = (idle % 2.4) / 2.4;
+    const start = cyc * (f * C + seg) - seg;
+    const a = Math.max(0, start), b = Math.min(f * C, start + seg);
+    if (b > a) {
+      $("sheen").setAttribute("stroke-dasharray", `0 ${a.toFixed(2)} ${(b - a).toFixed(2)} ${C.toFixed(2)}`);
+      $("sheen").style.opacity = 0.35;
+    } else $("sheen").style.opacity = 0;
+  } else $("sheen").style.opacity = 0;
+
+  // red row: impact glow on arrival, then a slow live pulse on the dot
+  const rr = t - BEATS.r6;
+  const red = $("r6");
+  red.style.boxShadow = `0 20px 60px rgba(0,0,0,.55), 0 0 ${rr > 0 ? 50 * Math.exp(-rr * 2.2) : 0}px rgba(255,90,78,${rr > 0 ? 0.6 * Math.exp(-rr * 2.2) : 0})`;
+  const pu = rr > 0.5 ? 0.5 + 0.5 * Math.sin((rr - 0.5) * 3.2) : 0;
+  $("pulse").style.opacity = rr > 0 ? clamp(rr / 0.4) : 0;
+  $("pulse").style.boxShadow = `0 0 0 ${pu * 10}px rgba(255,90,78,${0.35 * (1 - pu)})`;
+};
+
+window.ready = document.fonts.ready.then(() => {
+  const st = $("stack"); st.style.top = Math.round((1080 - st.getBoundingClientRect().height) / 2) + "px";
+  window.renderAt(0);
+});
+</script>
+</body></html>

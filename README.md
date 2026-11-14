@@ -4,7 +4,7 @@
 
 <img src="assets/banner.gif" width="880" alt="A few of the animations">
 
-**42 animations · 5 videos · all built in code with Claude Code**
+**51 animations · 6 videos · all built in code with Claude Code**
 
 [YouTube](https://www.youtube.com/@aleksgornik) · [How they're made](#how-theyre-made) · [Run one yourself](#run-one-yourself)
 
@@ -13,6 +13,14 @@
 Every video I put out on [my channel](https://www.youtube.com/@aleksgornik) gets a folder here with the source code for every animation in it, in the spirit of [3b1b/videos](https://github.com/3b1b/videos). I'm an engineer working on reinforcement learning, and I make videos about engineering, AI and how to actually get good at both. People kept asking how the visuals are made, so here's all of it.
 
 ## Videos
+
+### [Has OpenAI Solved Maths?](videos/2026-11-14-openai-math)
+
+`2026-11-14` · 9 new animations · ▶️ coming soon
+
+OpenAI's maths repo in numbers, a real lattice-Boltzmann Navier–Stokes flow, Fourier/FFT, Lean as a compiler for maths, paper-vs-Lean mismatch, rendered LaTeX and far-fetched theory slides.
+
+<p><a href="videos/2026-11-14-openai-math/arxiv_demo"><img src="videos/2026-11-14-openai-math/arxiv_demo/arxiv_demo.gif" width="262"></a> <a href="videos/2026-11-14-openai-math/farfetched_slides"><img src="videos/2026-11-14-openai-math/farfetched_slides/farfetched_slides.gif" width="262"></a> <a href="videos/2026-11-14-openai-math/fourier_fft"><img src="videos/2026-11-14-openai-math/fourier_fft/fourier_fft.gif" width="262"></a></p>
 
 ### [Give Me X Min. I'll Make You a Top 0.2% AI User](videos/2026-11-08-top-0.2-ai)
 

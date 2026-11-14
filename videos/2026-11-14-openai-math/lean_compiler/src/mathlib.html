@@ -1,0 +1,78 @@
+<!doctype html><html><head><meta charset="utf-8"><title>Mathlib</title>
+<link rel="stylesheet" href="common.css">
+<style>
+#win{left:560px;top:84px;width:800px;height:160px}
+#imp{position:absolute;left:0;right:0;top:61px;bottom:0;display:flex;align-items:center;padding-left:28px;font:500 44px "JetBrains Mono",Menlo,monospace;color:#F5F5F7;white-space:pre}
+#imp .no{color:#4A4A53;width:60px;font-size:34px}
+#lib{position:absolute;left:150px;top:318px;width:1620px;height:560px;border-radius:22px}
+#libsvg{position:absolute;left:0;top:0;width:1920px;height:1080px}
+#liblabel{position:absolute;left:186px;top:298px;padding:0 14px;background:#0E0E10;font:700 28px Inter;color:#D97757;letter-spacing:.02em}
+.card{position:absolute;width:360px;height:216px;background:#16161A;border:1px solid #2A2A30;border-radius:16px;box-shadow:0 20px 60px rgba(0,0,0,.55);
+  display:flex;flex-direction:column;justify-content:center;padding:0 30px;box-sizing:border-box}
+.card .sym{font:400 70px/1 "STIX Two Math","STIXGeneral",serif;color:#D97757;height:78px}
+.card .t{font:700 32px Inter;color:#F5F5F7;margin-top:12px;white-space:nowrap}
+.card .d{font:400 24px Inter;color:#A1A1AA;margin-top:6px}
+#badge{position:absolute;left:50%;top:922px;display:flex;align-items:center;gap:14px;font:700 34px Inter;color:#3DDC97;background:rgba(61,220,151,.12);
+  border:2px solid rgba(61,220,151,.6);border-radius:999px;padding:12px 30px 12px 22px;white-space:nowrap}
+#badge svg{width:38px;height:38px}
+</style></head><body><div id="stage">
+<svg id="libsvg"><rect id="box" x="150" y="318" width="1620" height="560" rx="22" fill="rgba(217,119,87,.03)" stroke="#D97757" stroke-opacity=".55" stroke-width="2" stroke-dasharray="10 9"/>
+<path id="trunk" d="M960 246 L960 318" stroke="#D97757" stroke-opacity=".7" stroke-width="3" stroke-dasharray="8 8" fill="none"/></svg>
+<div id="liblabel">Mathlib</div>
+<div class="win" id="win">
+  <div class="bar"><div class="dot"></div><div class="dot"></div><div class="dot"></div></div>
+  <div class="wtitle"><b>Proof.lean</b><span>&mdash; editor</span></div>
+  <div id="imp"></div>
+</div>
+<div id="cards"></div>
+<div id="badge"></div>
+</div>
+<script src="common.js"></script>
+<script>
+const C=[
+ ['∀','Axioms','logic &amp; sets'],
+ ['ℕ','Natural numbers','0, 1, 2, 3, …'],
+ ['ℝ','Real numbers','limits, completeness'],
+ ['ℂ','Complex numbers','a + bi'],
+ ['𝒯','Topology','open sets, continuity'],
+ ['∫','Analysis','derivatives, integrals'],
+ ['⊕','Linear algebra','vectors, matrices'],
+ ['ℙ','Probability','measures, expectation']];
+const X0=190, Y0=354, DX=400, DY=256;
+const cards=document.getElementById('cards');
+cards.innerHTML=C.map((c,i)=>`<div class="card" id="c${i}"><div class="sym">${c[0]}</div><div class="t">${c[1]}</div><div class="d">${c[2]}</div></div>`).join('');
+const imp=document.getElementById('imp'), box=document.getElementById('box'), trunk=document.getElementById('trunk'), lab=document.getElementById('liblabel'), badge=document.getElementById('badge');
+const S='import Mathlib';
+window.renderAt=t=>{
+  // editor in 0.0
+  const we=enter(t,0.0,10); const win=document.getElementById('win'); win.style.opacity=we; win.style.transform=`scale(${0.92+0.08*we})`;
+  const s=typed(S,t,0.6,16); // 0.6 -> 1.48
+  const k=s.slice(0,6), r=s.slice(6);
+  const cur=(t<1.5)||(blink(t)&&t<2.0);
+  imp.innerHTML=`<span class="no">1</span><span class="k">${esc(k)}</span>${esc(r)}${cur?'<span class="cur"></span>':''}`;
+  // library frame + trunk at 1.7
+  const le=enter(t,1.65,10);
+  box.style.opacity=le; trunk.style.opacity=le; lab.style.opacity=le;
+  const flow=-(t*40)%34; box.style.strokeDashoffset=flow; trunk.style.strokeDashoffset=flow;
+  // cards fan out from under the import line 2.0..5.2 (stagger 0.42s)
+  C.forEach((c,i)=>{
+    const col=i%4,row=Math.floor(i/4);
+    const tx=X0+col*DX, ty=Y0+row*DY;
+    const e=enter(t,2.0+i*0.42,12);
+    const sx=960-180, sy=150;
+    const x=sx+(tx-sx)*e, y=sy+(ty-sy)*e;
+    const rot=(1-e)*(col-1.5)*8;
+    const el=document.getElementById('c'+i);
+    // idle: one card glows at a time after 6.8 (element motion, no camera move)
+    let glow=0; if(t>6.8){const ph=((t-6.8)*1.6)%8; const d=Math.abs(ph-i); glow=Math.max(0,1-d)*0.9;}
+    el.style.cssText=`left:${x}px;top:${y}px;opacity:${clamp(e*1.6)};transform:scale(${0.6+0.4*e}) rotate(${rot}deg);z-index:${10-i};border-color:${glow>0?`rgba(61,220,151,${0.25+0.5*glow})`:'#2A2A30'}`;
+  });
+  // badge at 6.2
+  const be=enter(t,6.2,10);
+  const pulse=t>7.0?0.5+0.5*Math.sin((t-7.0)*Math.PI*1.1):0;
+  badge.innerHTML=`${CHECK}<span>checked by Lean’s kernel</span>`;
+  badge.style.opacity=be; badge.style.transform=`translateX(-50%) scale(${0.92+0.08*be})`;
+  badge.style.boxShadow=`0 0 ${24*pulse}px rgba(61,220,151,${.35*pulse})`;
+};
+window.renderAt(0);
+</script></body></html>

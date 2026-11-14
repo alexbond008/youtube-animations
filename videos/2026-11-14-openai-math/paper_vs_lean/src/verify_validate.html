@@ -1,0 +1,66 @@
+<!doctype html>
+<html><head><meta charset="utf-8"><title>Verify vs Validate</title>
+<link rel="stylesheet" href="common.css">
+<style>
+.q{left:300px;width:1320px;height:220px;display:flex;align-items:center;padding:0 52px;gap:40px;opacity:0}
+#A{top:170px}
+#B{top:690px}
+.ico{width:120px;height:120px;border-radius:50%;flex:none;box-sizing:border-box;display:flex;align-items:center;justify-content:center}
+#A .ico{background:rgba(61,220,151,.12);border:3px solid #3DDC97;padding:22px}
+#B .ico{background:rgba(217,119,87,.12);border:3px solid #D97757}
+#B .ico span{font:800 72px/1 Inter;color:#D97757;margin-top:-4px}
+.txt{flex:1}
+.h{font:800 60px/1.1 Inter;color:#F5F5F7;letter-spacing:-.5px}
+.sub{font:600 38px/1.3 Inter;color:#A1A1AA;margin-top:10px}
+.chip{flex:none;height:64px;padding:0 28px;border-radius:32px;display:flex;align-items:center;font:700 32px "JetBrains Mono"}
+#A .chip{color:#3DDC97;background:rgba(61,220,151,.12);border:1.5px solid rgba(61,220,151,.5)}
+#B .chip{color:#D97757;background:rgba(217,119,87,.12);border:1.5px solid rgba(217,119,87,.5)}
+#sync{position:absolute;left:0;top:0;width:1920px;height:1080px;pointer-events:none}
+#pill{position:absolute;left:960px;top:540px;transform:translate(-50%,-50%);height:58px;padding:0 28px;border-radius:29px;background:#16161A;
+  border:1.5px solid #3A3A42;display:flex;align-items:center;gap:12px;font:700 30px Inter;color:#F5F5F7;opacity:0;box-shadow:0 10px 30px rgba(0,0,0,.5)}
+#pill svg{width:30px;height:30px}
+</style></head>
+<body><div id="stage">
+<svg id="sync"><defs>
+  <linearGradient id="gr" x1="0" y1="390" x2="0" y2="690" gradientUnits="userSpaceOnUse"><stop offset="0" stop-color="#3DDC97"/><stop offset="1" stop-color="#D97757"/></linearGradient>
+  </defs>
+  <line id="bar" x1="960" y1="390" x2="960" y2="390" stroke="url(#gr)" stroke-width="5" stroke-linecap="round"/>
+  <circle id="d1" r="7" cx="960" cy="400" fill="#F5F5F7" opacity="0"/>
+  <circle id="d2" r="7" cx="960" cy="680" fill="#F5F5F7" opacity="0"/>
+</svg>
+<div class="card q" id="A"><div class="ico" id="ckA"></div>
+  <div class="txt"><div class="h">Verification</div><div class="sub">Did we build it right?</div></div>
+  <div class="chip">Lean</div></div>
+<div class="card q" id="B"><div class="ico"><span>?</span></div>
+  <div class="txt"><div class="h">Validation</div><div class="sub">Did we build the right thing?</div></div>
+  <div class="chip">humans</div></div>
+<div id="pill"><svg viewBox="0 0 24 24"><path d="M8 4v15M8 4L4.5 7.5M8 4l3.5 3.5M16 20V5M16 20l-3.5-3.5M16 20l3.5-3.5" fill="none" stroke="#F5F5F7" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>in sync</div>
+</div>
+<script src="anim.js"></script>
+<script>
+const $ = s => document.querySelector(s);
+$('#ckA').innerHTML = CHECK('#3DDC97', 3.2);
+const T = { A: .5, B: 3.5, bar: 6.0, pill: 6.45 };
+window.ready = document.fonts.ready;
+window.renderAt = t => {
+  pop($('#A'), prog(t, T.A, 11), 22, .94);
+  pop($('#B'), prog(t, T.B, 11), 22, .94);
+  // idle: icons breathe gently once shown
+  const bA = t > T.A ? 1 + .035 * Math.sin((t - T.A) * 2 * Math.PI / 2.2) : 1;
+  const bB = t > T.B ? 1 + .045 * Math.sin((t - T.B) * 2 * Math.PI / 1.8) : 1;
+  $('#A .ico').style.transform = `scale(${bA})`;
+  $('#B .ico').style.transform = `scale(${bB})`;
+  const bp = prog(t, T.bar, 14);
+  $('#bar').setAttribute('y2', 390 + 300 * bp); $('#bar').setAttribute('opacity', bp > 0.01 ? 1 : 0);
+  const pp = prog(t, T.pill, 10);
+  pop($('#pill'), pp, 0, .85); $('#pill').style.transform = `translate(-50%,-50%) scale(${.85 + .15 * pp})`;
+  // two dots shuttle along the bar (A->B and B->A), suggesting the two staying in sync
+  const live = clamp((t - T.pill - .3) / .3);
+  const ph = ((t - T.pill) / 1.6) % 1;
+  const y = p => 400 + 280 * p;
+  const fade = p => Math.sin(Math.PI * p);
+  $('#d1').setAttribute('cy', y(ph)); $('#d1').setAttribute('opacity', live * fade(ph) * .9);
+  $('#d2').setAttribute('cy', y(1 - ph)); $('#d2').setAttribute('opacity', live * fade(ph) * .9);
+};
+</script>
+</body></html>

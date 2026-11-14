@@ -1,0 +1,65 @@
+<!doctype html><html><head><meta charset="utf-8"><title>main.cpp</title>
+<link rel="stylesheet" href="common.css">
+<style>
+#win{left:200px;top:80px;width:1520px;height:920px}
+#code{position:absolute;left:0;right:0;top:61px;padding:30px 0 0 0}
+.ln{font:500 38px/58px "JetBrains Mono",Menlo,monospace;color:#F5F5F7;white-space:pre;display:flex}
+.ln .no{width:110px;text-align:right;padding-right:40px;color:#4A4A53;flex:none}
+#term{position:absolute;left:0;right:0;bottom:0;height:340px;background:#111114;border-top:1px solid #2A2A30}
+#thead{height:52px;display:flex;align-items:center;padding:0 40px;font:600 22px Inter;color:#A1A1AA;letter-spacing:.06em;border-bottom:1px solid #222228}
+#tbody{padding:22px 40px;font:500 36px/58px "JetBrains Mono",Menlo,monospace;color:#F5F5F7;white-space:pre}
+.dollar{color:#D97757;font-weight:700}
+#badge{display:inline-flex;align-items:center;gap:14px;font:700 38px Inter;color:#3DDC97;background:rgba(61,220,151,.12);border:2px solid rgba(61,220,151,.55);border-radius:14px;padding:4px 22px 4px 16px;transform-origin:left center}
+#badge svg{width:40px;height:40px}
+</style></head><body><div id="stage">
+<div class="win" id="win">
+  <div class="bar"><div class="dot"></div><div class="dot"></div><div class="dot"></div></div>
+  <div class="wtitle"><b>main.cpp</b><span>&mdash; editor</span></div>
+  <div id="code"></div>
+  <div id="term"><div id="thead">TERMINAL</div><div id="tbody"></div></div>
+</div>
+</div>
+<script src="common.js"></script>
+<script>
+const LINES=[
+ '<span class="p">#include</span> <span class="s">&lt;iostream&gt;</span>',
+ '',
+ '<span class="k">int</span> <span class="f">main</span>() {',
+ '    <span class="k">int</span> a = <span class="n">2</span>, b = <span class="n">3</span>;',
+ '    std::cout &lt;&lt; a + b &lt;&lt; <span class="s">"\\n"</span>;',
+ '    <span class="k">return</span> <span class="n">0</span>;',
+ '}'];
+const code=document.getElementById('code');
+code.innerHTML=LINES.map((l,i)=>`<div class="ln" id="l${i}"><span class="no">${i+1}</span><span>${l}</span></div>`).join('');
+const term=document.getElementById('term'), tb=document.getElementById('tbody');
+const CMD='g++ main.cpp -o main', RUN='./main';
+window.renderAt=t=>{
+  // code lines stagger in 0.1 .. 0.9
+  LINES.forEach((_,i)=>{const e=enter(t,0.1+i*0.11,10);const el=document.getElementById('l'+i);el.style.opacity=e;el.style.transform=`translateY(${(1-e)*14}px)`;});
+  // terminal strip slides up at 2.2
+  const te=enter(t,2.15,10); term.style.transform=`translateY(${(1-te)*340}px)`;
+  let h='';
+  if(t>=2.45){
+    const c=typed(CMD,t,2.5,32), done=c.length===CMD.length;
+    h+=`<span class="dollar">$ </span>${esc(c)}`;
+    const compiling=t>=3.2&&t<4.0;
+    if(!done||compiling) h+= (t<3.2? '<span class="cur"></span>' : '');
+    h+='\n';
+    if(compiling){const n=1+Math.floor((t-3.2)*5)%3;h+=`<span class="c">compiling${'.'.repeat(n)}</span>\n`;}
+    if(t>=4.0){
+      const e=enter(t,4.0,10);
+      const pulse=t>5?0.5+0.5*Math.sin((t-5)*Math.PI*1.1):0;
+      h+=`<span id="badge" style="opacity:${e};transform:scale(${0.92+0.08*e});box-shadow:0 0 ${18*pulse}px rgba(61,220,151,${.35*pulse})">${CHECK}<span>0 errors</span></span>\n`;
+    }
+    if(t>=5.0){
+      const r=typed(RUN,t,5.1,30);
+      h+=`<span class="dollar">$ </span>${esc(r)}`;
+      if(t<5.75) h+='<span class="cur"></span>';
+      h+='\n';
+      if(t>=5.8){const e=enter(t,5.8,8);h+=`<span style="opacity:${e}">5 </span>${t>=6.0&&blink(t-6)?'<span class="cur"></span>':''}`;}
+    }
+  }
+  tb.innerHTML=h;
+};
+window.renderAt(0);
+</script></body></html>

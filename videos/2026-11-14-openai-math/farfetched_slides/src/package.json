@@ -1,0 +1,1 @@
+{"name":"farfetched-slides-render","private":true,"type":"module","scripts":{"render":"node render.mjs slides.html 1920 1080 6 farfetched_slides_1080p.mp4 frame 0.4,1.2,1.9,2.15,3.2,5.2,5.97"},"dependencies":{"playwright":"^1.64.0"}}

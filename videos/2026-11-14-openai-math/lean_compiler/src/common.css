@@ -1,0 +1,19 @@
+@font-face{font-family:Inter;font-weight:400;src:url(fonts/inter-latin-400-normal.woff2)}
+@font-face{font-family:Inter;font-weight:600;src:url(fonts/inter-latin-600-normal.woff2)}
+@font-face{font-family:Inter;font-weight:700;src:url(fonts/inter-latin-700-normal.woff2)}
+@font-face{font-family:Inter;font-weight:800;src:url(fonts/inter-latin-800-normal.woff2)}
+@font-face{font-family:"JetBrains Mono";font-weight:500;src:url(fonts/jetbrains-mono-latin-500-normal.woff2)}
+@font-face{font-family:"JetBrains Mono";font-weight:700;src:url(fonts/jetbrains-mono-latin-700-normal.woff2)}
+html,body{margin:0;font-variant-ligatures:none;background:#0E0E10;overflow:hidden}
+#stage{position:relative;width:1920px;height:1080px;background:#0E0E10;overflow:hidden;
+  background-image:radial-gradient(circle at 12px 12px,#23232A 1.2px,transparent 1.7px);background-size:24px 24px}
+.win{position:absolute;background:#16161A;border:1px solid #2A2A30;border-radius:16px;box-shadow:0 20px 60px rgba(0,0,0,.55);overflow:hidden}
+.bar{height:60px;border-bottom:1px solid #2A2A30;display:flex;align-items:center;padding:0 24px;gap:12px;background:#131317;position:relative}
+.dot{width:14px;height:14px;border-radius:50%;background:#2E2E35}
+.wtitle{position:absolute;left:0;right:0;top:0;height:60px;display:flex;align-items:center;justify-content:center;gap:10px;font:600 25px Inter;color:#A1A1AA}
+.wtitle b{color:#F5F5F7;font-weight:700}
+*{font-variant-ligatures:none;font-feature-settings:"calt" 0,"liga" 0}
+.mono{font-family:"JetBrains Mono",Menlo,monospace;font-weight:500}
+.k{color:#4DA3FF}.s{color:#3DDC97}.n{color:#F5B800}.p{color:#D97757}.c{color:#71717A}.f{color:#E8C27A}.ty{color:#C792EA}
+.cur{display:inline-block;width:.55em;height:1.05em;background:#D97757;vertical-align:-.18em;margin-left:1px}
+.ok{color:#3DDC97}.bad{color:#FF5A4E}

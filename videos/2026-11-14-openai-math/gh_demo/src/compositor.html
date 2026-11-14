@@ -1,0 +1,69 @@
+<!doctype html><html><head><meta charset="utf-8"><style>
+@font-face{font-family:Inter;font-weight:600;src:url(fonts/inter-latin-600-normal.woff2)}
+@font-face{font-family:Inter;font-weight:700;src:url(fonts/inter-latin-700-normal.woff2)}
+@font-face{font-family:Inter;font-weight:800;src:url(fonts/inter-latin-800-normal.woff2)}
+html,body{margin:0;background:#0E0E10;overflow:hidden}canvas{display:block;width:1920px;height:1080px}
+</style></head><body><canvas id="c" width="3840" height="2160"></canvas><script>
+// Pure renderer: draw(spec) paints one frame. All timing lives in render.js.
+const cv = document.getElementById('c'), ctx = cv.getContext('2d');
+const IM = {};
+window.loadImages = async (base, list) => { await Promise.all(list.map(n => new Promise((ok, err) => {
+  const i = new Image(); i.onload = () => { IM[n] = i; ok(); }; i.onerror = () => err(n); i.src = base + n; })));
+  await document.fonts.load('800 40px Inter'); await document.fonts.load('600 20px Inter'); return Object.keys(IM).length; };
+const rr = (x, y, w, h, r) => { ctx.beginPath(); ctx.roundRect(x, y, w, h, r); };
+let dotPat = null;
+function dots() { if (dotPat) return dotPat; const c = document.createElement('canvas'); c.width = c.height = 48; const g = c.getContext('2d');
+  g.fillStyle = '#0E0E10'; g.fillRect(0, 0, 48, 48); g.fillStyle = '#23232A'; g.beginPath(); g.arc(24, 24, 2.4, 0, 7); g.fill();
+  dotPat = ctx.createPattern(c, 'repeat'); return dotPat; }
+function pageAt(L, y, C) { // draw doc range [y, y+C.h] of a chunked page into content rect C (scene coords)
+  const a = y, b = y + C.h;
+  const hi = L.chunks.find(c => c.dsf >= 2 && c.y0 <= a && c.y0 + c.h >= b);
+  const use = hi ? [hi] : L.chunks.filter(c => c.dsf < 2 && c.y0 < b && c.y0 + c.h > a);
+  for (const c of use) { const s = Math.max(a, c.y0), e = Math.min(b, c.y0 + c.h); if (e <= s) continue;
+    ctx.drawImage(IM[c.src], 0, (s - c.y0) * c.dsf, C.w * c.dsf, (e - s) * c.dsf, C.x, C.y + (s - y), C.w, e - s); } }
+function cursor(x, y, k) { ctx.save(); ctx.translate(x, y); ctx.scale(1.55 * k, 1.55 * k);
+  ctx.shadowColor = 'rgba(0,0,0,.45)'; ctx.shadowBlur = 6; ctx.shadowOffsetY = 2;
+  ctx.beginPath(); ctx.moveTo(0, 0); ctx.lineTo(0, 17.5); ctx.lineTo(4.3, 13.6); ctx.lineTo(7.2, 20.2); ctx.lineTo(10.2, 18.9); ctx.lineTo(7.4, 12.5); ctx.lineTo(13, 12.5); ctx.closePath();
+  ctx.fillStyle = '#000'; ctx.fill(); ctx.shadowColor = 'transparent';
+  ctx.beginPath(); ctx.moveTo(1.4, 3.3); ctx.lineTo(1.4, 14.2); ctx.lineTo(4.7, 11.2); ctx.lineTo(7.8, 18.1); ctx.lineTo(8.9, 17.6); ctx.lineTo(5.9, 11.0); ctx.lineTo(10.1, 11.0); ctx.closePath();
+  ctx.fillStyle = '#fff'; ctx.fill(); ctx.restore(); }
+window.draw = (s) => {
+  ctx.setTransform(1, 0, 0, 1, 0, 0); ctx.fillStyle = s.bg || '#0E0E10'; ctx.fillRect(0, 0, 3840, 2160);
+  const { z, cx, cy } = s.cam;
+  ctx.setTransform(2 * z, 0, 0, 2 * z, 2 * (960 - cx * z), 2 * (540 - cy * z));
+  ctx.imageSmoothingEnabled = true; ctx.imageSmoothingQuality = 'high';
+  const C = s.content;
+  if (s.win) { const W = s.win;
+    ctx.fillStyle = dots(); ctx.save(); ctx.scale(.5, .5); ctx.fillRect(-200, -200, 4300, 2600); ctx.restore();
+    ctx.save(); ctx.shadowColor = 'rgba(0,0,0,.55)'; ctx.shadowBlur = 60; ctx.shadowOffsetY = 20; rr(W.x, W.y, W.w, W.h, 14); ctx.fillStyle = '#0d1117'; ctx.fill(); ctx.restore();
+    ctx.save(); rr(W.x, W.y, W.w, W.h, 14); ctx.clip(); ctx.fillStyle = '#1A1A1F'; ctx.fillRect(W.x, W.y, W.w, C.y - W.y);
+    ctx.fillStyle = '#2A2A30'; ctx.fillRect(W.x, C.y - 1, W.w, 1); ctx.restore();
+    [['#FF5F57', 24], ['#FEBC2E', 46], ['#28C840', 68]].forEach(([c, dx]) => { ctx.beginPath(); ctx.arc(W.x + dx, W.y + 22, 6.5, 0, 7); ctx.fillStyle = c; ctx.fill(); });
+    const pw = 560; rr(W.x + W.w / 2 - pw / 2, W.y + 8, pw, 28, 8); ctx.fillStyle = '#0E0E10'; ctx.fill();
+    ctx.font = '600 14px Inter'; ctx.fillStyle = '#A1A1AA'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillText(s.url || '', W.x + W.w / 2, W.y + 22.5);
+  }
+  ctx.save(); if (s.win) { rr(C.x, C.y, C.w, C.h, [0, 0, 14, 14]); ctx.clip(); } else { ctx.beginPath(); ctx.rect(C.x, C.y, C.w, C.h); ctx.clip(); }
+  for (const L of s.layers) { if (L.alpha <= 0) continue;
+    if (L.samples.length === 1) { ctx.globalAlpha = L.alpha; pageAt(L, L.samples[0], C); }
+    else L.samples.forEach((y, i) => { ctx.globalAlpha = 1 / (i + 1); pageAt(L, y, C); });
+    ctx.globalAlpha = 1; }
+  for (const m of (s.marks || [])) for (const r of m.rects) { if (m.p <= 0) continue;
+    rr(r.x - 4, r.y - 3, (r.w + 6) * m.p, r.h + 6, 4); ctx.fillStyle = 'rgba(245,184,0,0.30)'; ctx.fill(); }
+  ctx.restore();
+  if (s.win) { rr(s.win.x + .5, s.win.y + .5, s.win.w - 1, s.win.h - 1, 14); ctx.strokeStyle = '#2A2A30'; ctx.lineWidth = 1; ctx.stroke(); }
+  // screen-space overlays
+  ctx.setTransform(2, 0, 0, 2, 0, 0);
+  const toS = (x, y) => [(x - cx) * z + 960, (y - cy) * z + 540];
+  if (s.ripple && s.ripple.p > 0 && s.ripple.p < 1) { const [x, y] = toS(s.ripple.x, s.ripple.y), p = s.ripple.p, e = 1 - Math.pow(1 - p, 3);
+    ctx.beginPath(); ctx.arc(x, y, 8 + 38 * e, 0, 7); ctx.fillStyle = `rgba(255,255,255,${0.18 * (1 - p)})`; ctx.fill();
+    ctx.lineWidth = 3; ctx.strokeStyle = `rgba(255,255,255,${0.75 * (1 - p)})`; ctx.stroke(); }
+  if (s.cursor) { const [x, y] = toS(s.cursor.x, s.cursor.y); cursor(x, y, s.cursor.k || 1); }
+  if (s.chip && s.chip.a > 0) { const c = s.chip; ctx.save(); ctx.globalAlpha = c.a;
+    const w = 430, h = 96, x = 1920 - 120 - w, y = 1080 - 84 - h; ctx.translate(x + w / 2, y + h / 2); ctx.scale(c.sc, c.sc); ctx.translate(-w / 2, -h / 2);
+    ctx.shadowColor = 'rgba(0,0,0,.55)'; ctx.shadowBlur = 60; ctx.shadowOffsetY = 20; rr(0, 0, w, h, 16); ctx.fillStyle = '#16161A'; ctx.fill(); ctx.shadowColor = 'transparent';
+    ctx.lineWidth = c.pulse > 0 ? 2 : 1; ctx.strokeStyle = c.pulse > 0 ? `rgba(217,119,87,${0.35 + 0.65 * c.pulse})` : '#2A2A30'; ctx.stroke();
+    ctx.textBaseline = 'alphabetic'; ctx.textAlign = 'right'; ctx.font = '800 54px Inter'; ctx.fillStyle = c.pulse > 0 ? '#F5F5F7' : '#F5F5F7';
+    ctx.fillText(String(c.n), 156, 67); ctx.textAlign = 'left'; ctx.font = '600 32px Inter'; ctx.fillStyle = '#A1A1AA'; ctx.fillText('manuscripts', 174, 65);
+    ctx.restore(); }
+};
+</script></body></html>
