@@ -1,6 +1,8 @@
-# Give Me X Min. I'll Make You a Top 0.2% AI User
+# Give me 15min, I'll make you a top 0.2% Engineer
 
-▶️ Video coming soon on [the channel](https://www.youtube.com/@aleksgornik).
+[![Give me 15min, I'll make you a top 0.2% Engineer](https://i.ytimg.com/vi/dej0mT2zUsY/maxresdefault.jpg)](https://www.youtube.com/watch?v=dej0mT2zUsY)
+
+▶️ **Watch:** https://www.youtube.com/watch?v=dej0mT2zUsY
 
 Karpathy's AI-usage funnel, long-horizon agents, an Excalidraw workflow turned into subagents, evals on an airfoil, research agents and the knowledge-expiry curve.
 

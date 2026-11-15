@@ -465,9 +465,9 @@
  {
   "slug": "top-0.2-ai",
   "folder": "2026-11-08-top-0.2-ai",
-  "title": "Give Me X Min. I'll Make You a Top 0.2% AI User",
-  "date": "2026-11-08",
-  "yt": "",
+  "title": "Give me 15min, I'll make you a top 0.2% Engineer",
+  "date": "2026-11-09",
+  "yt": "dej0mT2zUsY",
   "blurb": "Karpathy's AI-usage funnel, long-horizon agents, an Excalidraw workflow turned into subagents, evals on an airfoil, research agents and the knowledge-expiry curve.",
   "held": [
    "control_lab"

@@ -1,0 +1,297 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Aleks Gornik · Animations</title>
+<meta name="description" content="Every animation from Aleks Gornik's YouTube videos on engineering, AI and maths, all built in code with Claude Code.">
+<meta property="og:title" content="Aleks Gornik · Animations">
+<meta property="og:description" content="Every animation from my YouTube videos, built in code. Source, beat sheets and 1080p renders.">
+<meta property="og:image" content="assets/banner.gif">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🎬</text></svg>">
+<style>
+@font-face{font-family:Inter;src:url(fonts/InterVariable.woff2) format("woff2");font-weight:100 900;font-display:swap}
+@font-face{font-family:JBM;src:url(fonts/JetBrainsMono-Medium.woff2) format("woff2");font-display:swap}
+:root{
+  --bg:#0b0d12;--bg2:#11141b;--card:#151922;--line:#232938;--ink:#eef1f6;--mute:#8b93a7;
+  --accent:#ff6b35;--accent2:#4f8cff;--ok:#2ea44f;--r:14px;
+}
+*{box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.55 Inter,system-ui,sans-serif;-webkit-font-smoothing:antialiased}
+a{color:inherit}
+.wrap{max-width:1240px;margin:0 auto;padding:0 24px}
+.mono{font-family:JBM,ui-monospace,monospace}
+
+/* nav */
+nav{position:sticky;top:0;z-index:20;background:rgba(11,13,18,.82);backdrop-filter:blur(12px);border-bottom:1px solid var(--line)}
+nav .wrap{display:flex;align-items:center;gap:20px;height:60px}
+nav .brand{font-weight:800;text-decoration:none;letter-spacing:-.01em}
+nav .brand span{color:var(--accent)}
+nav .links{margin-left:auto;display:flex;gap:18px;font-size:14px}
+nav .links a{text-decoration:none;color:var(--mute)}
+nav .links a:hover{color:var(--ink)}
+
+/* hero */
+.hero{position:relative;overflow:hidden;padding:72px 0 40px}
+.hero::before{content:"";position:absolute;inset:-40% -10% auto;height:120%;background:radial-gradient(600px 300px at 20% 30%,rgba(255,107,53,.18),transparent 70%),radial-gradient(600px 320px at 80% 10%,rgba(79,140,255,.16),transparent 70%);pointer-events:none}
+.hero .wrap{position:relative;display:grid;grid-template-columns:1.05fr 1fr;gap:48px;align-items:center}
+.kicker{font-size:13px;letter-spacing:.14em;text-transform:uppercase;color:var(--accent);font-weight:700}
+h1{font-size:clamp(36px,5.4vw,64px);line-height:1.02;letter-spacing:-.035em;margin:14px 0 18px;font-weight:800}
+h1 em{font-style:normal;background:linear-gradient(90deg,var(--accent),#ffb347);-webkit-background-clip:text;background-clip:text;color:transparent}
+.lede{color:var(--mute);font-size:18px;max-width:34em;margin:0 0 28px}
+.btns{display:flex;flex-wrap:wrap;gap:12px}
+.btn{display:inline-flex;align-items:center;gap:8px;padding:12px 18px;border-radius:999px;text-decoration:none;font-weight:600;font-size:15px;border:1px solid var(--line);background:var(--card);transition:transform .15s,border-color .15s}
+.btn:hover{transform:translateY(-1px);border-color:#3a4256}
+.btn.primary{background:var(--accent);border-color:var(--accent);color:#140700}
+.stats{display:flex;gap:32px;margin-top:36px}
+.stat b{display:block;font-size:34px;font-weight:800;letter-spacing:-.03em}
+.stat span{color:var(--mute);font-size:13px}
+.hero-art{position:relative;border-radius:18px;overflow:hidden;border:1px solid var(--line);box-shadow:0 30px 80px rgba(0,0,0,.5);aspect-ratio:16/9;background:#000}
+.hero-art img{width:100%;height:100%;object-fit:cover;display:block}
+.hero-art .tag{position:absolute;left:12px;bottom:12px;font-size:12px;padding:6px 10px;border-radius:8px;background:rgba(0,0,0,.65);backdrop-filter:blur(6px)}
+
+/* section heads */
+section{padding:56px 0}
+.head{display:flex;align-items:end;justify-content:space-between;gap:16px;flex-wrap:wrap;margin-bottom:22px}
+h2{font-size:30px;letter-spacing:-.025em;margin:0}
+.sub{color:var(--mute);margin:6px 0 0}
+
+/* videos rail */
+.rail{display:grid;grid-template-columns:repeat(auto-fill,minmax(270px,1fr));gap:16px}
+.vid{background:var(--card);border:1px solid var(--line);border-radius:var(--r);overflow:hidden;text-decoration:none;display:flex;flex-direction:column;transition:transform .2s,border-color .2s;cursor:pointer}
+.vid:hover{transform:translateY(-3px);border-color:#3a4256}
+.vid .th{aspect-ratio:16/9;background:#000;position:relative}
+.vid .th img{width:100%;height:100%;object-fit:cover;display:block}
+.vid .th .play{position:absolute;right:10px;bottom:10px;font-size:12px;font-weight:700;padding:5px 9px;border-radius:7px;background:#ff0033;color:#fff}
+.vid .th .play.soon{background:rgba(0,0,0,.7)}
+.vid .bd{padding:14px 16px 16px}
+.vid h3{font-size:16px;line-height:1.3;margin:0 0 6px;letter-spacing:-.01em}
+.vid .meta{font-size:13px;color:var(--mute)}
+.vid.on{border-color:var(--accent);box-shadow:0 0 0 1px var(--accent)}
+
+/* gallery */
+.tools{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
+.chips{display:flex;gap:8px;flex-wrap:wrap;margin:0 0 22px}
+.chip{border:1px solid var(--line);background:var(--bg2);color:var(--mute);padding:7px 13px;border-radius:999px;font:600 13px Inter,sans-serif;cursor:pointer}
+.chip:hover{color:var(--ink)}
+.chip.on{background:var(--ink);color:var(--bg);border-color:var(--ink)}
+.search{background:var(--bg2);border:1px solid var(--line);border-radius:999px;color:var(--ink);padding:9px 16px;font:14px Inter,sans-serif;width:240px;max-width:100%}
+.search:focus{outline:none;border-color:var(--accent)}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:18px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:var(--r);overflow:hidden;cursor:pointer;transition:transform .2s,border-color .2s,box-shadow .2s;display:flex;flex-direction:column}
+.card:hover{transform:translateY(-3px);border-color:#3a4256;box-shadow:0 18px 40px rgba(0,0,0,.35)}
+.card .th{aspect-ratio:16/9;background:#05060a;overflow:hidden}
+.card .th img{width:100%;height:100%;object-fit:cover;display:block}
+.card .bd{padding:13px 15px 15px;display:flex;flex-direction:column;gap:6px;flex:1}
+.card .nm{font:600 13px JBM,monospace;color:var(--accent)}
+.card .ds{font-size:14px;line-height:1.45;color:#c9cfdc;display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden}
+.card .vt{margin-top:auto;padding-top:6px;font-size:12px;color:var(--mute)}
+.empty{color:var(--mute);padding:30px 0}
+
+/* how */
+.how{display:grid;grid-template-columns:repeat(4,1fr);gap:16px}
+.step{background:var(--card);border:1px solid var(--line);border-radius:var(--r);padding:20px}
+.step .ic{font-size:26px}
+.step h4{margin:10px 0 6px;font-size:16px}
+.step p{margin:0;color:var(--mute);font-size:14px}
+pre{background:#07080c;border:1px solid var(--line);border-radius:var(--r);padding:18px;overflow:auto;font:13px/1.6 JBM,monospace;color:#c9d1e3}
+
+footer{border-top:1px solid var(--line);padding:30px 0 50px;color:var(--mute);font-size:13px}
+footer a{color:var(--ink)}
+
+/* modal */
+dialog{border:1px solid var(--line);border-radius:18px;padding:0;background:var(--bg2);color:var(--ink);width:min(1000px,94vw);max-height:92vh;overflow:auto}
+dialog::backdrop{background:rgba(3,4,8,.78);backdrop-filter:blur(4px)}
+dialog img{width:100%;display:block;background:#000;aspect-ratio:16/9;object-fit:contain}
+dialog .bd{padding:20px 24px 24px}
+dialog .nm{font:600 14px JBM,monospace;color:var(--accent)}
+dialog h3{margin:6px 0 10px;font-size:20px;line-height:1.35;letter-spacing:-.01em}
+dialog .x{position:sticky;top:10px;float:right;margin:10px 10px -50px 0;z-index:2;width:38px;height:38px;border-radius:50%;border:1px solid var(--line);background:rgba(0,0,0,.6);color:#fff;font-size:18px;cursor:pointer}
+dialog .btns{margin-top:16px}
+
+@media (max-width:900px){
+  .hero .wrap{grid-template-columns:1fr}
+  .how{grid-template-columns:1fr 1fr}
+}
+@media (max-width:560px){
+  .wrap{padding:0 16px}
+  nav .links a.hide-sm{display:none}
+  .how{grid-template-columns:1fr}
+  .stats{gap:22px}
+  .grid{grid-template-columns:1fr}
+  .search{width:100%}
+}
+@media (prefers-reduced-motion:reduce){*{transition:none!important;scroll-behavior:auto!important}}
+</style>
+</head>
+<body>
+<nav><div class="wrap">
+  <a class="brand" href="#">🎬 aleks<span>/</span>animations</a>
+  <div class="links">
+    <a href="#videos" class="hide-sm">Videos</a>
+    <a href="#gallery">Gallery</a>
+    <a href="#how" class="hide-sm">How</a>
+    <a href="https://github.com/alexbond008/youtube-animations">GitHub</a>
+  </div>
+</div></nav>
+
+<header class="hero"><div class="wrap">
+  <div>
+    <div class="kicker">Engineering · AI · Maths</div>
+    <h1>Every animation from my videos, <em>built in code.</em></h1>
+    <p class="lede">I make YouTube videos about engineering and AI. No After Effects: each visual is code, written with Claude Code agents and timed to the spoken word. Here's every one, with source and full renders.</p>
+    <div class="btns">
+      <a class="btn primary" href="#gallery">Browse the gallery ↓</a>
+      <a class="btn" href="https://www.youtube.com/@aleksgornik">▶ YouTube channel</a>
+      <a class="btn" href="https://github.com/alexbond008/youtube-animations">★ Source on GitHub</a>
+    </div>
+    <div class="stats">
+      <div class="stat"><b id="s-anim">0</b><span>animations</span></div>
+      <div class="stat"><b id="s-vid">0</b><span>videos</span></div>
+      <div class="stat"><b>100%</b><span>code</span></div>
+    </div>
+  </div>
+  <div class="hero-art"><img id="hero-img" src="assets/banner.gif" alt="Animations from the latest video"><span class="tag" id="hero-tag">Latest video</span></div>
+</div></header>
+
+<main>
+<section id="videos"><div class="wrap">
+  <div class="head"><div><h2>Videos</h2><p class="sub">Newest first. Click one to filter the gallery.</p></div></div>
+  <div class="rail" id="rail"></div>
+</div></section>
+
+<section id="gallery"><div class="wrap">
+  <div class="head">
+    <div><h2>Gallery</h2><p class="sub">Click any animation for its description, source code and the full 1080p render.</p></div>
+    <div class="tools"><input class="search" id="q" type="search" placeholder="Search animations…" aria-label="Search animations"></div>
+  </div>
+  <div class="chips" id="chips"></div>
+  <div class="grid" id="grid"></div>
+  <p class="empty" id="empty" hidden>No animations match that search.</p>
+</div></section>
+
+<section id="how"><div class="wrap">
+  <div class="head"><div><h2>How they're made</h2><p class="sub">I describe the beat. An agent writes and renders it. I review the frames.</p></div></div>
+  <div class="how">
+    <div class="step"><div class="ic">🎨</div><h4>Explainers</h4><p>HTML + SVG/Canvas in headless Chromium, captured frame-by-frame with Playwright, encoded with ffmpeg.</p></div>
+    <div class="step"><div class="ic">📐</div><h4>Maths</h4><p>Manim, the library behind 3Blue1Brown, plus a small Python frame engine and real simulations.</p></div>
+    <div class="step"><div class="ic">💻</div><h4>Screen demos</h4><p>Static HTML replicas of real pages, animated with a synthetic cursor, clicks and auto-zoom.</p></div>
+    <div class="step"><div class="ic">🧩</div><h4>Overlays</h4><p>Remotion components for titles, lists, quote cards and end screens.</p></div>
+  </div>
+  <p class="sub" style="margin:26px 0 12px">Deterministic by design: every frame comes from a frame counter, not a clock, so the same code always renders the same video. Run one yourself:</p>
+<pre>git clone https://github.com/alexbond008/youtube-animations && cd youtube-animations
+./scripts/setup_fonts.sh
+cd videos/2026-11-08-top-0.2-ai/hook_funnel/src
+npm install && npx playwright install chromium-headless-shell
+node render.mjs main 22 ../hook_funnel_1080p.mp4 ../qa 0.3,5,9,14,21.9</pre>
+</div></section>
+</main>
+
+<footer><div class="wrap">
+  Code <a href="https://github.com/alexbond008/youtube-animations/blob/main/LICENSE">MIT</a> · Renders and previews <a href="https://creativecommons.org/licenses/by-nc/4.0/">CC BY-NC 4.0</a>, please credit the channel · Fonts SIL OFL · Inspired by <a href="https://github.com/3b1b/videos">3b1b/videos</a> · Made by <a href="https://www.youtube.com/@aleksgornik">@aleksgornik</a>
+</div></footer>
+
+<dialog id="dlg" aria-label="Animation details">
+  <button class="x" id="dlg-x" aria-label="Close">✕</button>
+  <img id="dlg-img" alt="">
+  <div class="bd">
+    <div class="nm" id="dlg-nm"></div>
+    <h3 id="dlg-ds"></h3>
+    <div class="meta" id="dlg-vt" style="color:var(--mute);font-size:14px"></div>
+    <div class="btns" id="dlg-btns"></div>
+  </div>
+</dialog>
+
+<script>
+const DATA = [{"slug": "ai-learn", "folder": "2026-10-06-ai-learn", "title": "How I use AI to learn engineering (anti brain rot studying)", "date": "2026-10-06", "yt": "GPM5MgFEkpk", "blurb": "3Blue1Brown-style maths homage, a jargon storm, GNNs on lungs, the NASA rover, and Claude Code subagents fanning out.", "cover": null, "animations": [{"name": "m01_3b1b_homage", "title": "m01_3b1b_homage: grid transform that becomes a circuit", "preview": "m01_3b1b_homage.gif", "renders": ["m01_3b1b_homage_1080p.mp4", "m01_3b1b_homage_label_1080p.mp4"]}, {"name": "m02_jargon_storm", "title": "m02_jargon_storm: jargon overload collapses to \"training loop\"", "preview": "m02_jargon_storm.gif", "renders": ["m02_jargon_storm_1080p.mp4"]}, {"name": "m03_gnn_lungs", "title": "m03_gnn_lungs: airway tree as a graph, and the 20 % you need", "preview": "m03_gnn_lungs.gif", "renders": ["m03_gnn_lungs_1080p.mp4", "m03_gnn_lungs_notext_1080p.mp4"]}, {"name": "nasa_perseverance", "title": "NASA Perseverance: Blender renders", "preview": "nasa_perseverance.gif", "renders": ["perseverance_closeup_1080p.mp4", "perseverance_turntable_1080p.mp4"]}, {"name": "p1_datasheet_mock", "title": "p1_datasheet_mock", "preview": "p1_datasheet_mock.gif", "renders": ["p1_datasheet_mock_1080p.mp4"]}, {"name": "p2_books_1970", "title": "p2_books_1970", "preview": "p2_books_1970.gif", "renders": ["p2_books_1970_1080p.mp4"]}, {"name": "p2_old_uni_webpage", "title": "p2_old_uni_webpage", "preview": "p2_old_uni_webpage.gif", "renders": ["p2_old_uni_webpage_1080p.mp4"]}, {"name": "p2_paper_flood", "title": "p2_paper_flood", "preview": "p2_paper_flood.gif", "renders": ["p2_paper_flood_1080p.mp4"]}, {"name": "p4_subagents_fanout", "title": "p4_subagents_fanout", "preview": "p4_subagents_fanout.gif", "renders": ["p4_subagents_fanout_1080p.mp4"]}]}, {"slug": "ee-ai", "folder": "2026-10-11-ee-ai", "title": "Electrical Engineers Will Dominate AI", "date": "2026-10-11", "yt": "BNFo5mwcX78", "blurb": "Control vs RL loops, Fourier on a voice, text-to-PCB, the AI power chain and data-centre cooling.", "cover": null, "animations": [{"name": "control_rl", "title": "01 · Control loop vs RL loop (ee-ai, Point 3)", "preview": "control_rl.gif", "renders": ["01_control_loop_build_1080p.mp4", "02_side_by_side_1080p.mp4", "03_morph_1080p.mp4", "04_equation_echo_1080p.mp4"]}, {"name": "ee_relabel", "title": "ee_relabel: EE terms get relabelled as AI names", "preview": "ee_relabel.gif", "renders": ["ee_relabel_1080p.mp4", "ee_relabel_1080p_inter.mp4", "ee_relabel_sidebyside_1080p.mp4", "ee_relabel_sidebyside_1080p_inter.mp4", "ee_relabel_sidebyside_vertical_1080x1350.mp4", "ee_relabel_sidebyside_vertical_1080x1350_inter.mp4", "ee_relabel_vertical_1080x1350.mp4", "ee_relabel_vertical_1080x1350_inter.mp4"]}, {"name": "m01_3b1b_homage", "title": "m01_3b1b_homage: grid transform that becomes a circuit", "reused_from": "2026-10-06-ai-learn"}, {"name": "m03_gnn_lungs", "title": "m03_gnn_lungs: airway tree as a graph, and the 20 % you need", "reused_from": "2026-10-06-ai-learn"}, {"name": "p1_maths_to_ml", "title": "p1_maths_to_ml: two separate shots (Manim CE, house style)", "preview": "p1_maths_to_ml.gif", "renders": ["p1_linreg_1080p.mp4", "p1_linreg_1080p_inter.mp4", "p1_linreg_vertical_1080x1350.mp4", "p1_linreg_vertical_1080x1350_inter.mp4", "p1_matrix_cnn_1080p.mp4", "p1_matrix_cnn_1080p_inter.mp4", "p1_matrix_cnn_vertical_1080x1350.mp4", "p1_matrix_cnn_vertical_1080x1350_inter.mp4"]}, {"name": "p2_text_to_cad_pcb", "title": "p2_text_to_cad_pcb", "preview": "p2_text_to_cad_pcb.gif", "renders": ["p2_text_to_cad_pcb_1080p.mp4", "p2_text_to_cad_pcb_1080x1350.mp4"]}, {"name": "p2_voice_fourier", "title": "p2_voice_fourier: voice -> sines -> spectrum -> Voice AI", "preview": "p2_voice_fourier.gif", "renders": ["p2_voice_fourier_1080p.mp4", "p2_voice_fourier_1080p_half.mp4", "p2_voice_fourier_vertical_1080x1350.mp4", "p2_voice_fourier_vertical_1080x1350_half.mp4"]}, {"name": "p3_microwave", "title": "p3_microwave: branch-line coupler, S-matrix, |S21| plot", "preview": "p3_microwave.gif", "renders": ["p3_microwave_1080p.mp4"]}, {"name": "p4_all_the_way_down", "title": "p4_all_the_way_down", "preview": "p4_all_the_way_down.gif", "renders": ["p4_all_the_way_down_1080p.mp4", "p4_all_the_way_down_1080p_half.mp4", "p4_all_the_way_down_1080x1350.mp4"]}, {"name": "p4_power_chain", "title": "p4_power_chain", "preview": "p4_power_chain.gif", "renders": ["p4_power_chain_1080p.mp4", "p4_power_chain_1080x1350.mp4"]}, {"name": "p4_water_cooling", "title": "p4_water_cooling", "preview": "p4_water_cooling.gif", "renders": ["p4_water_cooling_1080p.mp4", "p4_water_cooling_1080x1350.mp4"]}, {"name": "recap_ai_town", "title": "recap_ai_town", "preview": "recap_ai_town.gif", "renders": ["recap_ai_town_1080p.mp4", "recap_ai_town_1080x1350.mp4"]}]}, {"slug": "honest-qa", "folder": "2026-10-18-honest-qa", "title": "Will AI Replace Engineers? (+7 Other Questions)", "date": "2026-10-18", "yt": "0YiiZA-hphk", "blurb": "Model release cadence, project visibility, your first fifty users, Python vs C++, and English at B2.", "cover": null, "animations": [{"name": "control_rl", "title": "01 · Control loop vs RL loop (ee-ai, Point 3)", "reused_from": "2026-10-11-ee-ai"}, {"name": "ee_relabel", "title": "ee_relabel: EE terms get relabelled as AI names", "reused_from": "2026-10-11-ee-ai"}, {"name": "p1_maths_to_ml", "title": "p1_maths_to_ml: two separate shots (Manim CE, house style)", "reused_from": "2026-10-11-ee-ai"}, {"name": "p2_text_to_cad_pcb", "title": "p2_text_to_cad_pcb", "reused_from": "2026-10-11-ee-ai"}, {"name": "p4_all_the_way_down", "title": "p4_all_the_way_down", "reused_from": "2026-10-11-ee-ai"}, {"name": "p4_power_chain", "title": "p4_power_chain", "reused_from": "2026-10-11-ee-ai"}, {"name": "p4_water_cooling", "title": "p4_water_cooling", "reused_from": "2026-10-11-ee-ai"}, {"name": "q1_release_cadence", "title": "q1_release_cadence", "preview": "q1_release_cadence.gif", "renders": ["q1_release_cadence_1080p.mp4", "q1_release_cadence_notext_1080p.mp4", "q1_release_cadence_v2_1080p.mp4", "q1_release_cadence_v2_notext_1080p.mp4", "q1_release_cadence_v2_vertical_1080x1350.mp4", "q1_release_cadence_v2_vertical_notext_1080x1350.mp4", "q1_release_cadence_vertical_1080x1350.mp4", "q1_release_cadence_vertical_notext_1080x1350.mp4"]}, {"name": "q2_project_visibility", "title": "q2_project_visibility", "preview": "q2_project_visibility.gif", "renders": ["q2_project_visibility_a_1080p.mp4", "q2_project_visibility_a_1080x1350.mp4", "q2_project_visibility_b_1080p.mp4", "q2_project_visibility_b_1080x1350.mp4"]}, {"name": "q3_fifty_users", "title": "q3_fifty_users", "preview": "q3_fifty_users.gif", "renders": ["q3_fifty_users_1080p.mp4", "q3_fifty_users_notext_1080p.mp4", "q3_fifty_users_vertical_1080x1350.mp4", "q3_fifty_users_vertical_notext_1080x1350.mp4"]}, {"name": "q4_python_cpp", "title": "q4_python_cpp: \"Python first, then C++ to understand it\"", "preview": "q4_python_cpp.gif", "renders": ["q4_python_cpp_1080p.mp4", "q4_python_cpp_1080x1350.mp4"]}, {"name": "q5_english_b2", "title": "q5_english_b2: \"How good does my English need to be?\"", "preview": "q5_english_b2.gif", "renders": ["q5_english_b2_a_1080p.mp4", "q5_english_b2_a_vertical_1080x1350.mp4", "q5_english_b2_b_1080p.mp4", "q5_english_b2_b_vertical_1080x1350.mp4"]}, {"name": "recap_ai_town", "title": "recap_ai_town", "reused_from": "2026-10-11-ee-ai"}]}, {"slug": "why-fail", "folder": "2026-10-26-why-fail", "title": "The Real Reasons Why Engineering Students Fail", "date": "2026-10-26", "yt": "uBAR_aZDiVk", "blurb": "STEM attrition, isolation week, the medics comparison, skipping lectures and the fail loop.", "cover": null, "animations": [{"name": "hook_stem_attrition", "title": "hook_stem_attrition", "preview": "hook_stem_attrition.gif", "renders": ["hook_stem_attrition_1080p.mp4", "hook_stem_attrition_maths_1080p.mp4"]}, {"name": "p1_isolation_week", "title": "p1_isolation_week", "preview": "p1_isolation_week.gif", "renders": ["p1_isolation_week_calendar_1080p.mp4", "p1_isolation_week_loop_1080p.mp4"]}, {"name": "p2_medics", "title": "p2_medics: point 2 fix, \"find a cohort, like medics do\"", "preview": "p2_medics.gif", "renders": ["p2_medics_cohort_1080p.mp4", "p2_medics_cohort_short_1080p.mp4"]}, {"name": "p2_timetable", "title": "p2_timetable", "preview": "p2_timetable.gif", "renders": ["p2_timetable_friday_1080p.mp4", "p2_timetable_week_1080p.mp4"]}, {"name": "p3_fly_home", "title": "p3_fly_home: point 3 intro, flying home", "preview": "p3_fly_home.gif", "renders": ["p3_fly_home_1080p.mp4"]}, {"name": "p3_skipping", "title": "p3_skipping: point 3 \"Skipping lectures\" (3 concept animations)", "preview": "p3_skipping.gif", "renders": ["p3_flight_trade_1080p.mp4", "p3_home_distractions_1080p.mp4", "p3_momentum_1080p.mp4"]}, {"name": "p4_fail_loop", "title": "p4_fail_loop: point 4, \"failure itself isn't the issue\"", "preview": "p4_fail_loop.gif", "renders": ["p4_fail_loop_1080p.mp4"]}, {"name": "p4_new_class", "title": "p4_new_class: stick-figure \"just pass\" student", "preview": "p4_new_class.gif", "renders": ["p4_new_class_1080p.mp4"]}, {"name": "p4_synapse_ohm", "title": "\"It IS hard: it's applied maths\"", "preview": "p4_synapse_ohm.gif", "renders": ["p4_synapse_ohm_1080p.mp4", "p4_synapse_ohm_short_1080p.mp4"]}, {"name": "p4_threshold", "title": "p4_threshold", "preview": "p4_threshold.gif", "renders": ["p4_threshold_1080p.mp4"]}]}, {"slug": "top-0.2-ai", "folder": "2026-11-08-top-0.2-ai", "title": "Give me 15min, I'll make you a top 0.2% Engineer", "date": "2026-11-09", "yt": "dej0mT2zUsY", "blurb": "Karpathy's AI-usage funnel, long-horizon agents, an Excalidraw workflow turned into subagents, evals on an airfoil, research agents and the knowledge-expiry curve.", "cover": null, "animations": [{"name": "hook_funnel", "title": "Karpathy's AI-usage tiers (hook)", "preview": "hook_funnel.gif", "renders": ["hook_funnel_1080p.mp4"]}, {"name": "knowledge_expiry", "title": "\"Your knowledge expires\" (Point 5)", "preview": "knowledge_expiry.gif", "renders": ["knowledge_expiry_1080p.mp4", "knowledge_expiry_curve_1080p.mp4"]}, {"name": "long_horizon", "title": "one long session rots, sub-agents don't (Point 2)", "preview": "long_horizon.gif", "renders": ["long_horizon_1080p.mp4"]}, {"name": "airfoil_eval", "title": "Point 3 example (aerospace eval)", "preview": "airfoil_eval.gif", "renders": ["airfoil_eval_1080p.mp4"]}, {"name": "alpha_brief", "title": "Point 4 \"Research agents find your alpha\"", "preview": "alpha_brief.gif", "renders": ["alpha_brief_1080p.mp4", "alpha_satellite_1080p.mp4"]}, {"name": "evals_loop", "title": "Point 3 \"Evals\"", "preview": "evals_loop.gif", "renders": ["evals_loop_1080p.mp4"]}, {"name": "excalidraw_workflow", "title": "drawing the system in Excalidraw, then handing it to Claude (Point 2)", "preview": "excalidraw_workflow.gif", "renders": ["drawing_1080p.mp4", "export_to_terminal_1080p.mp4"]}, {"name": "subagents_md", "title": "Claude Code subagents b-roll (control-lab example)", "preview": "subagents_md.gif", "renders": ["agent_md_1080p.mp4", "agents_tree_1080p.mp4", "orchestrate_1080p.mp4"]}]}, {"slug": "openai-math", "folder": "2026-11-14-openai-math", "title": "Has OpenAI Solved Maths?", "date": "2026-11-14", "yt": "", "blurb": "OpenAI's maths repo in numbers, a real lattice-Boltzmann Navier–Stokes flow, Fourier/FFT, Lean as a compiler for maths, paper-vs-Lean mismatch, rendered LaTeX and far-fetched theory slides.", "cover": "navier_stokes", "animations": [{"name": "arxiv_demo", "title": "arXiv abstract → click \"View PDF\" → scroll to the m+4 vs m+5 (Lean) mismatch, OpenScreen-style", "preview": "arxiv_demo.gif", "renders": ["arxiv_demo_1080p.mp4"]}, {"name": "farfetched_slides", "title": "three ultra-abstract openai/math preprints as a snappy slide deck, each with an orange \"useful for… ?\" arrow on the real typeset maths", "preview": "farfetched_slides.gif", "renders": ["farfetched_slides_1080p.mp4"]}, {"name": "fourier_fft", "title": "a square wave builds from sine harmonics, then the FFT's O(n log n) meets the new O(n (log n)^(1−10⁻¹³)) bound", "preview": "fourier_fft.gif", "renders": ["fourier_fft_1080p.mp4", "fourier_fft_vertical_1080x1350.mp4", "fourier_fft_wave_1080p.mp4"]}, {"name": "gh_demo", "title": "OpenScreen-style GitHub screen demos of openai/math (cursor, click ripples, auto-zoom)", "preview": "gh_demo.gif", "renders": ["gh_history_zoom_1080p.mp4", "gh_hook_demo_1080p.mp4", "gh_repo_anim_1080p.mp4"]}, {"name": "latex_showcase", "title": "the real typeset \"Catalan's constant is irrational\" paper (openai/math) fans in, glides down a dense page and zooms onto eq. (14): \"good luck reading this\"", "preview": "latex_showcase.gif", "renders": ["latex_showcase_1080p.mp4"]}, {"name": "lean_compiler", "title": "\"Lean is a compiler for maths\": C++ compile, a real Lean 4 proof going green/red/green, and Mathlib's library fanning out", "preview": "lean_compiler.gif", "renders": ["cpp_compile_1080p.mp4", "lean_proof_1080p.mp4", "mathlib_1080p.mp4"]}, {"name": "navier_stokes", "title": "real lattice-Boltzmann flow past a cylinder (von Kármán vortex street) with the Navier–Stokes equation", "preview": "navier_stokes.gif", "renders": ["navier_stokes_1080p.mp4", "navier_stokes_notext_1080p.mp4", "navier_stokes_notext_vertical_1080x1350.mp4"]}, {"name": "paper_vs_lean", "title": "a paper proof and a Lean proof that both \"check out\" but don't say the same thing (m + 4 vs m + 5)", "preview": "paper_vs_lean.gif", "renders": ["paper_vs_lean_1080p.mp4", "verify_validate_1080p.mp4"]}, {"name": "repo_stats", "title": "openai/math repository card: 719-manuscript count-up with a \"3 WITHDRAWN\" stamp, plus a stats board that builds row by row", "preview": "repo_stats.gif", "renders": ["repo_stats_board_1080p.mp4", "repo_stats_hook_1080p.mp4", "repo_stats_hook_vertical.mp4"]}]}];
+const REPO = "https://github.com/alexbond008/youtube-animations";
+const $ = id => document.getElementById(id);
+const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+const vids = [...DATA].sort((a, b) => b.date.localeCompare(a.date));
+const anims = vids.flatMap(v => v.animations.filter(a => !a.reused_from && a.preview).map(a => ({...a, v})));
+const fmt = d => new Date(d + "T12:00:00").toLocaleDateString("en-GB", {day: "numeric", month: "short", year: "numeric"});
+const gif = a => `videos/${a.v.folder}/${a.name}/${a.preview}`;
+const cover = v => {
+  const p = v.animations.filter(a => !a.reused_from && a.preview);
+  return p.find(a => a.name === v.cover) || p[0];
+};
+
+// hero: latest video's cover animation
+const latest = vids[0], lc = latest && cover(latest);
+if (lc) { $("hero-img").src = `videos/${latest.folder}/${lc.name}/${lc.preview}`; $("hero-tag").textContent = "Latest · " + latest.title; }
+
+// count-up stats
+function countUp(el, n) {
+  const t0 = performance.now(), d = 900;
+  const step = t => { const k = Math.min(1, (t - t0) / d); el.textContent = Math.round(n * (1 - Math.pow(1 - k, 3))); if (k < 1) requestAnimationFrame(step); };
+  matchMedia("(prefers-reduced-motion: reduce)").matches ? el.textContent = n : requestAnimationFrame(step);
+}
+countUp($("s-anim"), anims.length); countUp($("s-vid"), vids.length);
+
+// state
+let filter = new URLSearchParams(location.hash.slice(1)).get("video") || "all", q = "";
+
+// videos rail
+$("rail").innerHTML = vids.map(v => {
+  const c = cover(v), n = v.animations.filter(a => !a.reused_from && a.preview).length;
+  const th = v.yt ? `https://i.ytimg.com/vi/${v.yt}/mqdefault.jpg` : (c ? `videos/${v.folder}/${c.name}/${c.preview}` : "");
+  return `<div class="vid" data-slug="${esc(v.slug)}" tabindex="0" role="button" aria-label="Show animations from ${esc(v.title)}">
+    <div class="th"><img loading="lazy" src="${esc(th)}" alt=""><span class="play ${v.yt ? "" : "soon"}">${v.yt ? "▶ Watch" : "Coming soon"}</span></div>
+    <div class="bd"><h3>${esc(v.title)}</h3><div class="meta">${fmt(v.date)} · ${n} animations</div></div></div>`;
+}).join("");
+$("rail").querySelectorAll(".vid").forEach(el => {
+  const go = () => { setFilter(filter === el.dataset.slug ? "all" : el.dataset.slug); $("gallery").scrollIntoView(); };
+  el.addEventListener("click", go);
+  el.addEventListener("keydown", e => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); go(); } });
+});
+
+// chips
+function renderChips() {
+  const all = [{slug: "all", title: "All"}, ...vids.map(v => ({slug: v.slug, title: v.title}))];
+  $("chips").innerHTML = all.map(c => `<button class="chip ${filter === c.slug ? "on" : ""}" data-slug="${esc(c.slug)}">${esc(c.title.length > 34 ? c.title.slice(0, 32) + "…" : c.title)}</button>`).join("");
+  $("chips").querySelectorAll(".chip").forEach(b => b.onclick = () => setFilter(b.dataset.slug));
+  $("rail").querySelectorAll(".vid").forEach(el => el.classList.toggle("on", el.dataset.slug === filter));
+}
+function setFilter(s) {
+  filter = s;
+  history.replaceState(null, "", s === "all" ? location.pathname : "#video=" + s);
+  renderChips(); renderGrid();
+}
+
+// grid
+function renderGrid() {
+  const ql = q.toLowerCase();
+  const list = anims.filter(a => (filter === "all" || a.v.slug === filter) &&
+    (!ql || (a.name + " " + a.title + " " + a.v.title).toLowerCase().includes(ql)));
+  $("grid").innerHTML = list.map(a => `<article class="card" tabindex="0" data-k="${esc(a.v.slug + "/" + a.name)}">
+    <div class="th"><img loading="lazy" src="${esc(gif(a))}" alt="${esc(a.name)} preview"></div>
+    <div class="bd"><div class="nm">${esc(a.name)}</div><div class="ds">${esc(a.title)}</div><div class="vt">${esc(a.v.title)}</div></div></article>`).join("");
+  $("empty").hidden = list.length > 0;
+  $("grid").querySelectorAll(".card").forEach(el => {
+    const a = list.find(x => x.v.slug + "/" + x.name === el.dataset.k);
+    el.onclick = () => openAnim(a);
+    el.onkeydown = e => { if (e.key === "Enter") openAnim(a); };
+  });
+}
+$("q").addEventListener("input", e => { q = e.target.value; renderGrid(); });
+
+// modal
+function openAnim(a) {
+  $("dlg-img").src = gif(a); $("dlg-img").alt = a.name + " preview";
+  $("dlg-nm").textContent = a.name; $("dlg-ds").textContent = a.title;
+  $("dlg-vt").textContent = "From “" + a.v.title + "” · " + fmt(a.v.date);
+  const b = [`<a class="btn primary" href="${REPO}/tree/main/videos/${a.v.folder}/${a.name}">{ } Source & beat sheet</a>`];
+  (a.renders || []).slice(0, 1).forEach(r => b.push(`<a class="btn" href="${REPO}/releases/download/${a.v.slug}/${a.name}__${r}">⬇ 1080p render</a>`));
+  if (a.v.yt) b.push(`<a class="btn" href="https://www.youtube.com/watch?v=${a.v.yt}">▶ Watch the video</a>`);
+  $("dlg-btns").innerHTML = b.join("");
+  $("dlg").showModal();
+}
+$("dlg-x").onclick = () => $("dlg").close();
+$("dlg").addEventListener("click", e => { if (e.target === $("dlg")) $("dlg").close(); });
+
+if (!vids.some(v => v.slug === filter)) filter = "all";
+renderChips(); renderGrid();
+</script>
+</body>
+</html>
