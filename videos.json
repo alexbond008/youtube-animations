@@ -653,6 +653,12 @@
     ],
     "render_bytes": 1099029
    }
+  ],
+  "cover": "navier_stokes",
+  "featured": [
+   "navier_stokes",
+   "lean_compiler",
+   "repo_stats"
   ]
  }
 ]

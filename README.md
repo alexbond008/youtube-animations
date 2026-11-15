@@ -1,81 +1,44 @@
 <div align="center">
 
-# Animations from my YouTube videos
+# 🎬 youtube-animations
+
+**The source code behind every animation on [@aleksgornik](https://www.youtube.com/@aleksgornik).**<br>
+Engineering, AI and maths explainers, all of them code, none of them After Effects.
 
 <img src="assets/banner.gif" width="880" alt="A few of the animations">
 
-**51 animations · 6 videos · all built in code with Claude Code**
-
-[YouTube](https://www.youtube.com/@aleksgornik) · [How they're made](#how-theyre-made) · [Run one yourself](#run-one-yourself)
+<img src="https://img.shields.io/badge/animations-51-ff6b35?style=for-the-badge" alt="animations: 51"> <img src="https://img.shields.io/badge/videos-6-4f8cff?style=for-the-badge" alt="videos: 6"> <img src="https://img.shields.io/badge/built_with-Claude_Code-d97757?style=for-the-badge" alt="built_with: Claude_Code"> <img src="https://img.shields.io/badge/license-MIT_%2B_CC_BY--NC-2ea44f?style=for-the-badge" alt="license: MIT_%2B_CC_BY--NC">
 
 </div>
 
-Every video I put out on [my channel](https://www.youtube.com/@aleksgornik) gets a folder here with the source code for every animation in it, in the spirit of [3b1b/videos](https://github.com/3b1b/videos). I'm an engineer working on reinforcement learning, and I make videos about engineering, AI and how to actually get good at both. People kept asking how the visuals are made, so here's all of it.
-
-## Videos
-
-### [Has OpenAI Solved Maths?](videos/2026-11-14-openai-math)
-
-`2026-11-14` · 9 new animations · ▶️ coming soon
+## ✨ Latest: [Has OpenAI Solved Maths?](videos/2026-11-14-openai-math)
 
 OpenAI's maths repo in numbers, a real lattice-Boltzmann Navier–Stokes flow, Fourier/FFT, Lean as a compiler for maths, paper-vs-Lean mismatch, rendered LaTeX and far-fetched theory slides.
 
-<p><a href="videos/2026-11-14-openai-math/arxiv_demo"><img src="videos/2026-11-14-openai-math/arxiv_demo/arxiv_demo.gif" width="262"></a> <a href="videos/2026-11-14-openai-math/farfetched_slides"><img src="videos/2026-11-14-openai-math/farfetched_slides/farfetched_slides.gif" width="262"></a> <a href="videos/2026-11-14-openai-math/fourier_fft"><img src="videos/2026-11-14-openai-math/fourier_fft/fourier_fft.gif" width="262"></a></p>
+<p align="center"><a href="videos/2026-11-14-openai-math/navier_stokes"><img src="videos/2026-11-14-openai-math/navier_stokes/navier_stokes.gif" width="290" alt="navier_stokes"></a> <a href="videos/2026-11-14-openai-math/lean_compiler"><img src="videos/2026-11-14-openai-math/lean_compiler/lean_compiler.gif" width="290" alt="lean_compiler"></a> <a href="videos/2026-11-14-openai-math/repo_stats"><img src="videos/2026-11-14-openai-math/repo_stats/repo_stats.gif" width="290" alt="repo_stats"></a></p>
 
-### [Give Me X Min. I'll Make You a Top 0.2% AI User](videos/2026-11-08-top-0.2-ai)
+## 📺 Every video
 
-`2026-11-08` · 8 new animations · ▶️ coming soon
+Click a video for all its animations, each with a beat sheet and a one-line render command.
 
-Karpathy's AI-usage funnel, long-horizon agents, an Excalidraw workflow turned into subagents, evals on an airfoil, research agents and the knowledge-expiry curve.
+| | Video | Animations | |
+|:-:|---|:-:|:-:|
+| <a href="videos/2026-11-14-openai-math/navier_stokes"><img src="videos/2026-11-14-openai-math/navier_stokes/navier_stokes.gif" width="200" alt="navier_stokes"></a> | **[Has OpenAI Solved Maths?](videos/2026-11-14-openai-math)**<br><sub>OpenAI's maths repo in numbers, a real lattice-Boltzmann Navier–Stokes flow, Fourier/FFT, Lean as a compiler for maths, paper-vs-Lean mismatch, rendered LaTeX and far-fetched theory slides.</sub> | 9 | <sub>soon</sub> |
+| <a href="videos/2026-11-08-top-0.2-ai/hook_funnel"><img src="videos/2026-11-08-top-0.2-ai/hook_funnel/hook_funnel.gif" width="200" alt="hook_funnel"></a> | **[Give Me X Min. I'll Make You a Top 0.2% AI User](videos/2026-11-08-top-0.2-ai)**<br><sub>Karpathy's AI-usage funnel, long-horizon agents, an Excalidraw workflow turned into subagents, evals on an airfoil, research agents and the knowledge-expiry curve.</sub> | 8 | <sub>soon</sub> |
+| <a href="videos/2026-10-26-why-fail/hook_stem_attrition"><img src="videos/2026-10-26-why-fail/hook_stem_attrition/hook_stem_attrition.gif" width="200" alt="hook_stem_attrition"></a> | **[The Real Reasons Why Engineering Students Fail](videos/2026-10-26-why-fail)**<br><sub>STEM attrition, isolation week, the medics comparison, skipping lectures and the fail loop.</sub> | 10 | [▶️ Watch](https://www.youtube.com/watch?v=uBAR_aZDiVk) |
+| <a href="videos/2026-10-18-honest-qa/q1_release_cadence"><img src="videos/2026-10-18-honest-qa/q1_release_cadence/q1_release_cadence.gif" width="200" alt="q1_release_cadence"></a> | **[Will AI Replace Engineers? (+7 Other Questions)](videos/2026-10-18-honest-qa)**<br><sub>Model release cadence, project visibility, your first fifty users, Python vs C++, and English at B2.</sub> | 5 | [▶️ Watch](https://www.youtube.com/watch?v=0YiiZA-hphk) |
+| <a href="videos/2026-10-11-ee-ai/control_rl"><img src="videos/2026-10-11-ee-ai/control_rl/control_rl.gif" width="200" alt="control_rl"></a> | **[Electrical Engineers Will Dominate AI](videos/2026-10-11-ee-ai)**<br><sub>Control vs RL loops, Fourier on a voice, text-to-PCB, the AI power chain and data-centre cooling.</sub> | 10 | [▶️ Watch](https://www.youtube.com/watch?v=BNFo5mwcX78) |
+| <a href="videos/2026-10-06-ai-learn/m01_3b1b_homage"><img src="videos/2026-10-06-ai-learn/m01_3b1b_homage/m01_3b1b_homage.gif" width="200" alt="m01_3b1b_homage"></a> | **[How I use AI to learn engineering (anti brain rot studying)](videos/2026-10-06-ai-learn)**<br><sub>3Blue1Brown-style maths homage, a jargon storm, GNNs on lungs, the NASA rover, and Claude Code subagents fanning out.</sub> | 9 | [▶️ Watch](https://www.youtube.com/watch?v=GPM5MgFEkpk) |
 
-<p><a href="videos/2026-11-08-top-0.2-ai/hook_funnel"><img src="videos/2026-11-08-top-0.2-ai/hook_funnel/hook_funnel.gif" width="262"></a> <a href="videos/2026-11-08-top-0.2-ai/knowledge_expiry"><img src="videos/2026-11-08-top-0.2-ai/knowledge_expiry/knowledge_expiry.gif" width="262"></a> <a href="videos/2026-11-08-top-0.2-ai/long_horizon"><img src="videos/2026-11-08-top-0.2-ai/long_horizon/long_horizon.gif" width="262"></a></p>
+## 🛠️ How they're made
 
-### [The Real Reasons Why Engineering Students Fail](videos/2026-10-26-why-fail)
+I describe each beat (what the viewer should get, and on which spoken word), a [Claude Code](https://claude.com/claude-code) agent writes and renders the animation, and I review the frames. Renders are deterministic: frames come from a frame counter, not a clock, so the same code always gives the same video.
 
-`2026-10-26` · 10 new animations · [▶️ watch on YouTube](https://www.youtube.com/watch?v=uBAR_aZDiVk)
+| 🎨 Explainers | 📐 Maths | 💻 UI mocks | 🧩 Overlays |
+|:-:|:-:|:-:|:-:|
+| HTML + SVG/Canvas, captured by Playwright | [Manim](https://www.manim.community) + a small Python frame engine | HTML replicas, animated with Playwright | [Remotion](https://www.remotion.dev) |
 
-STEM attrition, isolation week, the medics comparison, skipping lectures and the fail loop.
-
-<p><a href="videos/2026-10-26-why-fail/hook_stem_attrition"><img src="videos/2026-10-26-why-fail/hook_stem_attrition/hook_stem_attrition.gif" width="262"></a> <a href="videos/2026-10-26-why-fail/p1_isolation_week"><img src="videos/2026-10-26-why-fail/p1_isolation_week/p1_isolation_week.gif" width="262"></a> <a href="videos/2026-10-26-why-fail/p2_medics"><img src="videos/2026-10-26-why-fail/p2_medics/p2_medics.gif" width="262"></a></p>
-
-### [Will AI Replace Engineers? (+7 Other Questions)](videos/2026-10-18-honest-qa)
-
-`2026-10-18` · 5 new animations · [▶️ watch on YouTube](https://www.youtube.com/watch?v=0YiiZA-hphk)
-
-Model release cadence, project visibility, your first fifty users, Python vs C++, and English at B2.
-
-<p><a href="videos/2026-10-18-honest-qa/q1_release_cadence"><img src="videos/2026-10-18-honest-qa/q1_release_cadence/q1_release_cadence.gif" width="262"></a> <a href="videos/2026-10-18-honest-qa/q2_project_visibility"><img src="videos/2026-10-18-honest-qa/q2_project_visibility/q2_project_visibility.gif" width="262"></a> <a href="videos/2026-10-18-honest-qa/q3_fifty_users"><img src="videos/2026-10-18-honest-qa/q3_fifty_users/q3_fifty_users.gif" width="262"></a></p>
-
-### [Electrical Engineers Will Dominate AI](videos/2026-10-11-ee-ai)
-
-`2026-10-11` · 10 new animations · [▶️ watch on YouTube](https://www.youtube.com/watch?v=BNFo5mwcX78)
-
-Control vs RL loops, Fourier on a voice, text-to-PCB, the AI power chain and data-centre cooling.
-
-<p><a href="videos/2026-10-11-ee-ai/control_rl"><img src="videos/2026-10-11-ee-ai/control_rl/control_rl.gif" width="262"></a> <a href="videos/2026-10-11-ee-ai/ee_relabel"><img src="videos/2026-10-11-ee-ai/ee_relabel/ee_relabel.gif" width="262"></a> <a href="videos/2026-10-11-ee-ai/p1_maths_to_ml"><img src="videos/2026-10-11-ee-ai/p1_maths_to_ml/p1_maths_to_ml.gif" width="262"></a></p>
-
-### [How I use AI to learn engineering (anti brain rot studying)](videos/2026-10-06-ai-learn)
-
-`2026-10-06` · 9 new animations · [▶️ watch on YouTube](https://www.youtube.com/watch?v=GPM5MgFEkpk)
-
-3Blue1Brown-style maths homage, a jargon storm, GNNs on lungs, the NASA rover, and Claude Code subagents fanning out.
-
-<p><a href="videos/2026-10-06-ai-learn/m01_3b1b_homage"><img src="videos/2026-10-06-ai-learn/m01_3b1b_homage/m01_3b1b_homage.gif" width="262"></a> <a href="videos/2026-10-06-ai-learn/m02_jargon_storm"><img src="videos/2026-10-06-ai-learn/m02_jargon_storm/m02_jargon_storm.gif" width="262"></a> <a href="videos/2026-10-06-ai-learn/m03_gnn_lungs"><img src="videos/2026-10-06-ai-learn/m03_gnn_lungs/m03_gnn_lungs.gif" width="262"></a></p>
-
-## How they're made
-
-There's no After Effects here. Every animation is code, written with [Claude Code](https://claude.com/claude-code) agents. I describe the beat (what the viewer should understand, and on which spoken word), and one agent writes and renders each animation. Then I review the frames.
-
-| Kind | Stack | Example |
-|---|---|---|
-| Explainer scenes | HTML + SVG/Canvas in headless Chromium, captured frame-by-frame with Playwright, encoded with ffmpeg | `hook_funnel`, `p4_power_chain` |
-| Maths | [Manim](https://www.manim.community), the library behind 3Blue1Brown, plus a small Python frame engine | `m01_3b1b_homage`, `m03_gnn_lungs` |
-| UI / terminal mocks | Static HTML replicas animated with Playwright | `p4_subagents_fanout`, `alpha_brief` |
-| Overlays (titles, lists, prompt cards, end screens) | [Remotion](https://www.remotion.dev) components | point titles, side lists, prompt cards, recap boards |
-
-Every render is deterministic. The animation reads a frame number instead of a clock, so the same code always gives the same video, and each beat is timed to land on a word in the voiceover.
-
-## Run one yourself
+<details><summary><b>▶️ Run one yourself</b></summary>
 
 ```bash
 git clone https://github.com/alexbond008/youtube-animations && cd youtube-animations
@@ -85,16 +48,10 @@ npm install && npx playwright install chromium-headless-shell
 node render.mjs main 22 ../hook_funnel_1080p.mp4 ../qa 0.3,5,9,14,21.9   # each folder's README has its command
 ```
 
-Requirements: Node 20+, ffmpeg, and Python 3.12 for the Manim scenes. The scripts were written on a Mac; elsewhere, set `FFMPEG` and `CHROME` to your binaries.
+Needs Node 20+, ffmpeg, and Python 3.12 for the Manim scenes. Written on a Mac; elsewhere, set `FFMPEG` and `CHROME`. Full 1080p renders live in [Releases](../../releases).
 
-## Repo layout
+</details>
 
-```
-videos/<date>-<video>/<animation>/   README (beat sheet + render command), src/, preview.gif
-fonts/                              Inter, JetBrains Mono, STIX Two (SIL Open Font License)
-releases → GitHub Releases          full 1080p renders per video (kept out of git history)
-```
+---
 
-## License
-
-Code: [MIT](LICENSE). Rendered videos and previews: [CC BY-NC 4.0](https://creativecommons.org/licenses/by-nc/4.0/). Feel free to learn from them and remix them; please credit the channel. Fonts keep their own OFL licences.
+<sub>Code: [MIT](LICENSE) · Renders and previews: [CC BY-NC 4.0](https://creativecommons.org/licenses/by-nc/4.0/), please credit the channel · Fonts: SIL OFL · Inspired by [3b1b/videos](https://github.com/3b1b/videos)</sub>
