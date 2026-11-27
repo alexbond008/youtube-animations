@@ -1,0 +1,55 @@
+// Every line below is taken from the real run log work/run_1/stream.jsonl (claude-opus-4-8, 536 s), condensed in time.
+// Viewport: frames replayed from Claude's own execute_code scripts step by step (src/stages_run1.py) + Claude's own get_view screenshots.
+const P = "Hey Claude, I have an Arduino Uno and I need to put it in a nice box safe from all the atrocities on this planet. I don't want any interference and I want it to be nice and organized. Could you fetch the specifications of the Arduino and design an enclosure in FreeCAD that lets me wire cables in and out of the box while protecting the actual PCB board.<br><br>It's going on top of a robot, so it needs to screw on.";
+const T = (n, a) => `<span class="b">● </span><span class="v">${n}</span><span class="a">  ${a}</span>`;
+const V = '../work/run_1/vp/', G = '../work/run_1/getview/';
+const C = (tool, what) => `<span class="n">${tool}</span>${what}`;
+window.DATA = {
+  speed: '9 min run · condensed',
+  lines: [
+    [0.3, 'prompt', '<span class="gt">&gt; </span>' + P],
+    [1.3, 'think', '✻ <span class="t" data-th>Thinking</span>'],
+    [2.1, 'tool', T('WebSearch', '"Arduino Uno Rev3 mechanical dimensions mounting hole coordinates PCB size"')],
+    [2.5, 'sub', '⎿  9 results · KiCad #590 · electricalflux.com · kapycad.com'],
+    [3.1, 'say', "I've got the Arduino Uno Rev3 mechanical specs:"],
+    [3.4, 'out', 'PCB <span class="hl">68.58 × 53.34 mm</span>, 1.6 mm thick'],
+    [3.7, 'out', '4× M3 (3.2 mm) holes: (15.2, 50.8) (66.1, 35.6) (66.1, 7.6) (13.9, 7.6)'],
+    [4.0, 'out', 'USB-B + barrel jack protrude off one short edge'],
+    [4.7, 'tool', T('AskUserQuestion', 'How should the box attach to the robot?')],
+    [5.0, 'sub', '⎿  no answer → defaults: corner mounting ears, screw-on lid, M3'],
+    [5.8, 'tool', T('freecad · execute_code', 'tray, standoffs, ears, connector window, wire slots, lid')],
+    [6.2, 'code', 'for hx, hy in holes:'],
+    [6.5, 'code', '    base = base.<span class="f">fuse</span>(Part.<span class="f">makeCylinder</span>(standoff_od/2, standoff_h, ...))'],
+    [9.3, 'out', 'outer: 86.0 71.0  wall_h: 22.0  ·  base volume 33000.3 mm³'],
+    [9.9, 'tool', T('freecad · get_view', 'Top · Front · Isometric · Dimetric')],
+    [11.2, 'say', 'Let me verify the standoffs analytically.'],
+    [11.6, 'tool', T('freecad · execute_code', 'check all 4 standoffs')],
+    [12.0, 'out', 'hole0 (23.9,59.6) ring_solid=True · hole1 (74.8,44.4) ring_solid=True'],
+    [12.3, 'out', 'hole2 (74.8,16.4) ring_solid=True · hole3 (22.6,16.4) ring_solid=True'],
+    [12.9, 'say', 'Bumping interior height to 24 mm and widening the connector window.'],
+    [13.5, 'tool', T('freecad · execute_code', 'rebuild + export')],
+    [13.8, 'sub', '⎿  <span style="color:#FF5A4E">SyntaxError: invalid syntax (line 78)</span>'],
+    [14.3, 'say', 'I left a stray expression in a print. Let me fix that line.'],
+    [14.9, 'tool', T('freecad · execute_code', 'rebuild + export')],
+    [17.8, 'out', 'box footprint: <span class="hl">86.0 x 71.0 mm</span> | with ears: 110.0 mm long'],
+    [18.1, 'out', 'base height: 24.0 + lid 2.5 = total 26.5 mm'],
+    [18.4, 'out', 'saved fcstd: True | step: True'],
+    [19.2, 'done', '✓ Done — ArduinoUno_Enclosure.step'],
+    [19.8, 'say', '4 standoffs · connector window · 6 wire slots · 4 robot-mount ears · screw-on lid'],
+  ],
+  frames: [
+    [6.0, V + 'a_1_tray.png', C('execute_code', 'hollow tray')],
+    [6.6, V + 'a_2_standoffs.png', C('execute_code', 'standoffs + corner posts')],
+    [7.2, V + 'a_3_ears.png', C('execute_code', 'robot-mount ears')],
+    [7.7, V + 'a_4_window.png', C('execute_code', 'USB / power window')],
+    [8.2, V + 'a_5_slots.png', C('execute_code', 'wire slots')],
+    [8.6, V + 'a_6_holes.png', C('execute_code', 'M3 pilot holes')],
+    [9.0, V + 'a_7_lid.png', C('execute_code', 'lid (shown exploded)')],
+    [10.1, G + 'gv_07_crop.png', C('get_view', 'Claude checks its work')],
+    [10.8, G + 'gv_08_crop.png', C('get_view', 'Dimetric')],
+    [15.2, V + 'b_1_tray.png', C('execute_code', 'rebuild: 24 mm walls')],
+    [15.7, V + 'b_4_window.png', C('execute_code', 'wider connector window')],
+    [16.3, V + 'b_6_holes.png', C('execute_code', 'base')],
+    [16.9, V + 'b_7_lid.png', C('execute_code', 'base + lid → STEP')],
+  ],
+};

@@ -1,0 +1,65 @@
+<!doctype html><html><head><meta charset="utf-8"><title>Agent CAD run</title>
+<link rel="stylesheet" href="../../cad_common/src/common.css">
+<style>
+#term{left:96px;top:110px;width:980px;height:860px}
+#view{left:1108px;top:110px;width:716px;height:860px}
+.bar{height:58px;border-bottom:1px solid #2A2A30;display:flex;align-items:center;padding:0 22px;gap:10px;background:#131317;position:relative}
+.dot{width:13px;height:13px;border-radius:50%;background:#2E2E35}
+.ttl{position:absolute;left:0;right:0;top:0;height:58px;display:flex;align-items:center;justify-content:center;gap:8px;font:600 23px Inter;color:#A1A1AA}
+.ttl b{color:#F5F5F7;font-weight:700}
+#tbody{position:absolute;left:0;right:0;top:59px;bottom:0;overflow:hidden}
+#scroll{position:absolute;left:36px;right:36px;top:26px}
+.ln{font:500 22px/33px "JetBrains Mono",monospace;color:#F5F5F7;white-space:pre-wrap;word-break:break-word;opacity:0}
+.gap{height:10px}
+.prompt{border-left:4px solid #D97757;padding:8px 0 8px 18px;background:rgba(217,119,87,.07);border-radius:0 10px 10px 0}
+.prompt .gt{color:#D97757;font-weight:700}
+.tool .b{color:#D97757}.tool .v{font-weight:700;color:#F5F5F7}.tool .a{color:#C9C9D1}
+.sub{color:#A1A1AA;padding-left:30px}
+.out{color:#C9C9D1;padding-left:30px}.out .hl{color:#F5F5F7;font-weight:700}.ok{color:#3DDC97}
+.say{color:#F5F5F7}.done{color:#3DDC97;font-weight:700}
+.think{color:#D97757}.think .t{color:#A1A1AA}
+.code{color:#C9C9D1;padding-left:30px}.code .f{color:#F5B800}.code .s{color:#3DDC97}.code .k{color:#4DA3FF}
+#vbody{position:absolute;left:0;right:0;top:59px;bottom:0;background:radial-gradient(ellipse at 50% 35%,#24242B 0%,#141418 70%,#101013 100%)}
+#vbody img{position:absolute;left:0;top:0;width:100%;height:100%;object-fit:contain;opacity:0}
+#cap{position:absolute;left:24px;bottom:22px;font:600 21px Inter;color:#F5F5F7;background:rgba(14,14,16,.78);border:1px solid #2A2A30;border-radius:10px;padding:7px 13px;white-space:nowrap}
+#cap .n{color:#D97757;margin-right:8px;font-family:"JetBrains Mono"}
+#speed{position:absolute;right:24px;top:76px;font:600 18px "JetBrains Mono";color:#A1A1AA;background:rgba(14,14,16,.7);border:1px solid #2A2A30;border-radius:8px;padding:4px 10px}
+</style></head><body><div id="stage">
+<div id="term" class="card"><div class="bar"><div class="dot"></div><div class="dot"></div><div class="dot"></div></div>
+  <div class="ttl"><b>claude</b><span>&mdash; terminal</span></div><div id="tbody"><div id="scroll"></div></div></div>
+<div id="view" class="card"><div class="bar"><div class="dot"></div><div class="dot"></div><div class="dot"></div></div>
+  <div class="ttl"><b>FreeCAD</b><span>&mdash; 3D view</span></div><div id="vbody"></div><div id="cap"></div><div id="speed"></div></div>
+</div>
+<script src="../../cad_2_drawing/src/run_data.js"></script>
+<script>
+const D = window.DATA;
+const scroll = document.getElementById('scroll'), vbody = document.getElementById('vbody'), cap = document.getElementById('cap');
+document.getElementById('speed').textContent = D.speed || '';
+const els = D.lines.map(([t, cls, html]) => { const d = document.createElement('div'); d.className = cls === 'gap' ? 'gap' : 'ln ' + cls; if (html) d.innerHTML = html; scroll.appendChild(d); return d; });
+const imgs = D.frames.map(([t, src]) => { const i = document.createElement('img'); i.src = src; vbody.appendChild(i); return i; });
+const ease = f => f <= 0 ? 0 : f >= 1 ? 1 : 1 - Math.pow(1 - f, 3);
+const VIEW_H = 860 - 59 - 26 - 30;
+let heights = null;
+window.ready = Promise.all(imgs.map(i => i.complete ? 1 : new Promise(r => { i.onload = r; i.onerror = r; }))).then(() => document.fonts.ready);
+window.renderAt = t => {
+  if (!heights) heights = els.map(e => e.getBoundingClientRect().height + 0);
+  let bottom = 0;
+  D.lines.forEach(([lt, cls], k) => {
+    const e = els[k]; const f = ease((t - lt) / 0.25);
+    if (t >= lt) { bottom = Math.max(bottom, e.offsetTop + heights[k] * ease((t - lt) / 0.25)); }
+    if (cls !== 'gap') { e.style.opacity = f; e.style.transform = `translateY(${(1 - f) * 8}px)`; }
+    if (cls === 'think') { const s = e.querySelector('[data-th]'); if (s) { const nx = D.lines.findIndex((l, j) => j > k && l[1] !== 'gap'); const end = nx >= 0 ? D.lines[nx][0] : 1e9; e.style.display = t < end ? 'block' : 'none'; s.textContent = 'Thinking' + '.'.repeat(1 + Math.floor(t * 3) % 3); } }
+  });
+  // smooth scroll so the newest line stays in view
+  const target = Math.max(0, bottom - VIEW_H);
+  scroll.style.transform = `translateY(${-target}px)`;
+  // viewport frames: crossfade
+  let cur = -1; D.frames.forEach(([ft], k) => { if (t >= ft) cur = k; });
+  imgs.forEach((im, k) => {
+    if (k === cur) im.style.opacity = ease((t - D.frames[k][0]) / 0.3);
+    else if (k === cur - 1) im.style.opacity = 1 - ease((t - D.frames[cur][0]) / 0.3);
+    else im.style.opacity = 0;
+  });
+  if (cur >= 0 && D.frames[cur][2]) { cap.style.opacity = 1; cap.innerHTML = D.frames[cur][2]; } else cap.style.opacity = 0;
+};
+</script></body></html>

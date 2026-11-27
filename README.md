@@ -5,11 +5,11 @@
 **The source code behind every animation on [@aleksgornik](https://www.youtube.com/@aleksgornik).**<br>
 Engineering, AI and maths explainers: all code, no After Effects.
 
-<img src="https://img.shields.io/badge/animations-51-ff6b35?style=for-the-badge" alt="animations: 51"> <img src="https://img.shields.io/badge/videos-6-4f8cff?style=for-the-badge" alt="videos: 6"> <img src="https://img.shields.io/badge/built_with-Claude_Code-d97757?style=for-the-badge" alt="built_with: Claude_Code"> <img src="https://img.shields.io/badge/license-MIT_%2B_CC_BY--NC-2ea44f?style=for-the-badge" alt="license: MIT_%2B_CC_BY--NC">
+<img src="https://img.shields.io/badge/animations-56-ff6b35?style=for-the-badge" alt="animations: 56"> <img src="https://img.shields.io/badge/videos-7-4f8cff?style=for-the-badge" alt="videos: 7"> <img src="https://img.shields.io/badge/built_with-Claude_Code-d97757?style=for-the-badge" alt="built_with: Claude_Code"> <img src="https://img.shields.io/badge/license-MIT_%2B_CC_BY--NC-2ea44f?style=for-the-badge" alt="license: MIT_%2B_CC_BY--NC">
 
 <table><tr><td width="33%" align="center"><a href="videos/2026-11-14-openai-math/navier_stokes"><img src="videos/2026-11-14-openai-math/navier_stokes/navier_stokes.gif" alt="navier_stokes"></a><br><sub><b><code>navier_stokes</code></b><br>Has OpenAI Solved Maths?</sub></td><td width="33%" align="center"><a href="videos/2026-10-06-ai-learn/m01_3b1b_homage"><img src="videos/2026-10-06-ai-learn/m01_3b1b_homage/m01_3b1b_homage.gif" alt="m01_3b1b_homage"></a><br><sub><b><code>m01_3b1b_homage</code></b><br>How I use AI to learn engineering (anti brain rot studying)</sub></td><td width="33%" align="center"><a href="videos/2026-11-08-top-0.2-ai/hook_funnel"><img src="videos/2026-11-08-top-0.2-ai/hook_funnel/hook_funnel.gif" alt="hook_funnel"></a><br><sub><b><code>hook_funnel</code></b><br>Give me 15min, I'll make you a top 0.2% Engineer</sub></td></tr></table>
 
-### [✨ Browse all 51 animations →](https://alexbond008.github.io/youtube-animations/)
+### [✨ Browse all 56 animations →](https://alexbond008.github.io/youtube-animations/)
 
 <sub>Searchable gallery, every video, source links and 1080p renders</sub>
 

@@ -1,0 +1,54 @@
+<!doctype html><html><head><meta charset="utf-8"><title>Uno datasheet</title>
+<link rel="stylesheet" href="../../cad_common/src/common.css">
+<style>
+#doc{position:absolute;left:0;top:0;width:2483px;height:3512px;transform-origin:0 0}
+#doc img{position:absolute;left:0;top:0;width:2483px;height:3512px;border-radius:8px;box-shadow:0 20px 60px rgba(0,0,0,.55)}
+.mk{position:absolute;background:rgba(245,184,0,.32);border-radius:6px;mix-blend-mode:multiply}
+.ring{position:absolute;border:7px solid #F5B800;border-radius:50%;box-sizing:border-box}
+#chip{position:absolute;right:100px;top:70px;display:flex;align-items:center;gap:14px;
+  background:#16161A;border:1px solid #2A2A30;border-radius:14px;box-shadow:0 20px 60px rgba(0,0,0,.55);padding:14px 22px;white-space:nowrap}
+#chip .tag{font:700 24px Inter;color:#0E0E10;background:#D97757;border-radius:8px;padding:4px 12px}
+#chip .url{font:500 24px "JetBrains Mono";color:#F5F5F7}
+</style></head><body><div id="stage">
+<div id="doc"><img id="pg" src="../work/datasheet_p11_300dpi.png">
+  <!-- marker boxes in 300-dpi page pixels (page 11/14, "5.4 Board Outline & Mounting Holes") -->
+  <div class="mk" data-t="2.0" data-dir="x" style="left:545px;top:800px;width:240px;height:50px"></div>
+  <div class="ring" data-t="2.25" style="left:850px;top:996px;width:60px;height:60px"></div>
+  <div class="ring" data-t="2.35" style="left:1723px;top:1257px;width:60px;height:60px"></div>
+  <div class="ring" data-t="2.45" style="left:1723px;top:1736px;width:60px;height:60px"></div>
+  <div class="ring" data-t="2.55" style="left:830px;top:1823px;width:60px;height:60px"></div>
+  <div class="mk" data-t="3.1" data-dir="x" style="left:1095px;top:1950px;width:168px;height:84px"></div>
+  <div class="mk" data-t="3.6" data-dir="y" style="left:268px;top:1425px;width:90px;height:168px"></div>
+</div>
+
+<div id="chip"><span class="tag" id="tag">fetched by Claude</span><span class="url" id="url"></span></div>
+</div>
+<script>
+const URL_FETCHED = new URLSearchParams(location.search).get('url') || '';
+document.getElementById('url').textContent = URL_FETCHED;
+const TAG = new URLSearchParams(location.search).get('tag'); if (TAG) document.getElementById('tag').textContent = TAG;
+const doc = document.getElementById('doc'), pg = document.getElementById('pg'), chip = document.getElementById('chip');
+const PW = 2483, PH = 3512;
+const s0 = 1000 / PH, c0 = [PW / 2, PH / 2];
+const s1 = 0.70, c1 = [1241, 1380];
+const easeIO = f => f <= 0 ? 0 : f >= 1 ? 1 : (f < .5 ? 4*f*f*f : 1 - Math.pow(-2*f + 2, 3) / 2);
+const easeOut = f => f <= 0 ? 0 : f >= 1 ? 1 : 1 - Math.pow(1 - f, 3);
+const marks = [...document.querySelectorAll('[data-t]')].map(e => ({e, t: +e.dataset.t, dir: e.dataset.dir, w: e.style.width, h: e.style.height}));
+window.ready = new Promise(r => { if (pg.complete) r(); else pg.onload = r; }).then(() => document.fonts.ready);
+window.renderAt = t => {
+  const e = easeIO((t - 0.6) / 1.1);
+  const s = Math.exp(Math.log(s0) + (Math.log(s1) - Math.log(s0)) * e);
+  const cx = c0[0] + (c1[0] - c0[0]) * e, cy = c0[1] + (c1[1] - c0[1]) * e;
+  doc.style.opacity = easeOut(t / 0.3);
+  doc.style.transform = `translate(${960 - cx * s}px, ${540 - cy * s}px) scale(${s})`;
+  for (const m of marks) {
+    const f = easeOut((t - m.t) / 0.35);
+    if (m.dir === 'x') { m.e.style.clipPath = `inset(0 ${100 - 100 * f}% 0 0)`; }
+    else if (m.dir === 'y') { m.e.style.clipPath = `inset(${100 - 100 * f}% 0 0 0)`; }
+    else { m.e.style.opacity = f; m.e.style.transform = `scale(${1.4 - 0.4 * f})`; }
+  }
+  
+  const fc = easeOut((t - 4.4) / 0.33);
+  chip.style.opacity = fc; chip.style.transform = `scale(${0.92 + 0.08 * fc})`; chip.style.transformOrigin = '100% 0';
+};
+</script></body></html>

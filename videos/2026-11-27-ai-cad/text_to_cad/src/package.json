@@ -1,0 +1,7 @@
+{
+  "name": "concept-anim",
+  "private": true,
+  "description": "Frame-stepped HTML/SVG concept animation rendered with headless Chrome",
+  "scripts": { "render": "node render.js", "qa": "node render.js --qa" },
+  "dependencies": { "playwright-core": "1.64.0" }
+}

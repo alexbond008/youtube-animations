@@ -1,0 +1,137 @@
+<!doctype html><html><head><meta charset="utf-8">
+<link rel="stylesheet" href="common.css">
+<style>
+#term{left:100px;top:250px;width:580px;height:580px}
+#cad{left:1240px;top:250px;width:580px;height:580px}
+#tbody{font-family:"JetBrains Mono",monospace;padding:26px 28px;font-size:22px;line-height:40px;white-space:pre;color:#F5F5F7}
+#tbody .l{opacity:0}
+.or{color:#D97757}.mu{color:#A1A1AA}.gr{color:#3DDC97}
+.cur{display:inline-block;width:12px;height:26px;background:#D97757;vertical-align:-5px;margin-left:2px}
+#pill{position:absolute;left:960px;top:452px;transform:translate(-50%,-50%);height:72px;padding:0 32px;border-radius:36px;
+  background:#16161A;border:2px solid #2A2A30;display:flex;align-items:center;gap:14px;font-size:28px;font-weight:700;white-space:nowrap;color:#A1A1AA}
+#pill b{font-weight:800}
+#band{position:absolute;left:681px;top:528px;width:558px;height:64px;overflow:hidden}
+.pk{position:absolute;top:12px;height:40px;padding:0 16px 0 12px;border-radius:20px;background:#1E1A19;border:1.5px solid #D97757;
+  display:flex;align-items:center;gap:10px;font-size:22px;font-weight:700;color:#F5F5F7;white-space:nowrap;box-shadow:0 0 22px rgba(217,119,87,.35)}
+.pk i{width:10px;height:10px;border-radius:50%;background:#D97757;display:block}
+.tool{display:flex;height:50px;align-items:center;gap:10px;padding:0 16px;border-bottom:1px solid #2A2A30}
+.tool i{width:28px;height:28px;border-radius:6px;background:#24242A;display:block}
+.tool i.sep{width:1px;background:#2A2A30;margin:0 4px}
+#tree{position:absolute;left:0;top:106px;width:150px;bottom:40px;border-right:1px solid #2A2A30;padding:14px 12px;font-size:17px;color:#A1A1AA}
+#tree div{height:30px;display:flex;align-items:center;gap:8px}
+#tree .sq{width:12px;height:12px;border-radius:3px;background:#3A3A42}
+#vp{position:absolute;left:151px;top:106px;right:0;bottom:40px;background:radial-gradient(ellipse at 50% 45%,#1C1C22 0%,#131317 75%)}
+#status{position:absolute;left:0;right:0;bottom:0;height:40px;border-top:1px solid #2A2A30;display:flex;align-items:center;padding:0 16px;font-size:17px;color:#A1A1AA;background:#141418}
+#chip{position:absolute;left:1530px;top:892px;transform:translate(-50%,-50%);height:60px;padding:0 26px 0 18px;border-radius:30px;background:#16161A;
+  border:1.5px solid #2A2A30;display:flex;align-items:center;gap:12px;font-size:27px;font-weight:700;white-space:nowrap;box-shadow:0 20px 60px rgba(0,0,0,.55)}
+</style></head><body><div id="stage">
+<svg id="bridge" width="1920" height="1080"></svg>
+<div class="card" id="term"><div class="bar"><div class="dots"><i></i><i></i><i></i></div>claude — terminal</div>
+  <div id="tbody"></div></div>
+<div class="card" id="cad"><div class="bar"><div class="dots"><i></i><i></i><i></i></div>FreeCAD</div>
+  <div class="tool"><i></i><i></i><i></i><i class="sep"></i><i></i><i></i><i></i><i class="sep"></i><i></i><i></i></div>
+  <div id="tree"><div style="color:#F5F5F7;font-weight:600">Model</div><div><span class="sq"></span>Unnamed</div><div id="boxrow" style="opacity:0;color:#F5F5F7;padding-left:14px"><span class="sq" style="background:#D97757"></span>Box</div></div>
+  <div id="vp"></div>
+  <div id="status">Ready</div></div>
+<div id="pill"><b>MCP</b><span>·</span><span>Model Context Protocol</span></div>
+<div id="band"></div>
+<svg id="wire" width="1920" height="1080"></svg>
+<div id="chip"><svg width="30" height="30" viewBox="0 0 30 30" style="position:static"><path d="M8 5 L8 23 L12.5 19 L15.5 25.5 L18.5 24.2 L15.6 17.8 L21.5 17.8 Z" fill="#F5F5F7"/><circle cx="15" cy="15" r="13" fill="none" stroke="#FF5A4E" stroke-width="2.6"/><path d="M5.8 24.2 L24.2 5.8" stroke="#FF5A4E" stroke-width="2.6"/></svg>no clicks needed</div>
+</div>
+<script src="common.js"></script>
+<script>
+const { prog, lerp, fr, pop, io, out, clamp, mix } = U;
+window.SCENE = { D: 7.0 };
+const $ = id => document.getElementById(id);
+// ---- terminal lines: [time, html]
+const L = [
+  [0.0, '<span class="or">›</span> make a 40 mm cube'],
+  [1.18, '<span class="gr">●</span> <span class="mu">freecad</span>  connected via MCP'],
+  [2.5, '<span class="or">⏺</span> <span class="or">create_object</span><span class="mu">(Box, 40, 40, 40)</span>'],
+  [3.2, '<span class="or">⏺</span> <span class="or">execute_code</span><span class="mu">(doc.recompute())</span>'],
+  [3.9, '<span class="or">⏺</span> <span class="or">get_view</span><span class="mu">(isometric)</span>'],
+  [5.0, '<span class="gr">✓</span> Box ready in FreeCAD'],
+];
+$('tbody').innerHTML = L.map((l, i) => `<div class="l" id="l${i}">${l[1]}</div>`).join('') + '<div id="cl" class="l"> </div>';
+const PROMPT = 'make a 40 mm cube';
+const PK = [['create_object', 2.5], ['execute_code', 3.2], ['get_view', 3.9]];
+$('band').innerHTML = PK.map((p, i) => `<div class="pk mono" id="pk${i}"><i></i>${p[0]}</div>`).join('');
+const pkW = PK.map((_, i) => $('pk' + i).offsetWidth);
+
+// ---- wireframe cube in the CAD viewport
+const VC = [1605, 584];
+const E12 = (() => { const v = []; for (const x of [-1, 1]) for (const y of [-1, 1]) for (const z of [-1, 1]) v.push([x, y, z]);
+  const e = []; for (let i = 0; i < 8; i++) for (let j = i + 1; j < 8; j++) { const d = v[i].map((a, k) => a !== v[j][k]).filter(Boolean).length; if (d === 1) e.push([i, j]); }
+  return { v, e }; })();
+function cube(t) {
+  const a = prog(t, 5.0, 5.0 + fr(22), out);
+  if (a <= 0) return '';
+  const cam = ISO.camera({ yaw: 0.62 + 0.16 * Math.max(0, t - 5.0), pitch: 0.52, s: 78, cx: VC[0], cy: VC[1] + 10 });
+  let s = '';
+  // floor grid
+  for (let k = -3; k <= 3; k++) { const g = 0.55 * 0.5;
+    const A = cam.p([k * 0.5, -1.5, -1]), B = cam.p([k * 0.5, 1.5, -1]), C = cam.p([-1.5, k * 0.5, -1]), D = cam.p([1.5, k * 0.5, -1]);
+    s += `<line x1="${A[0]}" y1="${A[1]}" x2="${B[0]}" y2="${B[1]}" stroke="#2A2A31" stroke-width="1.2" opacity="${a}"/><line x1="${C[0]}" y1="${C[1]}" x2="${D[0]}" y2="${D[1]}" stroke="#2A2A31" stroke-width="1.2" opacity="${a}"/>`; }
+  // faces (faint fill) + edges, hidden edges dashed
+  const faces = ISO.box(-1, -1, -1, 1, 1, 1).faces;
+  for (const f of faces) if (cam.vis(f.n) > 0) s += `<polygon points="${f.q.map(v => cam.p(v).join(',')).join(' ')}" fill="#D97757" opacity="${0.07 * a}"/>`;
+  const visN = n => cam.vis(n) > 1e-4;
+  E12.e.forEach(([i, j], k) => {
+    const vi = E12.v[i], vj = E12.v[j], axis = vi.findIndex((q, m) => q !== vj[m]);
+    const ns = [0, 1, 2].filter(m => m !== axis).map(m => { const n = [0, 0, 0]; n[m] = vi[m]; return n; });
+    const hidden = !ns.some(visN);
+    const A = cam.p(vi), B = cam.p(vj), len = Math.hypot(B[0] - A[0], B[1] - A[1]);
+    const d = prog(t, 5.0 + k * 0.025, 5.0 + k * 0.025 + fr(14), out);
+    const Bx = lerp(A[0], B[0], d), By = lerp(A[1], B[1], d);
+    s += hidden ? `<line x1="${A[0]}" y1="${A[1]}" x2="${Bx}" y2="${By}" stroke="#D97757" stroke-width="2" stroke-dasharray="7 7" opacity="${0.4 * a}"/>`
+      : `<line x1="${A[0]}" y1="${A[1]}" x2="${Bx}" y2="${By}" stroke="#D97757" stroke-width="3.2" stroke-linecap="round" opacity="${a}"/>`;
+  });
+  return s;
+}
+function triad() { const o = [1428, 758]; const ax = [["#FF5A4E", [28, 9]], ["#3DDC97", [-20, 11]], ["#4DA3FF", [0, -28]]];
+  return ax.map(([c, d]) => `<line x1="${o[0]}" y1="${o[1]}" x2="${o[0] + d[0]}" y2="${o[1] + d[1]}" stroke="${c}" stroke-width="2.4" stroke-linecap="round"/>`).join(''); }
+
+window.render = t => {
+  // cards enter
+  const cIn = prog(t, 0, fr(11));
+  for (const id of ['term', 'cad']) { $(id).style.opacity = cIn; $(id).style.transform = `scale(${lerp(.92, 1, cIn)})`; }
+  // terminal
+  const n = Math.floor(clamp((t - 0.12) * 30, 0, PROMPT.length));
+  const blink = (Math.floor(t * 2.2) % 2 === 0) ? 1 : 0;
+  $('l0').style.opacity = cIn; $('l0').innerHTML = '<span class="or">›</span> ' + PROMPT.slice(0, n) + (t < 1.15 ? `<span class="cur" style="opacity:${n < PROMPT.length ? 1 : blink}"></span>` : '');
+  for (let i = 1; i < L.length; i++) { const a = prog(t, L[i][0], L[i][0] + fr(8)); const e = $('l' + i);
+    e.style.opacity = a; e.style.transform = `translateY(${(1 - a) * 8}px)`; }
+  const last = L.filter(l => t >= l[0]).length; // cursor on next empty line
+  $('cl').style.opacity = t >= 1.15 ? 1 : 0; $('cl').innerHTML = `<span class="cur" style="opacity:${blink}"></span>`;
+  $('cl').style.transform = `translateY(${-(L.length - last) * 40}px)`;
+  // pill: pops dim at .55, lights at 1.0
+  const pp = pop(t, 0.55), lit = prog(t, 0.97, 0.97 + fr(9));
+  const P = $('pill'); P.style.opacity = pp.o; P.style.transform = `translate(-50%,-50%) scale(${pp.s * (1 + 0.05 * Math.sin(Math.PI * clamp((t - 0.97) / 0.35)))})`;
+  P.style.borderColor = mix('#2A2A30', '#D97757', lit); P.style.color = mix('#A1A1AA', '#F5F5F7', lit);
+  P.querySelector('b').style.color = mix('#A1A1AA', '#D97757', lit);
+  const pulse = t > 1.4 ? 0.5 + 0.5 * Math.sin((t - 1.4) * 3.2) : 1;
+  P.style.boxShadow = `0 0 ${lerp(0, 46, lit) * lerp(.65, 1, pulse)}px rgba(217,119,87,${0.45 * lit}), 0 20px 60px rgba(0,0,0,.55)`;
+  // band (the bridge): dim rails, fill from both ends into the centre at ~1.0
+  const f = prog(t, 0.86, 1.06, io), x0 = 681, x1 = 1239, y0 = 528, y1 = 592, cx = 960;
+  let b = `<rect x="${x0}" y="${y0}" width="${x1 - x0}" height="${y1 - y0}" fill="rgba(217,119,87,${0.07 * lit})"/>`;
+  for (const y of [y0, y1]) b += `<line x1="${x0}" y1="${y}" x2="${x1}" y2="${y}" stroke="#2A2A30" stroke-width="2"/>`
+    + `<line x1="${x0}" y1="${y}" x2="${lerp(x0, cx, f)}" y2="${y}" stroke="#D97757" stroke-width="2.5"/><line x1="${x1}" y1="${y}" x2="${lerp(x1, cx, f)}" y2="${y}" stroke="#D97757" stroke-width="2.5"/>`;
+  b += `<line x1="${x0 + 10}" y1="560" x2="${x1 - 10}" y2="560" stroke="#D97757" stroke-width="2" stroke-dasharray="4 14" stroke-linecap="round" stroke-dashoffset="${-t * 60}" opacity="${0.55 * lit}"/>`;
+  for (const [x, y] of [[x0, 560], [x1, 560]]) b += `<circle cx="${x}" cy="${y}" r="9" fill="#16161A" stroke="${mix('#2A2A30', '#D97757', lit)}" stroke-width="2.5"/>`;
+  $('bridge').innerHTML = b;
+  // packets flow right (1.15 s each, ease in-out), into the CAD card
+  PK.forEach(([, t0], i) => { const u = prog(t, t0, t0 + 1.15, io), e = $('pk' + i);
+    e.style.left = lerp(-pkW[i] - 6, 558 + 6, u) + 'px'; e.style.opacity = (t >= t0 && t < t0 + 1.15) ? 1 : 0; });
+  // CAD: viewport flash when each packet lands, cube at 5.0
+  $('wire').innerHTML = (t >= 0 ? `<g opacity="${cIn}">${triad()}</g>` : '') + cube(t);
+  $('boxrow').style.opacity = prog(t, 5.05, 5.05 + fr(8));
+  $('status').textContent = t >= 5.05 ? 'Box  ·  40 × 40 × 40 mm' : t >= 2.5 + 1.0 ? 'Receiving commands…' : 'Ready';
+  const land = PK.reduce((m, [, t0]) => Math.max(m, 1 - prog(t, t0 + 1.05, t0 + 1.45, io) * (t >= t0 + 1.05 ? 1 : 0) - (t < t0 + 1.05 ? 1 : 0)), 0);
+  $('cad').style.borderColor = mix('#2A2A30', '#D97757', Math.max(0, land) * 0.9);
+  // chip
+  const cp = pop(t, 5.3); $('chip').style.opacity = cp.o; $('chip').style.transform = `translate(-50%,-50%) scale(${cp.s})`;
+};
+window.ready = document.fonts.ready.then(() => Promise.all(['400', '600', '700', '800'].map(w => document.fonts.load(w + ' 20px Inter')).concat(
+  ['500', '700'].map(w => document.fonts.load(w + ' 20px "JetBrains Mono"'))))).then(() => {
+  PK.forEach((_, i) => pkW[i] = $('pk' + i).offsetWidth); window.render(0); });
+</script></body></html>

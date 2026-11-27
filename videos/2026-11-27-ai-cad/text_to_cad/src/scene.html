@@ -1,0 +1,102 @@
+<!doctype html><html><head><meta charset="utf-8">
+<link rel="stylesheet" href="common.css">
+<style>
+#bar{position:absolute;left:460px;top:120px;width:1000px;height:108px;display:flex;align-items:center;padding:0 22px 0 34px;gap:18px;border-radius:20px}
+#bar .gt{font-family:'JetBrains Mono',monospace;font-weight:700;font-size:40px;color:#D97757}
+#txt{flex:1;font-family:'JetBrains Mono',monospace;font-weight:500;font-size:40px;white-space:pre;position:relative}
+#txt span{display:inline-block}
+.cur{display:inline-block;width:20px;height:46px;background:#D97757;vertical-align:-9px;margin-left:3px}
+#send{width:64px;height:64px;border-radius:16px;background:#24242A;display:flex;align-items:center;justify-content:center}
+#fly{position:absolute;left:0;top:0;width:1920px;height:1080px;pointer-events:none}
+#fly span{position:absolute;font-family:'JetBrains Mono',monospace;font-weight:700;font-size:40px;white-space:pre;transform-origin:50% 50%}
+#chip{position:absolute;left:960px;top:968px;transform:translate(-50%,-50%);height:56px;padding:0 24px;border-radius:28px;background:#16161A;border:1px solid #2A2A30;
+  display:flex;align-items:center;gap:14px;font-size:26px;font-weight:700;white-space:nowrap;box-shadow:0 20px 60px rgba(0,0,0,.55)}
+#chip .mu{color:#A1A1AA;font-weight:600}
+</style></head><body><div id="stage">
+<svg id="g" width="1920" height="1080"></svg>
+<div class="card" id="bar"><span class="gt">›</span><div id="txt"></div>
+  <div id="send"><svg width="30" height="30" viewBox="0 0 30 30" style="position:static"><path id="arr" d="M15 24 V7 M8 13.5 L15 6.5 L22 13.5" fill="none" stroke="#A1A1AA" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round"/></svg></div></div>
+<div id="fly"></div>
+<div id="chip">80 × 64 × 30 mm<span class="mu">·</span><span class="mu">fits Arduino Uno</span></div>
+</div>
+<script src="common.js"></script>
+<script>
+const { prog, lerp, fr, pop, io, out, clamp, mix, inn } = U;
+window.SCENE = { D: 5.0 };
+const $ = id => document.getElementById(id);
+const TEXT = 'a box for my Arduino Uno', T0 = 0.2, CPS = 30;
+const words = TEXT.split(' ');
+// typed text as one span per word (so each can fly)
+$('txt').innerHTML = words.map((w, i) => `<span id="w${i}">${w}</span>`).join(' ') + '<span class="cur" id="cur"></span>';
+$('fly').innerHTML = words.map((w, i) => `<span id="f${i}">${w}</span>`).join('');
+let WP = []; // word rects
+const TFLY = 2.5, TARGET = [960, 620];
+
+// ---- enclosure model (mm); outer 80 x 64 x 30, wall 2.5
+const W = 80, D = 64, H = 30, w = 2.5, LZ = H + 40;
+const PIV = [W / 2, D / 2, (LZ + 2.5) / 2];
+const SO = [[19.7, 7.8], [21, 56], [71.8, 12.9], [71.8, 40.8]];
+function model(t) {
+  const P = []; const g = k => prog(t, k, k + fr(9), out); // each face ~9 frames
+  const fl = g(2.72); if (fl > 0) { const fb = ISO.box(0, 0, 0 + 6 * (1 - fl), W, D, w + 6 * (1 - fl), { layer: -2, alpha: fl }); fb.faces[1].fill = '#222228'; P.push(fb); }
+  const wall = (k, b, layer, dec) => { const u = g(k); if (u <= 0) return; const z1 = lerp(w + 0.4, H, u);
+    const p = ISO.box(...b.slice(0, 5), z1, { layer, alpha: Math.min(1, u * 3) });
+    if (dec && u > 0.98) p.faces[4].decals = dec; P.push(p); };
+  wall(2.92, [0, D - w, w, W, D], -1); // back
+  wall(3.08, [W - w, w, w, W, D - w], -1); // right
+  wall(3.24, [0, w, w, w, D - w], 1, [ // left (ports for USB-B and barrel jack)
+    [[0, 9, 6.5], [0, 21, 6.5], [0, 21, 17.5], [0, 9, 17.5]], [[0, 41, 6.5], [0, 50, 6.5], [0, 50, 16.5], [0, 41, 16.5]]].map(q => q.map(v => [v[0] - 0.05, v[1], v[2]])));
+  wall(3.40, [0, 0, w, W, w], 1); // front
+  const so = g(3.56); if (so > 0) SO.forEach(([x, y]) => P.push(ISO.cyl(x, y, w, lerp(w + 0.2, w + 7, so), 3.2, { layer: 0, hole: 1.4, alpha: Math.min(1, so * 3) })));
+  const ld = prog(t, 3.72, 4.0, out); if (ld > 0) { const bob = t > 4.3 ? 1.6 * Math.sin((t - 4.3) * 2.6) : 0;
+    const z = LZ + 26 * (1 - ld) + bob; const lid = ISO.box(0, 0, z, W, D, z + w, { layer: 2, alpha: ld });
+    lid.faces[1].decals = [0, 1, 2, 3].map(k => { const y = 22 + k * 6.4; return [[28, y, z + w + 0.05], [52, y, z + w + 0.05], [52, y + 2.6, z + w + 0.05], [28, y + 2.6, z + w + 0.05]]; });
+    P.push(lid); }
+  return P.map(p => { // move pivot to origin
+    const sh = v => [v[0] - PIV[0], v[1] - PIV[1], v[2] - PIV[2]];
+    if (p.type === 'poly') { p.faces.forEach(f => { f.q = f.q.map(sh); if (f.decals) f.decals = f.decals.map(q => q.map(sh)); }); }
+    else { p.x -= PIV[0]; p.y -= PIV[1]; p.z0 -= PIV[2]; p.z1 -= PIV[2]; }
+    p.c = sh(p.c); return p; });
+}
+const cam = ISO.camera({ yaw: 0.6, pitch: 0.5, s: 5.3, cx: 960, cy: 600 });
+
+window.render = t => {
+  // bar enters
+  const b = pop(t, 0); $('bar').style.opacity = b.o; $('bar').style.transform = `scale(${b.s})`;
+  const n = Math.floor(clamp((t - T0) * CPS, 0, TEXT.length));
+  let c = 0; words.forEach((wd, i) => { const s = c; c += wd.length + 1; const e = $('w' + i);
+    e.textContent = wd.slice(0, clamp(n - s, 0, wd.length)); e.style.opacity = lerp(1, 0.45, prog(t, TFLY + i * 0.05, TFLY + i * 0.05 + 0.2)); });
+  const typing = n < TEXT.length, blink = Math.floor((t - T0) * 2.2) % 2 === 0;
+  $('cur').style.opacity = t < TFLY ? (typing || blink ? 1 : 0) : 0;
+  // send press at 2.2
+  const sp = Math.max(0, 1 - Math.abs(t - 2.28) / 0.18);
+  $('send').style.background = mix('#24242A', '#D97757', t >= 2.2 && t < 2.62 ? 1 : 0);
+  $('arr').setAttribute('stroke', t >= 2.2 && t < 2.62 ? '#0E0E10' : '#A1A1AA');
+  $('send').style.transform = `scale(${1 - 0.08 * sp})`;
+  $('bar').style.borderColor = mix('#2A2A30', '#D97757', t >= 2.2 && t < 2.7 ? 1 - prog(t, 2.45, 2.7) : 0);
+  // words fly into the model
+  words.forEach((wd, i) => { const e = $('f' + i), t0 = TFLY + i * 0.05, u = prog(t, t0, t0 + 0.42, U.bez(.45, 0, .6, 1));
+    if (t < t0 || u >= 1) { e.style.opacity = 0; return; }
+    const [x0, y0] = WP[i], x = lerp(x0, TARGET[0], u), y = lerp(y0, TARGET[1], u) - 140 * Math.sin(Math.PI * u) * 0.6;
+    e.textContent = wd; e.style.left = x + 'px'; e.style.top = y + 'px';
+    e.style.transform = `translate(-50%,-50%) scale(${lerp(1, 0.3, u)})`; e.style.opacity = u < 0.75 ? 1 : 1 - (u - 0.75) / 0.25;
+    e.style.color = mix('#F5F5F7', '#D97757', clamp(u * 1.6)); });
+  // model
+  let s = '';
+  const done = prog(t, 4.0, 4.0 + fr(8)), glow = done * (1 - prog(t, 4.12, 4.7, io));
+  const fl = prog(t, 2.72, 2.72 + fr(9));
+  if (fl > 0) { const sh = cam.p([0, 0, -PIV[2]]);
+    s += `<ellipse cx="${sh[0]}" cy="${sh[1] + 40}" rx="${360}" ry="${70}" fill="url(#sh)" opacity="${fl}"/>`; }
+  s += `<defs><radialGradient id="sh"><stop offset="0" stop-color="#D97757" stop-opacity="${0.10 + 0.14 * glow}"/><stop offset="1" stop-color="#D97757" stop-opacity="0"/></radialGradient></defs>`;
+  s += `<g style="filter:drop-shadow(0 0 ${10 * glow}px rgba(217,119,87,${0.8 * glow}))">` + ISO.draw(cam, model(t), { sw: 2.6, stroke: '#D97757' }) + '</g>';
+  // orange spark where the words land
+  const sk = prog(t, 2.7, 3.05); if (sk > 0 && sk < 1) s += `<circle cx="${TARGET[0]}" cy="${TARGET[1]}" r="${10 + 80 * sk}" fill="none" stroke="#D97757" stroke-width="3" opacity="${0.7 * (1 - sk)}"/>`;
+  $('g').innerHTML = s;
+  const cp = pop(t, 4.15); $('chip').style.opacity = cp.o; $('chip').style.transform = `translate(-50%,-50%) scale(${cp.s})`;
+};
+window.ready = document.fonts.ready.then(() => Promise.all(['400', '600', '700', '800'].map(w => document.fonts.load(w + ' 20px Inter')).concat(
+  ['500', '700'].map(w => document.fonts.load(w + ' 20px "JetBrains Mono"'))))).then(() => {
+  window.render(2.0); // full text laid out -> measure word centres
+  WP = words.map((_, i) => { const r = $('w' + i).getBoundingClientRect(); return [r.left + r.width / 2, r.top + r.height / 2]; });
+  window.render(0); });
+</script></body></html>

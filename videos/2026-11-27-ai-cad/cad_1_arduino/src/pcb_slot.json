@@ -1,0 +1,177 @@
+{
+ "parts": [
+  {
+   "name": "base",
+   "stl": "work/blend/base.stl",
+   "color": "#E6E2DA",
+   "rough": 0.55
+  },
+  {
+   "name": "lid",
+   "stl": "work/blend/lid.stl",
+   "color": "#E6E2DA",
+   "rough": 0.55,
+   "anim": [
+    [
+     1,
+     [
+      0,
+      0,
+      130
+     ]
+    ],
+    [
+     105,
+     [
+      0,
+      0,
+      130
+     ]
+    ],
+    [
+     150,
+     [
+      0,
+      0,
+      0
+     ]
+    ]
+   ]
+  },
+  {
+   "name": "pcb",
+   "stl": "work/blend/uno_pcb.stl",
+   "color": "#0E6B4A",
+   "rough": 0.4,
+   "anim": [
+    [
+     1,
+     [
+      0,
+      0,
+      45
+     ]
+    ],
+    [
+     90,
+     [
+      0,
+      0,
+      0
+     ]
+    ]
+   ]
+  },
+  {
+   "name": "usb",
+   "stl": "work/blend/uno_usb.stl",
+   "color": "#C9CDD2",
+   "rough": 0.25,
+   "metal": 1.0,
+   "anim": [
+    [
+     1,
+     [
+      0,
+      0,
+      45
+     ]
+    ],
+    [
+     90,
+     [
+      0,
+      0,
+      0
+     ]
+    ]
+   ]
+  },
+  {
+   "name": "jack",
+   "stl": "work/blend/uno_jack.stl",
+   "color": "#151517",
+   "rough": 0.5,
+   "anim": [
+    [
+     1,
+     [
+      0,
+      0,
+      45
+     ]
+    ],
+    [
+     90,
+     [
+      0,
+      0,
+      0
+     ]
+    ]
+   ]
+  },
+  {
+   "name": "headers",
+   "stl": "work/blend/uno_headers.stl",
+   "color": "#151517",
+   "rough": 0.5,
+   "anim": [
+    [
+     1,
+     [
+      0,
+      0,
+      45
+     ]
+    ],
+    [
+     90,
+     [
+      0,
+      0,
+      0
+     ]
+    ]
+   ]
+  },
+  {
+   "name": "chip",
+   "stl": "work/blend/uno_chip.stl",
+   "color": "#1C1C1F",
+   "rough": 0.6,
+   "anim": [
+    [
+     1,
+     [
+      0,
+      0,
+      45
+     ]
+    ],
+    [
+     90,
+     [
+      0,
+      0,
+      0
+     ]
+    ]
+   ]
+  }
+ ],
+ "frames": 180,
+ "spin_deg": 0,
+ "spin_offset": 141,
+ "engine": "EEVEE",
+ "spp": 64,
+ "cam_elev": 30,
+ "cam_az": -60,
+ "cam_dist_k": 4.8,
+ "focal": 55,
+ "target_z": 0.95,
+ "light_k": 0.06,
+ "floor_color": "#08080A",
+ "world_strength": 0.25,
+ "out": "work/slot_frames/f_"
+}

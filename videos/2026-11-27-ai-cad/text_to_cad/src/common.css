@@ -1,0 +1,15 @@
+@font-face{font-family:Inter;font-weight:400;src:url(fonts/inter-latin-400-normal.woff2)}
+@font-face{font-family:Inter;font-weight:600;src:url(fonts/inter-latin-600-normal.woff2)}
+@font-face{font-family:Inter;font-weight:700;src:url(fonts/inter-latin-700-normal.woff2)}
+@font-face{font-family:Inter;font-weight:800;src:url(fonts/inter-latin-800-normal.woff2)}
+@font-face{font-family:'JetBrains Mono';font-weight:500;src:url(fonts/jetbrains-mono-latin-500-normal.woff2)}
+@font-face{font-family:'JetBrains Mono';font-weight:700;src:url(fonts/jetbrains-mono-latin-700-normal.woff2)}
+*{box-sizing:border-box}
+html,body{margin:0;width:1920px;height:1080px;overflow:hidden;background:#0E0E10;color:#F5F5F7;font-family:Inter,sans-serif}
+#stage{position:absolute;inset:0;background-color:#0E0E10;
+  background-image:radial-gradient(circle,#23232A 1.2px,transparent 1.6px);background-size:24px 24px;background-position:12px 12px}
+.card{position:absolute;background:#16161A;border:1px solid #2A2A30;border-radius:16px;box-shadow:0 20px 60px rgba(0,0,0,.55);overflow:hidden}
+.bar{height:56px;display:flex;align-items:center;padding:0 20px;border-bottom:1px solid #2A2A30;background:#1A1A1F;font-weight:600;font-size:24px;color:#A1A1AA}
+.dots{display:flex;gap:9px;margin-right:18px}.dots i{width:13px;height:13px;border-radius:50%;background:#3A3A42;display:block}
+.mono{font-family:'JetBrains Mono',monospace}
+svg{position:absolute;left:0;top:0;overflow:visible}

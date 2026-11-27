@@ -1,0 +1,187 @@
+<!doctype html><html><head><meta charset="utf-8">
+<link rel="stylesheet" href="common.css">
+<style>
+.dim{position:absolute;transform:translate(-50%,-50%);height:48px;padding:0 16px;border-radius:12px;background:#16161A;border:1.5px solid #2A2A30;
+  display:flex;align-items:center;font-size:30px;font-weight:700;white-space:nowrap;color:#F5F5F7;box-shadow:0 10px 30px rgba(0,0,0,.5)}
+.dim small{font-size:20px;color:#A1A1AA;font-weight:600;margin-left:5px}
+#ui{font-family:Inter;font-weight:700}
+</style></head><body><div id="stage">
+<svg id="paper" width="1920" height="1080"></svg>
+<svg id="cad" width="1920" height="1080"></svg>
+<div id="dims"></div>
+<svg id="vf" width="1920" height="1080"></svg>
+<div id="flash" style="position:absolute;inset:0;background:#fff;opacity:0"></div>
+</div>
+<script src="common.js"></script>
+<script>
+const { prog, lerp, fr, pop, io, out, clamp, mix, sine } = U;
+window.SCENE = { D: 6.0 };
+const $ = id => document.getElementById(id);
+const CX = 960, CY = 560, S = 10;            // morph frame: yaw 0, pitch 0 -> screen = (CX + S x, CY - S z)
+const PIV = [30, 15, 20];
+const X = x => CX + S * (x - PIV[0]), Z = z => CY - S * (z - PIV[2]);
+
+// ---------- hand-drawn strokes
+function rnd(seed) { return () => { seed = (seed * 16807) % 2147483647; return seed / 2147483647; }; }
+function wobble(pts, seed, amp = 1.3, over = 0) {
+  const r = rnd(seed * 97 + 13), ph = [r() * 6, r() * 6, r() * 6];
+  if (over) { const [a, b] = [pts[0], pts[1]], [c, d] = [pts[pts.length - 2], pts[pts.length - 1]];
+    const ext = (p, q, k) => { const l = Math.hypot(q[0] - p[0], q[1] - p[1]) || 1; return [q[0] + (q[0] - p[0]) / l * k, q[1] + (q[1] - p[1]) / l * k]; };
+    pts = [ext(b, a, over * (0.5 + r())), ...pts, ext(c, d, over * (0.5 + r()))]; }
+  const o = []; let s = 0;
+  for (let i = 0; i < pts.length - 1; i++) { const [x0, y0] = pts[i], [x1, y1] = pts[i + 1], L = Math.hypot(x1 - x0, y1 - y0), n = Math.max(1, Math.ceil(L / 7));
+    const nx = -(y1 - y0) / (L || 1), ny = (x1 - x0) / (L || 1);
+    for (let j = 0; j <= n; j++) { if (i > 0 && j === 0) continue; const u = j / n, ss = s + u * L;
+      const w = amp * (Math.sin(ss * 0.021 + ph[0]) + 0.6 * Math.sin(ss * 0.067 + ph[1]) + 0.25 * Math.sin(ss * 0.19 + ph[2]));
+      o.push([x0 + (x1 - x0) * u + nx * w, y0 + (y1 - y0) * u + ny * w]); }
+    s += L; }
+  return o;
+}
+const arc = (cx, cy, rx, ry, a0, a1, n = 26) => [...Array(n + 1)].map((_, i) => { const a = (a0 + (a1 - a0) * i / n) * Math.PI / 180; return [cx + rx * Math.cos(a), cy + ry * Math.sin(a)]; });
+const G = { // single-stroke glyphs, 1 x 1.4 box, y down
+  '0': [arc(.5, .7, .44, .68, -80, 285)],
+  '3': [arc(.48, .38, .4, .34, -165, 95), arc(.46, 1.02, .46, .37, -95, 165)],
+  '4': [[[.72, 1.4], [.72, 0], [0, .98], [1, .98]]],
+  '5': [[[.9, 0], [.22, 0], [.14, .62]], arc(.48, .96, .44, .42, -140, 150)],
+  '6': [arc(.95, 1.0, .85, .95, -100, -180), arc(.5, 1.0, .42, .4, 180, 540)],
+  'Ø': [arc(.5, .72, .45, .55, -90, 270), [[0, 1.38], [1, .04]]],
+  'W': [[[0, .05], [.3, 1.38], [.65, .45], [1.0, 1.38], [1.3, .05]]],
+  '=': [[[0, .55], [.8, .55]], [[0, .92], [.8, .92]]],
+};
+const GW = { 'W': 1.3, '=': 0.8 };
+function text(str, x, y, h, seed) { // centred at x,y
+  const k = h / 1.4, gap = 0.32; let w = 0; for (const ch of str) w += (GW[ch] || 1) + gap; w -= gap;
+  let cx = x - w * k / 2; const strokes = [];
+  [...str].forEach((ch, i) => { for (const st of G[ch]) strokes.push(wobble(st.map(([a, b]) => [cx + a * k, y - h / 2 + b * k]), seed + i * 7, 0.7));
+    cx += ((GW[ch] || 1) + gap) * k; });
+  return strokes;
+}
+// strokes: [points, t0, t1, width, style]
+const SK = []; let sd = 1;
+const TS = 0.82; // sketch is fully drawn by ~1.65 s
+const line = (pts, t0, t1, w = 3.6, o = {}) => SK.push({ p: wobble(pts, sd++, o.amp ?? 1.3, o.over ?? 7), t0: t0 * TS, t1: t1 * TS, w: w === 2 ? 2.5 : w, dash: o.dash });
+const txt = (s, x, y, h, t0, t1) => text(s, x, y, h, sd += 5).forEach((p, i, a) => SK.push({ p, t0: TS * lerp(t0, t1, i / a.length), t1: TS * lerp(t0, t1, (i + 1) / a.length), w: 3.1 }));
+// profile (L bracket, side view)
+line([[X(0), Z(40)], [X(5), Z(40)]], 0.10, 0.18);
+line([[X(5), Z(40)], [X(5), Z(5)]], 0.18, 0.36);
+line([[X(5), Z(5)], [X(60), Z(5)]], 0.36, 0.58);
+line([[X(60), Z(5)], [X(60), Z(0)]], 0.58, 0.63);
+line([[X(60), Z(0)], [X(0), Z(0)]], 0.63, 0.85);
+line([[X(0), Z(0)], [X(0), Z(40)]], 0.85, 1.02);
+// hidden holes (dashed)
+for (const z of [22, 28]) line([[X(0), Z(z)], [X(5), Z(z)]], 1.02, 1.08, 2, { dash: '7 6', over: 3 });
+for (const x of [37, 43]) line([[X(x), Z(5)], [X(x), Z(0)]], 1.08, 1.13, 2, { dash: '5 5', over: 3 });
+// dims: 60 below
+line([[X(0), Z(-1.5)], [X(0), Z(-9)]], 1.13, 1.17, 2, { over: 2 }); line([[X(60), Z(-1.5)], [X(60), Z(-9)]], 1.17, 1.21, 2, { over: 2 });
+line([[X(0), Z(-6.5)], [X(60), Z(-6.5)]], 1.21, 1.33, 2, { over: 0 });
+line([[X(0) + 16, Z(-6.5) - 7], [X(0), Z(-6.5)], [X(0) + 16, Z(-6.5) + 7]], 1.33, 1.36, 2, { over: 0, amp: .5 });
+line([[X(60) - 16, Z(-6.5) - 7], [X(60), Z(-6.5)], [X(60) - 16, Z(-6.5) + 7]], 1.36, 1.39, 2, { over: 0, amp: .5 });
+txt('60', X(30), Z(-11.6), 40, 1.39, 1.5);
+// 40 left
+line([[X(-1.5), Z(0)], [X(-9), Z(0)]], 1.5, 1.53, 2, { over: 2 }); line([[X(-1.5), Z(40)], [X(-9), Z(40)]], 1.53, 1.56, 2, { over: 2 });
+line([[X(-6.5), Z(0)], [X(-6.5), Z(40)]], 1.56, 1.66, 2, { over: 0 });
+line([[X(-6.5) - 7, Z(40) + 16], [X(-6.5), Z(40)], [X(-6.5) + 7, Z(40) + 16]], 1.66, 1.68, 2, { over: 0, amp: .5 });
+line([[X(-6.5) - 7, Z(0) - 16], [X(-6.5), Z(0)], [X(-6.5) + 7, Z(0) - 16]], 1.68, 1.70, 2, { over: 0, amp: .5 });
+txt('40', X(-12.5), Z(20), 40, 1.70, 1.8);
+// 5 (thickness) above upright
+txt('5', X(2.5), Z(45), 34, 1.8, 1.84);
+// Ø6 callout on base hole + width note
+line([[X(43) + 2, Z(5) - 4], [X(49), Z(12)], [X(55), Z(12)]], 1.84, 1.9, 2, { over: 0 });
+txt('Ø6', X(58.5), Z(12), 36, 1.9, 1.96);
+txt('W=30', X(46), Z(32), 40, 1.96, 2.0);
+// each stroke as a path, drawn in by dashoffset
+const toD = p => 'M' + p.map(q => q[0].toFixed(1) + ' ' + q[1].toFixed(1)).join('L');
+const PAPER = { x: 420, y: 196, w: 1080, h: 740 };
+
+// ---------- 3D bracket
+function model(t, Wd) {
+  const sh = v => [v[0] - PIV[0], v[1] - PIV[1], v[2] - PIV[2]];
+  const up = ISO.box(0, 0, 0, 5, Wd, 40, { layer: 0 }), base = ISO.box(5, 0, 0, 60, Wd, 5, { layer: 1 });
+  if (Wd > 10) { const a = prog(Wd, 10, 18, io);
+    up.faces[5].decals = [ISO.circle([5.05, Wd / 2, 25], [0, 1, 0], [0, 0, 1], 3 * a)];
+    base.faces[1].decals = [ISO.circle([40, Wd / 2, 5.05], [1, 0, 0], [0, 1, 0], 3 * a)]; }
+  for (const p of [up, base]) { p.faces.forEach(f => { f.q = f.q.map(sh); if (f.decals) f.decals = f.decals.map(q => q.map(sh)); }); p.c = sh(p.c); }
+  return [up, base];
+}
+const M0 = 3.2, M1 = 4.45; // morph window
+function camAt(t) { const u = prog(t, M0 + 0.1, M1, io), drift = t > M1 ? (t - M1) * 0.045 : 0;
+  return ISO.camera({ yaw: lerp(0, -0.62, u) - drift, pitch: lerp(0, 0.5, u), s: lerp(S, 8.6, u), cx: CX + lerp(0, 40, u), cy: CY + lerp(0, 10, u) }); }
+// dimension helpers (3D -> screen)
+function arrow(a, b) { const dx = b[0] - a[0], dy = b[1] - a[1], l = Math.hypot(dx, dy), ux = dx / l, uy = dy / l, k = 14, w = 6;
+  return `M${b[0]} ${b[1]} L${b[0] - ux * k - uy * w} ${b[1] - uy * k + ux * w} L${b[0] - ux * k + uy * w} ${b[1] - uy * k - ux * w}Z`; }
+function dimLine(cam, A, B, off, u) { // A,B model points, off offset vector, u reveal
+  const sh = v => [v[0] - PIV[0], v[1] - PIV[1], v[2] - PIV[2]], add = (v, k) => v.map((x, i) => x + off[i] * k);
+  const a = cam.p(sh(A)), b = cam.p(sh(B)), a2 = cam.p(sh(add(A, 1))), b2 = cam.p(sh(add(B, 1))), ae = cam.p(sh(add(A, 1.25))), be = cam.p(sh(add(B, 1.25)));
+  const m = [(a2[0] + b2[0]) / 2, (a2[1] + b2[1]) / 2], hb = [lerp(m[0], a2[0], u), lerp(m[1], a2[1], u)], hb2 = [lerp(m[0], b2[0], u), lerp(m[1], b2[1], u)];
+  let s = `<g opacity="${clamp(u * 3)}" stroke="#A1A1AA" stroke-width="2" fill="none">`;
+  s += `<line x1="${a[0]}" y1="${a[1]}" x2="${ae[0]}" y2="${ae[1]}" stroke-dasharray="4 5"/><line x1="${b[0]}" y1="${b[1]}" x2="${be[0]}" y2="${be[1]}" stroke-dasharray="4 5"/>`;
+  s += `<line x1="${hb[0]}" y1="${hb[1]}" x2="${hb2[0]}" y2="${hb2[1]}"/></g>`;
+  if (u > 0.95) s += `<path d="${arrow(m, a2)}" fill="#A1A1AA"/><path d="${arrow(m, b2)}" fill="#A1A1AA"/>`;
+  return { s, m };
+}
+const DIMS = [['60', 4.55], ['40', 4.72], ['30', 4.89], ['Ø6', 5.06]];
+$('dims').innerHTML = DIMS.map((d, i) => `<div class="dim" id="d${i}">${d[0]}<small>mm</small></div>`).join('');
+
+window.render = t => {
+  // paper + sketch (deskews 2.45 -> 2.95, fades out 3.2 -> 3.5)
+  const rot = lerp(-2.4, 0, prog(t, 2.45, 2.95, io)), pf = 1 - prog(t, M0, M0 + 0.3, io), pin = prog(t, 0, fr(10));
+  const ps = lerp(.96, 1, pin);
+  let p = `<g opacity="${pin * pf}" transform="rotate(${rot} ${CX} ${CY}) translate(${CX} ${CY}) scale(${ps}) translate(${-CX} ${-CY})">`;
+  p += `<defs><pattern id="gr" width="30" height="30" patternUnits="userSpaceOnUse" x="${PAPER.x}" y="${PAPER.y}"><path d="M30 0H0V30" fill="none" stroke="rgba(70,110,190,.16)" stroke-width="1.2"/></pattern>
+    <filter id="ps" x="-10%" y="-10%" width="120%" height="120%"><feDropShadow dx="0" dy="20" stdDeviation="28" flood-color="#000" flood-opacity=".6"/></filter></defs>`;
+  p += `<rect x="${PAPER.x}" y="${PAPER.y}" width="${PAPER.w}" height="${PAPER.h}" rx="6" fill="#F3F0E8" filter="url(#ps)"/>`;
+  p += `<rect x="${PAPER.x}" y="${PAPER.y}" width="${PAPER.w}" height="${PAPER.h}" rx="6" fill="url(#gr)"/>`;
+  for (const k of SK) { const u = prog(t, k.t0, k.t1, U.lin); if (u <= 0) continue;
+    if (k.dash) { if (u > 0) p += `<path d="${toD(k.p)}" fill="none" stroke="#2E2E34" stroke-width="${k.w}" stroke-dasharray="${k.dash}" stroke-linecap="round" opacity="${0.85 * clamp(u * 1.5)}"/>`; continue; }
+    p += `<path d="${toD(k.p)}" pathLength="1" fill="none" stroke="#2E2E34" stroke-width="${k.w}" stroke-linecap="round" stroke-linejoin="round" stroke-dasharray="1 1" stroke-dashoffset="${1 - u}" opacity=".9"/>`;
+    p += `<path d="${toD(k.p.map(([x, y]) => [x + .9, y + .6]))}" pathLength="1" fill="none" stroke="#2E2E34" stroke-width="${k.w * .45}" stroke-dasharray="1 1" stroke-dashoffset="${1 - u}" opacity=".35"/>`; }
+  // AI scan sweep over the photo
+  const sc = prog(t, 2.5, 3.15, io);
+  if (sc > 0 && sc < 1) { const y = lerp(PAPER.y + 10, PAPER.y + PAPER.h - 10, sc);
+    p += `<rect x="${PAPER.x}" y="${y - 60}" width="${PAPER.w}" height="60" fill="url(#sg)"/><line x1="${PAPER.x}" y1="${y}" x2="${PAPER.x + PAPER.w}" y2="${y}" stroke="#D97757" stroke-width="3"/>
+      <defs><linearGradient id="sg" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#D97757" stop-opacity="0"/><stop offset="1" stop-color="#D97757" stop-opacity=".22"/></linearGradient></defs>`; }
+  p += '</g>';
+  $('paper').innerHTML = p;
+
+  // viewfinder snaps over at 1.62 -> 1.92, shutter 2.0, exits 2.22
+  const vin = prog(t, 1.6, 1.6 + fr(9)), vout = prog(t, 2.22, 2.22 + fr(8), io), va = vin * (1 - vout);
+  let v = '';
+  if (va > 0) { const k = lerp(1.07, 1, vin) + 0.03 * vout, R = { x: 250, y: 105, w: 1420, h: 870 };
+    v += `<g opacity="${va}" transform="translate(960 540) scale(${k}) translate(-960 -540)">`;
+    v += `<path d="M-200 -200H2120V1280H-200Z M${R.x + 40} ${R.y}H${R.x + R.w - 40}A40 40 0 0 1 ${R.x + R.w} ${R.y + 40}V${R.y + R.h - 40}A40 40 0 0 1 ${R.x + R.w - 40} ${R.y + R.h}H${R.x + 40}A40 40 0 0 1 ${R.x} ${R.y + R.h - 40}V${R.y + 40}A40 40 0 0 1 ${R.x + 40} ${R.y}Z" fill="rgba(8,8,10,.72)" fill-rule="evenodd"/>`;
+    v += `<rect x="${R.x - 14}" y="${R.y - 14}" width="${R.w + 28}" height="${R.h + 28}" rx="54" fill="none" stroke="#050506" stroke-width="28"/>`;
+    v += `<rect x="${R.x - 28}" y="${R.y - 28}" width="${R.w + 56}" height="${R.h + 56}" rx="66" fill="none" stroke="#2A2A30" stroke-width="2"/>`;
+    // thirds grid
+    for (const f of [1 / 3, 2 / 3]) v += `<line x1="${R.x + R.w * f}" y1="${R.y}" x2="${R.x + R.w * f}" y2="${R.y + R.h}" stroke="rgba(255,255,255,.22)" stroke-width="1.5"/><line x1="${R.x}" y1="${R.y + R.h * f}" x2="${R.x + R.w}" y2="${R.y + R.h * f}" stroke="rgba(255,255,255,.22)" stroke-width="1.5"/>`;
+    // focus brackets around the sheet (tighten in)
+    const fk = prog(t, 1.68, 1.68 + fr(10)), F = { x: lerp(PAPER.x - 70, PAPER.x - 20, fk), y: lerp(PAPER.y - 50, PAPER.y - 18, fk) }, F2 = { x: 2 * PAPER.x + PAPER.w - F.x, y: 2 * PAPER.y + PAPER.h - F.y }, L = 54;
+    const corner = (x, y, sx, sy) => `<path d="M${x} ${y + sy * L}V${y}H${x + sx * L}" fill="none" stroke="#F5B800" stroke-width="4" stroke-linecap="round"/>`;
+    v += corner(F.x, F.y, 1, 1) + corner(F2.x, F.y, -1, 1) + corner(F.x, F2.y, 1, -1) + corner(F2.x, F2.y, -1, -1);
+    // shutter + mode label
+    const pr = 1 - 0.14 * Math.max(0, 1 - Math.abs(t - 2.02) / 0.09);
+    v += `<circle cx="${R.x + R.w - 70}" cy="540" r="40" fill="none" stroke="#fff" stroke-width="5"/><circle cx="${R.x + R.w - 70}" cy="540" r="${31 * pr}" fill="#fff"/>`;
+    v += `<text x="${R.x + R.w - 70}" y="${540 + 82}" fill="#F5B800" font-family="Inter" font-weight="700" font-size="22" text-anchor="middle" letter-spacing="2">PHOTO</text>`;
+    v += '</g>'; }
+  $('vf').innerHTML = v;
+  $('flash').style.opacity = t >= 2.0 ? 0.85 * (1 - prog(t, 2.0, 2.0 + fr(7), U.lin)) : 0;
+
+  // 3D model: fades in over the profile at M0, extrudes + turns to iso by M1
+  const ma = prog(t, M0, M0 + 0.22, io);
+  let c = '';
+  if (ma > 0) { const cam = camAt(t), Wd = lerp(0.001, 30, prog(t, M0 + 0.1, M1, io));
+    const done = prog(t, M1 - 0.05, M1 + fr(8)), glow = done * (1 - prog(t, M1 + 0.2, M1 + 0.8, io));
+    c += `<g opacity="${ma}" style="filter:drop-shadow(0 0 ${10 * glow}px rgba(217,119,87,${0.8 * glow}))">` + ISO.draw(cam, model(t, Wd), { sw: 3 }) + '</g>';
+    // dimensions
+    const D = [[[0, 0, 0], [60, 0, 0], [0, -12, 0]], [[0, 0, 0], [0, 0, 40], [-12, 0, 0]], [[60, 0, 0], [60, 30, 0], [12, 0, 0]]];
+    DIMS.forEach(([lab, td], i) => { const u = prog(t, td, td + fr(10)); const e = $('d' + i);
+      if (u <= 0) { e.style.opacity = 0; return; }
+      let pos;
+      if (i < 3) { const r = dimLine(cam, ...D[i], u); c += r.s; const off = { 0: [0, 30], 1: [-44, 0], 2: [44, 18] }[i]; pos = [r.m[0] + off[0], r.m[1] + off[1]]; }
+      else { const sh = v => [v[0] - PIV[0], v[1] - PIV[1], v[2] - PIV[2]]; const h = cam.p(sh([40, 15, 5])), k = [h[0] + 110, h[1] - 120];
+        c += `<g opacity="${u}"><circle cx="${h[0]}" cy="${h[1]}" r="4" fill="#A1A1AA"/><polyline points="${h[0]},${h[1]} ${lerp(h[0], k[0], u)},${lerp(h[1], k[1], u)}" stroke="#A1A1AA" stroke-width="2" fill="none"/></g>`; pos = [k[0] + 40, k[1] - 12]; }
+      e.style.opacity = u; e.style.left = pos[0] + 'px'; e.style.top = pos[1] + 'px'; e.style.transform = `translate(-50%,-50%) scale(${lerp(.92, 1, u)})`; });
+  } else DIMS.forEach((_, i) => $('d' + i).style.opacity = 0);
+  $('cad').innerHTML = c;
+};
+window.ready = document.fonts.ready.then(() => Promise.all(['400', '600', '700', '800'].map(w => document.fonts.load(w + ' 20px Inter')))).then(() => window.render(0));
+</script></body></html>

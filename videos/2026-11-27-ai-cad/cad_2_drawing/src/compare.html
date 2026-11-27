@@ -1,0 +1,63 @@
+<!doctype html><html><head><meta charset="utf-8"><title>Drawing vs model</title>
+<link rel="stylesheet" href="../../cad_common/src/common.css">
+<style>
+#dc{left:96px;top:70px;width:960px;height:940px}
+.hd{position:absolute;left:26px;font:700 22px Inter;color:#F5F5F7}.hd span{color:#A1A1AA;font-weight:600}
+#dwg{position:absolute;left:0;top:0;overflow:hidden;border-radius:8px}
+#mdl{position:absolute}
+svg{position:absolute;left:0;top:0;overflow:visible}
+#lc{left:1088px;top:70px;width:736px;height:940px}
+.row{position:absolute;left:28px;right:28px;font:600 25px/34px Inter;color:#F5F5F7;opacity:0}
+.row .m{font:800 32px Inter;display:inline-block;width:44px}
+.row .s{display:block;font:500 20px/28px "JetBrains Mono";color:#A1A1AA;margin-left:44px}
+.ok{color:#3DDC97}.bad{color:#FF5A4E}.warn{color:#F5B800}
+</style></head><body><div id="stage">
+<div id="dc" class="card"><div class="hd" style="top:20px">Drawing <span>· CC0 · Wikimedia Commons</span></div>
+ <div id="dwg"></div><div class="hd" id="mh">Claude's model <span>· FreeCAD front view, same scale</span></div><div id="mdl"></div><svg id="ov" width="960" height="940"></svg></div>
+<div id="lc" class="card"><div class="hd" style="top:20px">Checked on the real model <span>· measured</span></div><div id="rows"></div></div>
+</div>
+<script>
+// drawing: shaft left end at x=695 px, 4.434 px/mm (258 mm = 1144 px) in the 2500 px original; crop y 140..900
+const K = 0.62, X0 = 58, DY = 66, CROP = [600, 140, 1960, 900];
+const dx = mm => X0 + (695 - CROP[0]) * K + mm * 4.434 * K;          // card x for a shaft x (mm)
+const dwg = document.getElementById('dwg');
+dwg.style.cssText += `left:${X0 - 0}px;top:${DY}px;width:${(CROP[2] - CROP[0]) * K}px;height:${(CROP[3] - CROP[1]) * K}px;background:#fff`;
+dwg.innerHTML = `<img src="../../inputs/shaft/shaft_drawing.png" style="position:absolute;left:${-CROP[0] * K}px;top:${-CROP[1] * K}px;width:${2500 * K}px">`;
+const MY = DY + (CROP[3] - CROP[1]) * K + 70, MS = 4.434 * K / 10;   // model image is 10 px/mm
+document.getElementById('mh').style.top = (MY - 44) + 'px';
+const mdl = document.getElementById('mdl');
+mdl.style.cssText += `left:${dx(0)}px;top:${MY}px;width:${2580 * MS}px;height:${600 * MS}px`;
+mdl.innerHTML = `<img src="../work/cmp/front.png" style="width:100%;height:100%">`;
+const ov = document.getElementById('ov'), NS = 'http://www.w3.org/2000/svg';
+const mk = (t, a, txt) => { const e = document.createElementNS(NS, t); for (const k in a) e.setAttribute(k, a[k]); if (txt) e.textContent = txt; ov.appendChild(e); return e; };
+const mTop = MY, mBot = MY + 600 * MS, mMid = (mTop + mBot) / 2;
+const guides = [0, 24, 202, 258].map(x => mk('line', {x1: dx(x), x2: dx(x), y1: DY + 10, y2: mBot - 10, stroke: '#F5B800', 'stroke-width': 2, 'stroke-dasharray': '6 6', opacity: 0}));
+const dimL = (x0, x1, y, txt) => { const g = [mk('line', {x1: dx(x0), x2: dx(x1), y1: y, y2: y, stroke: '#3DDC97', 'stroke-width': 3}), mk('text', {x: (dx(x0) + dx(x1)) / 2, y: y + 30, fill: '#3DDC97', 'font-family': 'Inter', 'font-weight': 800, 'font-size': 24, 'text-anchor': 'middle'}, txt)]; g.forEach(e => e.setAttribute('opacity', 0)); return g; };
+const d258 = dimL(0, 258, mBot + 26, '258.0 mm');
+const d24 = dimL(0, 24, mBot - 2, ''), d178 = dimL(24, 202, mBot - 2, ''), d56 = dimL(202, 258, mBot - 2, '');
+const ring = (x, ytop, ybot) => mk('rect', {x: dx(x) - 8, y: ytop - 6, width: 16, height: ybot - ytop + 12, rx: 6, fill: 'none', stroke: '#3DDC97', 'stroke-width': 3, opacity: 0});
+const rBoss = ring(214, mMid - 19.85 * 10 * MS, mMid + 19.85 * 10 * MS), rBody = ring(125, mMid - 16 * 10 * MS, mMid + 16 * 10 * MS);
+const bx = (x0, x1, y0, y1) => mk('rect', {x: dx(x0) - 4, y: y0, width: dx(x1) - dx(x0) + 8, height: y1 - y0, rx: 8, fill: 'rgba(255,90,78,.12)', stroke: '#FF5A4E', 'stroke-width': 3, opacity: 0});
+const bD = bx(189.5, 202, DY + (690 - CROP[1]) * K, DY + (845 - CROP[1]) * K), bM = bx(202, 226, mMid - 22 * 10 * MS, mMid + 22 * 10 * MS);
+const R = [
+  [1.2, 'ok', '✓', 'Overall length 258', 'model 258.0 mm'],
+  [2.3, 'ok', '✓', 'Chain 24 + 178 + 56', 'model 24.0 · 178.0 · 56.0'],
+  [3.4, 'ok', '✓', 'Boss Ø39.70 / 39.35', 'model Ø39.70'],
+  [4.4, 'ok', '✓', 'Body Ø32.00 / 31.91', 'model Ø32.00'],
+  [5.5, 'bad', '✗', 'Boss position + width', 'drawing: 12.5 wide, ends at 202 · model: 24 wide, starts at 202'],
+  [6.7, 'warn', '≈', 'Inner steps, threads, grooves', 'interpreted / simplified (Claude flagged it)'],
+];
+const rows = document.getElementById('rows');
+const re = R.map(([t, c, m, a, s], i) => { const d = document.createElement('div'); d.className = 'row'; d.style.top = (84 + i * 118) + 'px';
+  d.innerHTML = `<span class="m ${c}">${m}</span>${a}<span class="s">${s}</span>`; rows.appendChild(d); return d; });
+const ease = f => f <= 0 ? 0 : f >= 1 ? 1 : 1 - Math.pow(1 - f, 3);
+window.ready = Promise.all([...document.images].map(i => i.complete ? 1 : new Promise(r => i.onload = r))).then(() => document.fonts.ready);
+window.renderAt = t => {
+  document.getElementById('stage').style.opacity = ease(t / 0.3);
+  const op = (els, t0) => els.forEach(e => e.setAttribute('opacity', ease((t - t0) / 0.3)));
+  guides.forEach((g, i) => g.setAttribute('opacity', 0.9 * ease((t - [1.0, 2.1, 2.1, 1.0][i]) / 0.3)));
+  op(d258, 1.2); op(d24, 2.3); op(d178, 2.3); op(d56, 2.3);
+  op([rBoss], 3.4); op([rBody], 4.4); op([bD, bM], 5.5);
+  re.forEach((d, i) => { const e = ease((t - R[i][0]) / 0.3); d.style.opacity = e; d.style.transform = `translateY(${(1 - e) * 10}px)`; });
+};
+</script></body></html>

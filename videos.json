@@ -660,5 +660,76 @@
    "lean_compiler",
    "repo_stats"
   ]
+ },
+ {
+  "slug": "ai-cad",
+  "folder": "2026-11-27-ai-cad",
+  "title": "Here's What AI Can Build in CAD Now",
+  "date": "2026-11-27",
+  "yt": "",
+  "blurb": "Real Claude Code + FreeCAD (freecad-mcp) runs with measured fit checks, plus MCP / text-to-CAD / sketch-to-model explainers",
+  "held": [
+   "cad_3_shoe",
+   "cad_common",
+   "foot_seq",
+   "inputs"
+  ],
+  "animations": [
+   {
+    "name": "cad_1_arduino",
+    "title": "Arduino Uno enclosure designed by Claude Code in FreeCAD (freecad-mcp), real run + measured fit check",
+    "preview": "cad_1_arduino.gif",
+    "renders": [
+     "datasheet_1080p.mp4",
+     "fitcheck_1080p.mp4",
+     "pcb_slot_1080p.mp4",
+     "run_1080p.mp4",
+     "run_fast4x_1080p.mp4",
+     "turntable_1080p.mp4"
+    ],
+    "render_bytes": 920673
+   },
+   {
+    "name": "cad_2_drawing",
+    "title": "CC0 shaft drawing to a FreeCAD model by Claude Code (freecad-mcp), real run + measured comparison",
+    "preview": "cad_2_drawing.gif",
+    "renders": [
+     "browse_1080p.mp4",
+     "compare_1080p.mp4",
+     "drawing_reveal_1080p.mp4",
+     "run_1080p.mp4",
+     "turntable_1080p.mp4"
+    ],
+    "render_bytes": 20569862
+   },
+   {
+    "name": "mcp_bridge",
+    "title": "Claude terminal talks to a CAD app over an MCP bridge; tool calls flow across and a cube appears, no clicks",
+    "preview": "mcp_bridge.gif",
+    "renders": [
+     "mcp_bridge_1080p.mp4"
+    ],
+    "render_bytes": 633972
+   },
+   {
+    "name": "sketch_to_model",
+    "title": "a hand-drawn dimensioned bracket sketch is photographed by a phone and morphs into a clean 3D part",
+    "preview": "sketch_to_model.gif",
+    "renders": [
+     "sketch_to_model_1080p.mp4"
+    ],
+    "render_bytes": 1622115
+   },
+   {
+    "name": "text_to_cad",
+    "title": "a typed prompt (\"a box for my Arduino Uno\") flies into an isometric enclosure that builds face by face",
+    "preview": "text_to_cad.gif",
+    "renders": [
+     "text_to_cad_1080p.mp4"
+    ],
+    "render_bytes": 483383
+   }
+  ],
+  "held_note": "The football-boot animations from this video aren't published here: they use a third-party 3D model and personal photos."
  }
 ]

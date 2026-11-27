@@ -1,0 +1,26 @@
+{
+ "parts": [
+  {
+   "name": "shaft",
+   "stl": "work/blend/shaft.stl",
+   "color": "#B9BDC4",
+   "rough": 0.28,
+   "metal": 1.0,
+   "smooth_by_angle": 30
+  }
+ ],
+ "frames": 300,
+ "spin_deg": 200,
+ "spin_offset": -30,
+ "engine": "EEVEE",
+ "spp": 64,
+ "cam_elev": 24,
+ "cam_az": -70,
+ "cam_dist_k": 3.7,
+ "focal": 60,
+ "target_z": 0.5,
+ "light_k": 0.06,
+ "floor_color": "#08080A",
+ "world_strength": 0.35,
+ "out": "work/tt_frames/f_"
+}
